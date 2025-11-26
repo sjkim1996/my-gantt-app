@@ -526,7 +526,10 @@ export default function ResourceGanttChart() {
     
     const res = await apiCreateProject(newEntries);
     if (res.success && res.data) {
-        const normalized = res.data.map((p) => ({...p, id: p._id ?? p.id}));
+        const normalized = res.data.map((p, idx) => ({
+          ...p,
+          id: p._id ?? p.id ?? `${Date.now()}-${idx}`,
+        }));
         setProjects(prev => dedupeProjects([...prev, ...normalized]));
         setProjectName(''); setSelectedAssignees([]);
         showBanner('프로젝트가 추가되었습니다.', 'success');
