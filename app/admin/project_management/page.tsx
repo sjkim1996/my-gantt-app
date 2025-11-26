@@ -224,6 +224,15 @@ export default function ResourceGanttChart() {
     setBanner({ text, tone });
   };
 
+  useEffect(() => {
+    const lockScroll = isModalOpen || isTeamModalOpen;
+    if (lockScroll) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = original; };
+    }
+  }, [isModalOpen, isTeamModalOpen]);
+
   // --- Auth & Data Fetch ---
   useEffect(() => {
     // [수정] 미리보기 환경에서 에러 방지
@@ -711,9 +720,9 @@ export default function ResourceGanttChart() {
       )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 md:p-6">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border border-indigo-100">
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl md:w-[90vw] overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border border-indigo-100">
             <div className="bg-indigo-600 px-6 py-4 text-white flex justify-between items-start">
               <div className="flex-1">
                 <div className="text-[11px] font-semibold text-indigo-200 mb-1 uppercase tracking-[0.08em]">Project Edit</div>
