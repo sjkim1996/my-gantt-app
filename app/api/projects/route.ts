@@ -2,6 +2,10 @@ import dbConnect from '@/lib/db';
 import Project from '@/models/Project';
 import { NextResponse } from 'next/server';
 
+// Ensure serverful runtime for mongoose
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 // [GET] 프로젝트 목록 가져오기
 export async function GET() {
   try {

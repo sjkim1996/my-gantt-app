@@ -2,6 +2,10 @@ import dbConnect from '@/lib/db';
 import mongoose from 'mongoose';
 import { NextResponse } from 'next/server';
 
+// Force Node.js runtime to avoid accidental Edge deployment (Mongoose needs Node APIs)
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   const uri = process.env.MONGODB_URI;
   if (!uri) {
@@ -13,10 +17,15 @@ export async function GET() {
 
   try {
     const conn = await dbConnect();
+    const { host, name } = conn.connection;
+
     return NextResponse.json({
       success: true,
-      uri,
-      readyState: mongoose.connection.readyState,
+      db: {
+        host,
+        name,
+        readyState: mongoose.connection.readyState,
+      },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
