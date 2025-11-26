@@ -6,6 +6,9 @@ if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
 }
 
+// Narrow to a plain string for downstream use after the guard above
+const mongoDbUri = MONGODB_URI as string;
+
 type MongooseCache = { conn: Mongoose | null; promise: Promise<Mongoose> | null };
 
 const globalWithMongoose = global as typeof global & { mongooseCache?: MongooseCache };
@@ -27,7 +30,7 @@ async function dbConnect() {
       serverSelectionTimeoutMS: 5000,
     };
 
-    cached!.promise = mongoose.connect(MONGODB_URI, opts).catch((err) => {
+    cached!.promise = mongoose.connect(mongoDbUri, opts).catch((err) => {
       cached!.promise = null;
       throw err;
     });
