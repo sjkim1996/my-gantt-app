@@ -188,8 +188,11 @@ export default function ResourceGanttChart() {
   const [hoveredProjectName, setHoveredProjectName] = useState<string | null>(null);
   const [ambiguousCandidates, setAmbiguousCandidates] = useState<Assignee[]>([]); 
   const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [pendingScrollDate, setPendingScrollDate] = useState<Date | null>(null);
-  const [pendingScrollRow, setPendingScrollRow] = useState<string | null>(null);
+  const [pendingScrollTarget, setPendingScrollTarget] = useState<{
+    date: Date;
+    rowId: string;
+    desiredStart: string;
+  } | null>(null);
 
   // Data State
   const [teams, setTeams] = useState<Team[]>(DEFAULT_TEAMS);
@@ -410,26 +413,32 @@ export default function ResourceGanttChart() {
   const modalSuggestions = useMemo(() => getSuggestions(modalAssigneeInput), [modalAssigneeInput, getSuggestions]);
 
   useEffect(() => {
-    if (!pendingScrollDate || !chartContainerRef.current) return;
-    const chartStart = parseDate(chartStartDate);
-    const diffDays = getDaysDiff(chartStart, pendingScrollDate);
-    const offsetRatio = diffDays / chartTotalDays;
-    const container = chartContainerRef.current;
-    const scrollWidth = container.scrollWidth - container.clientWidth;
-    const scrollPos = Math.max(0, Math.min(scrollWidth, container.scrollWidth * offsetRatio - 300));
-    container.scrollTo({ left: scrollPos, behavior: 'smooth' });
+    if (!pendingScrollTarget || !chartContainerRef.current) return;
+    if (chartStartDate !== pendingScrollTarget.desiredStart) return; // wait until chartStartDate 적용
 
-    if (pendingScrollRow) {
-      const row = rowRefs.current[pendingScrollRow];
+    const timeout = setTimeout(() => {
+      const { date, rowId } = pendingScrollTarget;
+      const chartStart = parseDate(chartStartDate);
+      const diffDays = getDaysDiff(chartStart, date);
+      const offsetRatio = diffDays / chartTotalDays;
+      const container = chartContainerRef.current!;
+      const scrollWidth = container.scrollWidth - container.clientWidth;
+      const scrollPos = Math.max(0, Math.min(scrollWidth, container.scrollWidth * offsetRatio - 300));
+      container.scrollTo({ left: scrollPos, behavior: 'smooth' });
+
+      const row = rowRefs.current[rowId];
       if (row) {
         row.scrollIntoView({ behavior: 'smooth', block: 'center' });
         row.classList.add('bg-yellow-100');
         setTimeout(() => row.classList.remove('bg-yellow-100'), 1500);
+      } else {
+        showBanner('행을 찾을 수 없습니다. 팀/멤버를 확인하세요.', 'info');
       }
-    }
-    setPendingScrollDate(null);
-    setPendingScrollRow(null);
-  }, [pendingScrollDate, pendingScrollRow, chartStartDate, chartTotalDays]);
+      setPendingScrollTarget(null);
+    }, 80); // 레이아웃 안정화 대기
+
+    return () => clearTimeout(timeout);
+  }, [pendingScrollTarget, chartStartDate, chartTotalDays]);
 
   const groupedProjects = useMemo(() => {
     const map = new Map<string, GroupedProject>();
@@ -585,21 +594,12 @@ export default function ResourceGanttChart() {
   const handleShortcutClick = (group: GroupedProject) => {
     const firstMember = group.members[0]; 
     const rowId = `${firstMember.team}-${firstMember.person}`; 
-    const row = rowRefs.current[rowId];
-    
-    if (row) { 
-        row.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
-        row.classList.add('bg-yellow-100'); 
-        setTimeout(() => row.classList.remove('bg-yellow-100'), 1500); 
-    }
-
-    const chartStart = parseDate(chartStartDate);
     const projStart = parseDate(group.start);
-    const desiredStart = getStartOfWeek(projStart);
-    setPendingScrollDate(projStart);
-    setPendingScrollRow(rowId);
-    if (chartStart.getTime() !== desiredStart.getTime()) {
-      setChartStartDate(formatDate(desiredStart));
+    const desiredStartStr = formatDate(getStartOfWeek(projStart));
+    setPendingScrollTarget({ date: projStart, rowId, desiredStart: desiredStartStr });
+
+    if (chartStartDate !== desiredStartStr) {
+      setChartStartDate(desiredStartStr);
     }
 
     setHoveredProjectName(group.name); 
