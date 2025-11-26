@@ -146,7 +146,7 @@ const dedupeProjects = (list: Project[]) => {
   return Array.from(map.values());
 };
 
-// [수정] API 호출 실패 시 보여줄 예시 데이터 (2025년 기준)
+/*// [수정] API 호출 실패 시 보여줄 예시 데이터 (2025년 기준)
 const MOCK_PROJECTS_2025: Project[] = [
   { id: 1, name: '2025 웹사이트 리뉴얼', person: '김철수', team: '기획팀', start: '2025-01-05', end: '2025-02-20', colorIdx: 0 },
   { id: 2, name: '2025 웹사이트 리뉴얼', person: '박지성', team: '개발팀', start: '2025-01-05', end: '2025-02-20', colorIdx: 0 },
@@ -155,7 +155,7 @@ const MOCK_PROJECTS_2025: Project[] = [
   { id: 5, name: '모바일 앱 기획', person: '최기획', team: '기획팀', start: '2025-02-01', end: '2025-03-15', colorIdx: 1 },
   { id: 6, name: '관리자 페이지 고도화', person: '박지성', team: '개발팀', start: '2025-03-01', end: '2025-04-15', colorIdx: 5 }, 
   { id: 7, name: '관리자 페이지 고도화', person: '손흥민', team: '개발팀', start: '2025-03-01', end: '2025-04-15', colorIdx: 5 }, 
-];
+];*/
 
 // --- 4. 메인 컴포넌트 ---
 export default function ResourceGanttChart() {
