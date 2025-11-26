@@ -19,7 +19,8 @@ interface Project {
 }
 
 interface Team {
-  id: string;
+  id?: string;
+  _id?: string;
   name: string;
   members: string[];
 }
@@ -193,13 +194,16 @@ export default function ResourceGanttChart() {
   const [deleteConfirmMode, setDeleteConfirmMode] = useState(false);
   const [hoveredProjectName, setHoveredProjectName] = useState<string | null>(null);
   const [ambiguousCandidates, setAmbiguousCandidates] = useState<Assignee[]>([]); 
+  const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Data State
-  const [teams, setTeams] = useState<Team[]>([
+  const DEFAULT_TEAMS: Team[] = [
     { id: 't1', name: '기획팀', members: ['김철수', '이영희', '최기획'] },
-    { id: 't2', name: '개발팀', members: ['박지성', '손흥민', '김철수', '차범근'] }, 
+    { id: 't2', name: '개발팀', members: ['박지성', '손흥민', '김철수', '차범근'] },
     { id: 't3', name: '디자인팀', members: ['홍길동', '신사임당'] },
-  ]);
+  ];
+
+  const [teams, setTeams] = useState<Team[]>(DEFAULT_TEAMS);
   const [projects, setProjects] = useState<Project[]>([]);
 
   // Input Form State
@@ -211,8 +215,18 @@ export default function ResourceGanttChart() {
   const [assigneeInput, setAssigneeInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [recentlyAddedProject, setRecentlyAddedProject] = useState<string | null>(null);
 
   const [editingTeams, setEditingTeams] = useState<Team[]>([]);
+
+  useEffect(() => {
+    if (statusMessage) {
+      if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
+      statusTimerRef.current = setTimeout(() => setStatusMessage(null), 3000);
+    }
+    return () => { if (statusTimerRef.current) clearTimeout(statusTimerRef.current); };
+  }, [statusMessage]);
 
   // --- Auth & Data Fetch ---
   useEffect(() => {
@@ -223,8 +237,8 @@ export default function ResourceGanttChart() {
         // if (!isLoggedIn) router.push('/login');
     }
 
-    // API 요청 시도
-    const fetchData = async () => {
+    // 프로젝트 불러오기
+    const fetchProjects = async () => {
       try {
         const res = await fetch('/api/projects');
         const data = (await res.json()) as ApiProjectsResponse;
@@ -239,7 +253,7 @@ export default function ResourceGanttChart() {
         const loadedProjects = (data.data || []).map((p) => ({
           ...p,
           id: p._id ?? p.id,
-        })); 
+        }));
         setProjects(loadedProjects);
       } catch (error) {
         console.error('API Fetch failed (Preview Mode), using mock data.', error);
@@ -249,7 +263,24 @@ export default function ResourceGanttChart() {
       }
     };
 
-    fetchData();
+    // 팀 불러오기 (실패 시 기본값 사용)
+    const fetchTeams = async () => {
+      try {
+        const res = await fetch('/api/teams');
+        const data = await res.json();
+        if (res.ok && data.success && Array.isArray(data.data)) {
+          const loaded = data.data.map((t: Team, idx: number) => ({ ...t, id: t._id || `t${idx}` }));
+          setTeams(loaded);
+          return;
+        }
+      } catch (error) {
+        console.error('[API] /api/teams failed, using defaults.', error);
+      }
+      setTeams(DEFAULT_TEAMS);
+    };
+
+    fetchProjects();
+    fetchTeams();
   }, [router]);
 
   // 60주 렌더링 (약 1년치)
@@ -388,9 +419,14 @@ export default function ResourceGanttChart() {
   const groupedProjects = useMemo(() => {
     const map = new Map<string, GroupedProject>();
     projects.forEach(p => {
-      if (!map.has(p.name)) map.set(p.name, { ...p, members: [] });
+      if (!map.has(p.name)) {
+        map.set(p.name, { ...p, members: [], start: p.start, end: p.end });
+      }
       const group = map.get(p.name)!;
       if (!group.members.find(m => m.person === p.person && m.team === p.team)) group.members.push({ person: p.person, team: p.team });
+      // 그룹의 기간을 멤버 중 가장 이른 시작/늦은 종료로 업데이트
+      if (parseDate(p.start) < parseDate(group.start)) group.start = p.start;
+      if (parseDate(p.end) > parseDate(group.end)) group.end = p.end;
     });
     return Array.from(map.values());
   }, [projects]);
@@ -419,24 +455,55 @@ export default function ResourceGanttChart() {
 
   const handleAddProject = async () => {
     if (!projectName || selectedAssignees.length === 0) return;
-    const sharedColorIdx = Math.floor(Math.random() * BAR_COLORS.length);
+
+    const existingGroup = groupedProjects.find((g) => g.name === projectName);
+    const existingPairs = new Set(projects.filter(p => p.name === projectName).map(p => `${p.person}__${p.team}`));
+
+    let targetName = projectName;
+    let assigneesToAdd = [...selectedAssignees];
+    let colorIdx = existingGroup ? existingGroup.colorIdx : Math.floor(Math.random() * BAR_COLORS.length);
+
+    if (existingGroup) {
+      const isSame = window.confirm(`이미 \"${projectName}\" 프로젝트가 있습니다.\n같은 프로젝트로 인원만 추가할까요?`);
+      if (isSame) {
+        assigneesToAdd = assigneesToAdd.filter(a => !existingPairs.has(`${a.name}__${a.team}`));
+        if (assigneesToAdd.length === 0) {
+          setStatusMessage('이미 등록된 인원입니다.');
+          return;
+        }
+      } else {
+        let suffix = 1;
+        let newName = `${projectName} (${suffix})`;
+        while (projects.some(p => p.name === newName)) {
+          suffix += 1;
+          newName = `${projectName} (${suffix})`;
+        }
+        targetName = newName;
+      }
+    }
+
     const newEntries: any[] = [];
-    selectedAssignees.forEach((assignee) => {
+    assigneesToAdd.forEach((assignee) => {
       newEntries.push({
-        name: projectName,
+        name: targetName,
         person: assignee.name,
         team: assignee.team,
         start: projectStart,
         end: projectEnd,
-        colorIdx: sharedColorIdx
+        colorIdx: colorIdx
       });
     });
     
     const res = await apiCreateProject(newEntries);
     if (res.success) {
-        // 서버 데이터로 업데이트 (ID 포함)
-        setProjects(prev => [...prev, ...res.data.map((p:any) => ({...p, id: p._id}))]);
+        const normalized = res.data.map((p:any) => ({...p, id: p._id ?? p.id}));
+        setProjects(prev => [...prev, ...normalized]);
         setProjectName(''); setSelectedAssignees([]);
+        setStatusMessage('프로젝트가 추가되었습니다.');
+        setRecentlyAddedProject(targetName);
+        setHoveredProjectName(targetName);
+        setTimeout(() => setHoveredProjectName(null), 2000);
+        setTimeout(() => setRecentlyAddedProject(null), 2500);
     }
   };
 
@@ -526,7 +593,30 @@ export default function ResourceGanttChart() {
   };
 
   const openTeamModal = () => { setEditingTeams(JSON.parse(JSON.stringify(teams))); setIsTeamModalOpen(true); };
-  const saveTeams = () => { setTeams(editingTeams); setIsTeamModalOpen(false); }; 
+
+  const saveTeams = async () => {
+    try {
+      const payload = editingTeams.map(({ name, members }) => ({ name, members }));
+      const res = await fetch('/api/teams', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data?.error || `Status ${res.status}`);
+      }
+      const stored = (data.data as Team[]).map((t, idx) => ({ ...t, id: t._id || `t${idx}` }));
+      setTeams(stored);
+      setIsTeamModalOpen(false);
+    } catch (error) {
+      console.error('[API] save teams failed:', error);
+      // 실패해도 로컬 상태 적용은 유지
+      setTeams(editingTeams);
+      setIsTeamModalOpen(false);
+    }
+  };
+
   const addTeam = () => { setEditingTeams([...editingTeams, { id: `t${Date.now()}`, name: '새 팀', members: [] }]); };
   const updateTeamName = (idx: number, name: string) => { const n = [...editingTeams]; n[idx].name = name; setEditingTeams(n); };
   const addMemberToTeam = (teamIdx: number) => { const name = prompt("이름:"); if (name) { const n = [...editingTeams]; n[teamIdx].members.push(name); setEditingTeams(n); } };
@@ -697,7 +787,13 @@ export default function ResourceGanttChart() {
                 <button onClick={handleLogout} className="h-10 w-10 bg-gray-200 text-gray-600 rounded-lg flex items-center justify-center hover:bg-red-100 hover:text-red-500 transition"><LogOut className="w-4 h-4" /></button>
             </div>
         </div>
-        
+        {statusMessage && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100 shadow-sm">
+            <Check className="w-4 h-4" />
+            <span className="text-sm font-semibold">{statusMessage}</span>
+          </div>
+        )}
+
         {/* Input Row */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end bg-white p-5 rounded-xl shadow-sm border border-gray-200">
           <div className="md:col-span-3">
@@ -775,6 +871,7 @@ export default function ResourceGanttChart() {
                                 className={`
                                     group cursor-pointer p-2.5 rounded border border-gray-200 bg-white shadow-sm hover:shadow transition-all relative overflow-hidden hover:border-indigo-300 hover:-translate-y-0.5 min-h-[70px] flex flex-col justify-between
                                     ${hoveredProjectName === group.name ? 'ring-2 ring-indigo-100 border-indigo-300' : ''}
+                                    ${recentlyAddedProject === group.name ? 'ring-2 ring-emerald-200 border-emerald-300 animate-pulse' : ''}
                                 `}
                             >
                                 <div className={`absolute left-0 top-0 bottom-0 w-1 ${BAR_COLORS[group.colorIdx % BAR_COLORS.length].bar}`}></div>
