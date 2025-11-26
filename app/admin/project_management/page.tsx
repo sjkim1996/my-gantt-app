@@ -146,7 +146,7 @@ const dedupeProjects = (list: Project[]) => {
   return Array.from(map.values());
 };
 
-/*// [수정] API 호출 실패 시 보여줄 예시 데이터 (2025년 기준)
+// [수정] API 호출 실패 시 보여줄 예시 데이터 (2025년 기준)
 const MOCK_PROJECTS_2025: Project[] = [
   { id: 1, name: '2025 웹사이트 리뉴얼', person: '김철수', team: '기획팀', start: '2025-01-05', end: '2025-02-20', colorIdx: 0 },
   { id: 2, name: '2025 웹사이트 리뉴얼', person: '박지성', team: '개발팀', start: '2025-01-05', end: '2025-02-20', colorIdx: 0 },
@@ -155,7 +155,7 @@ const MOCK_PROJECTS_2025: Project[] = [
   { id: 5, name: '모바일 앱 기획', person: '최기획', team: '기획팀', start: '2025-02-01', end: '2025-03-15', colorIdx: 1 },
   { id: 6, name: '관리자 페이지 고도화', person: '박지성', team: '개발팀', start: '2025-03-01', end: '2025-04-15', colorIdx: 5 }, 
   { id: 7, name: '관리자 페이지 고도화', person: '손흥민', team: '개발팀', start: '2025-03-01', end: '2025-04-15', colorIdx: 5 }, 
-];*/
+];
 
 // --- 4. 메인 컴포넌트 ---
 export default function ResourceGanttChart() {
@@ -254,9 +254,9 @@ export default function ResourceGanttChart() {
           return;
         }
 
-        const loadedProjects = (data.data || []).map((p) => ({
+        const loadedProjects = (data.data || []).map((p, idx) => ({
           ...p,
-          id: p._id ?? p.id,
+          id: p._id ?? p.id ?? `local-${idx}`,
         }));
         setProjects(dedupeProjects(loadedProjects));
       } catch (error) {
@@ -547,7 +547,12 @@ export default function ResourceGanttChart() {
     const relatedProjects = dedupeProjects(projects.filter(p => p.name === targetName));
     setMasterProjectName(targetName); setMasterColorIdx(project.colorIdx); setMasterStart(project.start); setMasterEnd(project.end);
     const members: EditingMember[] = relatedProjects.map(p => ({ 
-        id: p.id, _id: p._id || p.id, person: p.person, team: p.team, start: p.start, end: p.end, 
+        id: p.id,
+        _id: typeof p._id === 'string' ? p._id : undefined,
+        person: p.person,
+        team: p.team,
+        start: p.start,
+        end: p.end,
     }));
     setEditingMembers(members); setIsModalOpen(true);
   };
@@ -584,7 +589,7 @@ export default function ResourceGanttChart() {
         const res = await fetch('/api/projects');
         if (res.ok) {
             const data = await res.json() as ApiResponse<ProjectPayload[]>;
-            if (data.success && data.data) { setProjects(dedupeProjects(data.data.map((p) => ({ ...p, id: p._id })))); }
+            if (data.success && data.data) { setProjects(dedupeProjects(data.data.map((p, idx) => ({ ...p, id: p._id ?? p.id ?? `reload-${idx}` })))); }
         }
     } catch {
       showBanner('프로젝트를 다시 불러오는데 실패했습니다.', 'error');
@@ -598,7 +603,7 @@ export default function ResourceGanttChart() {
       const idsToDelete = editingMembers.filter(m => !m.isNew).map(m => m._id);
       for (const id of idsToDelete) { if (id) await apiDeleteProject(id); }
       // 로컬 업데이트
-      setProjects(prev => prev.filter(p => !idsToDelete.includes(p._id)));
+      setProjects(prev => prev.filter(p => p._id && !idsToDelete.includes(p._id)));
       setIsModalOpen(false); 
       showBanner('프로젝트가 삭제되었습니다.', 'info');
   };

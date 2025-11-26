@@ -22,10 +22,13 @@ async function dbConnect() {
   }
 
   if (!cached.promise) {
+    mongoose.set('strictQuery', false);
     const opts: Parameters<typeof mongoose.connect>[1] = {
       bufferCommands: false,
       serverSelectionTimeoutMS: 15000,
       maxPoolSize: 10,
+      connectTimeoutMS: 20000,
+      heartbeatFrequencyMS: 8000,
     };
 
     cached.promise = mongoose.connect(mongoDbUri, opts).catch((err) => {
