@@ -1,36 +1,28 @@
+import dbConnect from '@/lib/db';
 import mongoose from 'mongoose';
+import { NextResponse } from 'next/server';
 
-const MONGODB_URI = process.env.MONGODB_URI!;
-
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
-}
-
-let cached = (global as any).mongoose;
-
-if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
-}
-
-async function dbConnect() {
-  if (cached.conn) {
-    return cached.conn;
+export async function GET() {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    return NextResponse.json(
+      { success: false, error: 'MONGODB_URI env not set' },
+      { status: 500 }
+    );
   }
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-    };
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return mongoose;
-    });
-  }
+
   try {
-    cached.conn = await cached.promise;
-  } catch (e) {
-    cached.promise = null;
-    throw e;
+    const conn = await dbConnect();
+    return NextResponse.json({
+      success: true,
+      uri,
+      readyState: mongoose.connection.readyState,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      { success: false, error: message },
+      { status: 500 }
+    );
   }
-  return cached.conn;
 }
-
-export default dbConnect;

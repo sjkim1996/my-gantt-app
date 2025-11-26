@@ -9,7 +9,7 @@ import { Plus, Trash2, RefreshCw, Search, ChevronDown, AlertCircle, Settings, X,
 // --- 1. 타입 정의 ---
 interface Project {
   _id?: string; 
-  id: number;   
+  id: string | number;   
   name: string;
   person: string;
   team: string;
@@ -36,7 +36,7 @@ interface GroupedProject extends Project {
 
 interface EditingMember {
   _id?: string;
-  id: number;
+  id: string | number;
   person: string;
   team: string;
   start: string;
@@ -44,6 +44,12 @@ interface EditingMember {
   isNew?: boolean;
   isDeleted?: boolean;
 }
+
+type ApiProjectsResponse = {
+  success: boolean;
+  data?: Array<Project & { _id?: string }>;
+  error?: string;
+};
 
 // --- 2. 유틸리티 함수 ---
 const parseDate = (dateStr: string) => {
@@ -219,22 +225,28 @@ export default function ResourceGanttChart() {
 
     // API 요청 시도
     const fetchData = async () => {
-        try {
-            const res = await fetch('/api/projects');
-            if (!res.ok) throw new Error('API Error');
-            const data = await res.json();
-            if (data.success) {
-              const loadedProjects = data.data.map((p: any) => ({ ...p, id: p._id })); 
-              setProjects(loadedProjects);
-            } else {
-                setProjects(MOCK_PROJECTS_2025); 
-            }
-        } catch (error) {
-            console.log("API Fetch failed (Preview Mode), using mock data.");
-            setProjects(MOCK_PROJECTS_2025);
-        } finally {
-            setIsLoading(false);
+      try {
+        const res = await fetch('/api/projects');
+        const data = (await res.json()) as ApiProjectsResponse;
+
+        if (!res.ok || !data.success) {
+          const reason = data?.error || `Status ${res.status}`;
+          console.error('[API] /api/projects failed:', reason);
+          setProjects(MOCK_PROJECTS_2025);
+          return;
         }
+
+        const loadedProjects = (data.data || []).map((p) => ({
+          ...p,
+          id: p._id ?? p.id,
+        })); 
+        setProjects(loadedProjects);
+      } catch (error) {
+        console.error('API Fetch failed (Preview Mode), using mock data.', error);
+        setProjects(MOCK_PROJECTS_2025);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchData();
