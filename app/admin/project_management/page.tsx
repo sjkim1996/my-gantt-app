@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 // [수정] 실제 배포(Vercel) 시에는 아래 주석을 해제하고, 그 밑의 Mock Router를 삭제하세요.
 import { useRouter } from 'next/navigation'; 
-import { Plus, Trash2, RefreshCw, Search, ChevronDown, AlertCircle, Settings, X, Check, Info, Target, Edit3, Calendar, Clock, Users, Briefcase, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
+import { Plus, Trash2, RefreshCw, Search, AlertCircle, Settings, X, Check, Target, Edit3, Clock, Briefcase, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 
 
 // --- 1. 타입 정의 ---
@@ -71,13 +71,6 @@ const getDaysDiff = (start: Date, end: Date) => {
   return Math.round((end.getTime() - start.getTime()) / oneDay);
 };
 
-const isActiveToday = (projStart: string, projEnd: string, todayDate: Date) => {
-  const todayTime = todayDate.getTime();
-  const start = parseDate(projStart).getTime();
-  const end = parseDate(projEnd).getTime();
-  return todayTime >= start && todayTime <= end;
-};
-
 const getWeekLabel = (date: Date) => {
   const month = date.getMonth() + 1;
   const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
@@ -97,7 +90,7 @@ const getStartOfWeek = (date: Date) => {
 
 const generateWeeks = (startDateStr: string, numWeeks = 60, mockToday: Date) => {
   const weeks = [];
-  let current = parseDate(startDateStr);
+  const current = parseDate(startDateStr);
   
   // 오늘 날짜 비교용 (Time 제거)
   const todayTime = mockToday.getTime();
@@ -138,19 +131,19 @@ const BAR_COLORS = [
   { bg: 'bg-gray-100', border: 'border-gray-200', text: 'text-gray-800', bar: 'bg-gray-500' },
 ];
 
-const stringToColorClass = (str: string) => {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const colors = [
-    'text-red-600', 'text-orange-600', 'text-amber-600',
-    'text-green-600', 'text-emerald-600', 'text-teal-600',
-    'text-cyan-600', 'text-sky-600', 'text-blue-600',
-    'text-indigo-600', 'text-violet-600', 'text-purple-600',
-    'text-pink-600', 'text-rose-600',
-  ];
-  return colors[Math.abs(hash) % colors.length];
+const DEFAULT_TEAMS: Team[] = [
+  { id: 't1', name: '기획팀', members: ['김철수', '이영희', '최기획'] },
+  { id: 't2', name: '개발팀', members: ['박지성', '손흥민', '김철수', '차범근'] },
+  { id: 't3', name: '디자인팀', members: ['홍길동', '신사임당'] },
+];
+
+const dedupeProjects = (list: Project[]) => {
+  const map = new Map<string, Project>();
+  list.forEach((p) => {
+    const key = `${p.name}__${p.person}__${p.team}`;
+    if (!map.has(key)) map.set(key, p);
+  });
+  return Array.from(map.values());
 };
 
 // [수정] API 호출 실패 시 보여줄 예시 데이터 (2025년 기준)
@@ -194,15 +187,11 @@ export default function ResourceGanttChart() {
   const [deleteConfirmMode, setDeleteConfirmMode] = useState(false);
   const [hoveredProjectName, setHoveredProjectName] = useState<string | null>(null);
   const [ambiguousCandidates, setAmbiguousCandidates] = useState<Assignee[]>([]); 
-  const statusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pendingScrollDate, setPendingScrollDate] = useState<Date | null>(null);
+  const [pendingScrollRow, setPendingScrollRow] = useState<string | null>(null);
 
   // Data State
-  const DEFAULT_TEAMS: Team[] = [
-    { id: 't1', name: '기획팀', members: ['김철수', '이영희', '최기획'] },
-    { id: 't2', name: '개발팀', members: ['박지성', '손흥민', '김철수', '차범근'] },
-    { id: 't3', name: '디자인팀', members: ['홍길동', '신사임당'] },
-  ];
-
   const [teams, setTeams] = useState<Team[]>(DEFAULT_TEAMS);
   const [projects, setProjects] = useState<Project[]>([]);
 
@@ -215,24 +204,27 @@ export default function ResourceGanttChart() {
   const [assigneeInput, setAssigneeInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [banner, setBanner] = useState<{ text: string; tone?: 'success' | 'error' | 'info' } | null>(null);
   const [recentlyAddedProject, setRecentlyAddedProject] = useState<string | null>(null);
 
   const [editingTeams, setEditingTeams] = useState<Team[]>([]);
 
   useEffect(() => {
-    if (statusMessage) {
-      if (statusTimerRef.current) clearTimeout(statusTimerRef.current);
-      statusTimerRef.current = setTimeout(() => setStatusMessage(null), 3000);
+    if (banner) {
+      if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+      bannerTimerRef.current = setTimeout(() => setBanner(null), 3000);
     }
-    return () => { if (statusTimerRef.current) clearTimeout(statusTimerRef.current); };
-  }, [statusMessage]);
+    return () => { if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current); };
+  }, [banner]);
+
+  const showBanner = (text: string, tone: 'success' | 'error' | 'info' = 'success') => {
+    setBanner({ text, tone });
+  };
 
   // --- Auth & Data Fetch ---
   useEffect(() => {
     // [수정] 미리보기 환경에서 에러 방지
     if (typeof window !== 'undefined') {
-        const isLoggedIn = sessionStorage.getItem('isLoggedIn');
         // 데모 환경에서는 로그인 체크를 엄격하게 하지 않음 (미리보기 위해)
         // if (!isLoggedIn) router.push('/login');
     }
@@ -254,10 +246,10 @@ export default function ResourceGanttChart() {
           ...p,
           id: p._id ?? p.id,
         }));
-        setProjects(loadedProjects);
+        setProjects(dedupeProjects(loadedProjects));
       } catch (error) {
         console.error('API Fetch failed (Preview Mode), using mock data.', error);
-        setProjects(MOCK_PROJECTS_2025);
+        setProjects(dedupeProjects(MOCK_PROJECTS_2025));
       } finally {
         setIsLoading(false);
       }
@@ -298,7 +290,7 @@ export default function ResourceGanttChart() {
 
   const allMembers = useMemo(() => {
     const list: Assignee[] = [];
-    teams.forEach(t => t.members.forEach(m => list.push({ name: m, team: t.name })));
+    teams.forEach(t => Array.from(new Set(t.members)).forEach(m => list.push({ name: m, team: t.name })));
     return list;
   }, [teams]);
 
@@ -313,8 +305,11 @@ export default function ResourceGanttChart() {
     }
   }, [isLoading]);
 
+  type ApiResponse<T> = { success: boolean; data?: T; error?: string };
+  type ProjectPayload = Omit<Project, 'id'>;
+
   // --- API Wrappers ---
-  const apiCreateProject = async (newProjects: any[]) => {
+  const apiCreateProject = async (newProjects: ProjectPayload[]): Promise<ApiResponse<ProjectPayload[]>> => {
     try {
       const res = await fetch('/api/projects', {
         method: 'POST',
@@ -322,13 +317,12 @@ export default function ResourceGanttChart() {
         body: JSON.stringify(newProjects),
       });
       return res.json();
-    } catch (e) {
-      // console.error(e);
-      return { success: true, data: newProjects.map((p, i) => ({...p, id: Date.now() + i})) }; // Mock success
+    } catch {
+      return { success: true, data: newProjects.map((p, i) => ({ ...p, id: `${Date.now()}-${i}` })) };
     }
   };
 
-  const apiUpdateProject = async (project: any) => {
+  const apiUpdateProject = async (project: ProjectPayload): Promise<ApiResponse<ProjectPayload>> => {
     try {
       const res = await fetch('/api/projects', {
         method: 'PUT',
@@ -336,8 +330,7 @@ export default function ResourceGanttChart() {
         body: JSON.stringify(project),
       });
       return res.json();
-    } catch (e) {
-      // console.error(e);
+    } catch {
       return { success: true, data: project };
     }
   };
@@ -345,8 +338,8 @@ export default function ResourceGanttChart() {
   const apiDeleteProject = async (id: string) => {
     try {
       await fetch(`/api/projects?id=${id}`, { method: 'DELETE' });
-    } catch (e) {
-      // console.error(e);
+    } catch {
+      // ignore
     }
   };
 
@@ -408,13 +401,35 @@ export default function ResourceGanttChart() {
     return { left: `${left}%`, width: `${width}%`, top: `${proj.row * 30 + 4}px` };
   };
 
-  const getSuggestions = (input: string) => {
+  const getSuggestions = useCallback((input: string) => {
     if (!input.trim()) return [];
     const lowerInput = input.toLowerCase();
     return allMembers.filter(m => m.name.toLowerCase().includes(lowerInput) || m.team.toLowerCase().includes(lowerInput));
-  };
-  const mainSuggestions = useMemo(() => getSuggestions(assigneeInput), [assigneeInput, allMembers]);
-  const modalSuggestions = useMemo(() => getSuggestions(modalAssigneeInput), [modalAssigneeInput, allMembers]);
+  }, [allMembers]);
+  const mainSuggestions = useMemo(() => getSuggestions(assigneeInput), [assigneeInput, getSuggestions]);
+  const modalSuggestions = useMemo(() => getSuggestions(modalAssigneeInput), [modalAssigneeInput, getSuggestions]);
+
+  useEffect(() => {
+    if (!pendingScrollDate || !chartContainerRef.current) return;
+    const chartStart = parseDate(chartStartDate);
+    const diffDays = getDaysDiff(chartStart, pendingScrollDate);
+    const offsetRatio = diffDays / chartTotalDays;
+    const container = chartContainerRef.current;
+    const scrollWidth = container.scrollWidth - container.clientWidth;
+    const scrollPos = Math.max(0, Math.min(scrollWidth, container.scrollWidth * offsetRatio - 300));
+    container.scrollTo({ left: scrollPos, behavior: 'smooth' });
+
+    if (pendingScrollRow) {
+      const row = rowRefs.current[pendingScrollRow];
+      if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        row.classList.add('bg-yellow-100');
+        setTimeout(() => row.classList.remove('bg-yellow-100'), 1500);
+      }
+    }
+    setPendingScrollDate(null);
+    setPendingScrollRow(null);
+  }, [pendingScrollDate, pendingScrollRow, chartStartDate, chartTotalDays]);
 
   const groupedProjects = useMemo(() => {
     const map = new Map<string, GroupedProject>();
@@ -461,14 +476,14 @@ export default function ResourceGanttChart() {
 
     let targetName = projectName;
     let assigneesToAdd = [...selectedAssignees];
-    let colorIdx = existingGroup ? existingGroup.colorIdx : Math.floor(Math.random() * BAR_COLORS.length);
+    const colorIdx = existingGroup ? existingGroup.colorIdx : Math.floor(Math.random() * BAR_COLORS.length);
 
     if (existingGroup) {
       const isSame = window.confirm(`이미 \"${projectName}\" 프로젝트가 있습니다.\n같은 프로젝트로 인원만 추가할까요?`);
       if (isSame) {
         assigneesToAdd = assigneesToAdd.filter(a => !existingPairs.has(`${a.name}__${a.team}`));
         if (assigneesToAdd.length === 0) {
-          setStatusMessage('이미 등록된 인원입니다.');
+          showBanner('이미 등록된 인원입니다.', 'info');
           return;
         }
       } else {
@@ -482,37 +497,36 @@ export default function ResourceGanttChart() {
       }
     }
 
-    const newEntries: any[] = [];
-    assigneesToAdd.forEach((assignee) => {
-      newEntries.push({
-        name: targetName,
-        person: assignee.name,
-        team: assignee.team,
-        start: projectStart,
-        end: projectEnd,
-        colorIdx: colorIdx
-      });
-    });
+    const newEntries: ProjectPayload[] = assigneesToAdd.map((assignee) => ({
+      name: targetName,
+      person: assignee.name,
+      team: assignee.team,
+      start: projectStart,
+      end: projectEnd,
+      colorIdx,
+    }));
     
     const res = await apiCreateProject(newEntries);
-    if (res.success) {
-        const normalized = res.data.map((p:any) => ({...p, id: p._id ?? p.id}));
-        setProjects(prev => [...prev, ...normalized]);
+    if (res.success && res.data) {
+        const normalized = res.data.map((p) => ({...p, id: p._id ?? p.id}));
+        setProjects(prev => dedupeProjects([...prev, ...normalized]));
         setProjectName(''); setSelectedAssignees([]);
-        setStatusMessage('프로젝트가 추가되었습니다.');
+        showBanner('프로젝트가 추가되었습니다.', 'success');
         setRecentlyAddedProject(targetName);
         setHoveredProjectName(targetName);
         setTimeout(() => setHoveredProjectName(null), 2000);
         setTimeout(() => setRecentlyAddedProject(null), 2500);
+    } else {
+      showBanner(res.error || '프로젝트 추가에 실패했습니다.', 'error');
     }
   };
 
   const handleProjectClick = (project: Project) => {
     const targetName = project.name;
-    const relatedProjects = projects.filter(p => p.name === targetName);
+    const relatedProjects = dedupeProjects(projects.filter(p => p.name === targetName));
     setMasterProjectName(targetName); setMasterColorIdx(project.colorIdx); setMasterStart(project.start); setMasterEnd(project.end);
     const members: EditingMember[] = relatedProjects.map(p => ({ 
-        id: p.id, _id: (p as any)._id || p.id, person: p.person, team: p.team, start: p.start, end: p.end, 
+        id: p.id, _id: p._id || p.id, person: p.person, team: p.team, start: p.start, end: p.end, 
     }));
     setEditingMembers(members); setIsModalOpen(true);
   };
@@ -541,17 +555,21 @@ export default function ResourceGanttChart() {
     for (const m of updatedMembers) {
         await apiUpdateProject({
             _id: m._id, name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx
-        } as any);
+        });
     }
 
     // Refresh Data
     try {
         const res = await fetch('/api/projects');
         if (res.ok) {
-            const data = await res.json();
-            if (data.success) { setProjects(data.data.map((p: any) => ({ ...p, id: p._id }))); }
+            const data = await res.json() as ApiResponse<ProjectPayload[]>;
+            if (data.success && data.data) { setProjects(dedupeProjects(data.data.map((p) => ({ ...p, id: p._id })))); }
         }
-    } catch (e) {}
+    } catch {
+      showBanner('프로젝트를 다시 불러오는데 실패했습니다.', 'error');
+    }
+    showBanner('프로젝트가 저장되었습니다.', 'success');
+    setRecentlyAddedProject(masterProjectName);
     setIsModalOpen(false);
   };
 
@@ -559,8 +577,9 @@ export default function ResourceGanttChart() {
       const idsToDelete = editingMembers.filter(m => !m.isNew).map(m => m._id);
       for (const id of idsToDelete) { if (id) await apiDeleteProject(id); }
       // 로컬 업데이트
-      setProjects(prev => prev.filter(p => !idsToDelete.includes((p as any)._id)));
+      setProjects(prev => prev.filter(p => !idsToDelete.includes(p._id)));
       setIsModalOpen(false); 
+      showBanner('프로젝트가 삭제되었습니다.', 'info');
   };
   
   const handleShortcutClick = (group: GroupedProject) => {
@@ -576,16 +595,11 @@ export default function ResourceGanttChart() {
 
     const chartStart = parseDate(chartStartDate);
     const projStart = parseDate(group.start);
-    const diffDays = getDaysDiff(chartStart, projStart);
-    
-    if (chartContainerRef.current && diffDays >= 0 && diffDays <= chartTotalDays) {
-        const scrollWidth = chartContainerRef.current.scrollWidth;
-        const offsetRatio = diffDays / chartTotalDays;
-        const scrollPos = (scrollWidth * offsetRatio) - 300; 
-        chartContainerRef.current.scrollTo({ left: Math.max(0, scrollPos), behavior: 'smooth' });
-    } else {
-        // 범위 밖이면 차트 시작일 이동
-        setChartStartDate(formatDate(getStartOfWeek(projStart)));
+    const desiredStart = getStartOfWeek(projStart);
+    setPendingScrollDate(projStart);
+    setPendingScrollRow(rowId);
+    if (chartStart.getTime() !== desiredStart.getTime()) {
+      setChartStartDate(formatDate(desiredStart));
     }
 
     setHoveredProjectName(group.name); 
@@ -609,11 +623,13 @@ export default function ResourceGanttChart() {
       const stored = (data.data as Team[]).map((t, idx) => ({ ...t, id: t._id || `t${idx}` }));
       setTeams(stored);
       setIsTeamModalOpen(false);
+      showBanner('팀 정보가 저장되었습니다.', 'success');
     } catch (error) {
       console.error('[API] save teams failed:', error);
       // 실패해도 로컬 상태 적용은 유지
       setTeams(editingTeams);
       setIsTeamModalOpen(false);
+      showBanner('팀 저장에 실패했습니다. 네트워크를 확인하세요.', 'error');
     }
   };
 
@@ -631,15 +647,18 @@ export default function ResourceGanttChart() {
   if (isLoading) return <div className="min-h-screen flex items-center justify-center font-bold text-xl text-gray-500">Loading Projects...</div>;
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 font-sans relative text-gray-900 overflow-hidden" onClick={() => { setShowSuggestions(false); setModalShowSuggestions(false); }}>
+    <div
+      className={`flex flex-col h-screen bg-gray-50 font-sans relative text-gray-900 ${isModalOpen || isTeamModalOpen ? 'overflow-visible' : 'overflow-hidden'}`}
+      onClick={() => { setShowSuggestions(false); setModalShowSuggestions(false); }}
+    >
       
       {/* --- Modals --- */}
       {ambiguousCandidates.length > 0 && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-xl shadow-2xl border border-gray-100 w-full max-w-sm overflow-hidden">
-             <div className="p-5 border-b border-gray-100 bg-orange-50">
+              <div className="p-5 border-b border-gray-100 bg-orange-50">
               <h3 className="font-bold text-orange-800 flex items-center gap-2 text-sm"><AlertCircle className="w-4 h-4" /> 동명이인 선택</h3>
-              <p className="text-xs text-orange-600 mt-1">'{ambiguousCandidates[0].name}'님이 여러 팀에 존재합니다.</p>
+              <p className="text-xs text-orange-600 mt-1">&apos;{ambiguousCandidates[0].name}&apos;님이 여러 팀에 존재합니다.</p>
             </div>
             <div className="p-2 space-y-1">
               {ambiguousCandidates.map((c, i) => (
@@ -692,14 +711,15 @@ export default function ResourceGanttChart() {
       )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border border-indigo-100">
             <div className="bg-indigo-600 px-6 py-4 text-white flex justify-between items-start">
               <div className="flex-1">
-                <div className="text-xs font-medium text-indigo-200 mb-1 uppercase tracking-wider">Project Edit</div>
+                <div className="text-[11px] font-semibold text-indigo-200 mb-1 uppercase tracking-[0.08em]">Project Edit</div>
                 <input type="text" value={masterProjectName} onChange={(e) => setMasterProjectName(e.target.value)} className="bg-transparent border-b border-indigo-400 focus:border-white outline-none p-0 text-xl font-bold w-full placeholder-indigo-300 text-white"/>
               </div>
-              <button onClick={() => setIsModalOpen(false)}><X className="w-6 h-6 text-indigo-200 hover:text-white transition-colors" /></button>
+              <button onClick={() => setIsModalOpen(false)} className="p-1 -mr-2 text-indigo-100 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
                 <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm mb-6">
@@ -712,11 +732,11 @@ export default function ResourceGanttChart() {
                                 <input type="date" value={masterEnd} onChange={(e) => setMasterEnd(e.target.value)} className="w-full p-2 border border-gray-300 rounded bg-white text-sm text-gray-700 focus:border-indigo-500 outline-none transition-all"/>
                             </div>
                         </div>
-                        <div className="min-w-[120px]">
+                        <div className="min-w-[140px]">
                             <label className="block text-xs font-bold text-gray-500 mb-2">색상 태그</label>
-                            <div className="flex gap-2">
-                                {BAR_COLORS.slice(0, 5).map((color, idx) => (
-                                    <button key={idx} onClick={() => setMasterColorIdx(idx)} className={`w-6 h-6 rounded-full border-2 ${color.bg} ${color.border} ${masterColorIdx === idx ? 'ring-2 ring-gray-500 border-white' : ''} transition-all`}/>
+                            <div className="flex gap-2 flex-wrap">
+                                {BAR_COLORS.map((color, idx) => (
+                                    <button key={idx} onClick={() => setMasterColorIdx(idx)} className={`w-7 h-7 rounded-full border-2 ${color.bg} ${color.border} ${masterColorIdx === idx ? 'ring-2 ring-indigo-500 border-white shadow' : ''} transition-all`}/>
                                 ))}
                             </div>
                         </div>
@@ -759,7 +779,7 @@ export default function ResourceGanttChart() {
                         <input ref={modalInputRef} type="text" className="flex-1 bg-transparent outline-none text-sm placeholder-gray-400 text-gray-900" placeholder="새로운 멤버 검색 (엔터로 추가)" value={modalAssigneeInput} onChange={(e) => { setModalAssigneeInput(e.target.value); setModalShowSuggestions(true); }} onFocus={() => setModalShowSuggestions(true)} onKeyDown={handleModalInputKeyDown}/>
                     </div>
                     {modalShowSuggestions && modalAssigneeInput && (
-                         <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-[60]">
+                         <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-[200]">
                             {modalSuggestions.length > 0 ? modalSuggestions.map((s, idx) => (<button key={idx} onClick={() => addMemberInModal(s)} className="w-full flex items-center gap-3 p-2 hover:bg-gray-50 text-left transition-colors border-b border-gray-50 last:border-0"><span className="text-sm font-bold text-gray-700 ml-1">{s.name}</span> <span className="text-xs text-gray-400">{s.team}</span></button>)) : <div className="p-3 text-xs text-center text-gray-400">엔터로 추가하기</div>}
                          </div>
                     )}
@@ -787,10 +807,16 @@ export default function ResourceGanttChart() {
                 <button onClick={handleLogout} className="h-10 w-10 bg-gray-200 text-gray-600 rounded-lg flex items-center justify-center hover:bg-red-100 hover:text-red-500 transition"><LogOut className="w-4 h-4" /></button>
             </div>
         </div>
-        {statusMessage && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 text-emerald-700 rounded-lg border border-emerald-100 shadow-sm">
+        {banner && (
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border shadow-sm ${
+            banner.tone === 'error'
+              ? 'bg-red-50 text-red-700 border-red-100'
+              : banner.tone === 'info'
+              ? 'bg-blue-50 text-blue-700 border-blue-100'
+              : 'bg-emerald-50 text-emerald-700 border-emerald-100'
+          }`}>
             <Check className="w-4 h-4" />
-            <span className="text-sm font-semibold">{statusMessage}</span>
+            <span className="text-sm font-semibold">{banner.text}</span>
           </div>
         )}
 
@@ -842,7 +868,7 @@ export default function ResourceGanttChart() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 w-full h-[180px]">
             <div className="lg:col-span-4 bg-white p-4 rounded-xl shadow-sm border border-orange-100 flex flex-col h-full overflow-hidden">
                 <h2 className="text-xs font-bold text-gray-800 mb-3 uppercase tracking-wider flex items-center gap-2 flex-shrink-0">
-                    <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span> Today's Active
+                    <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span> Today&apos;s Active
                     <span className="text-[10px] font-normal text-gray-400 ml-auto">{todayDate.toLocaleDateString()}</span>
                 </h2>
                 <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar">
