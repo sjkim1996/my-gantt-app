@@ -318,7 +318,7 @@ export default function ResourceGanttChart() {
   }, [isLoading]);
 
   type ApiResponse<T> = { success: boolean; data?: T; error?: string };
-  type ProjectPayload = Omit<Project, 'id'>;
+  type ProjectPayload = Omit<Project, 'id'> & { id?: string | number; _id?: string };
 
   // --- API Wrappers ---
   const apiCreateProject = async (newProjects: ProjectPayload[]): Promise<ApiResponse<ProjectPayload[]>> => {
