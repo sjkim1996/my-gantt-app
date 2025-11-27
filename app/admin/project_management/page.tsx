@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation'; 
-import { Plus, Trash2, RefreshCw, Search, AlertCircle, Settings, X, Check, Target, Edit3, Clock, Briefcase, ChevronLeft, ChevronRight, LogOut, Paperclip, StickyNote, ChevronDown, ChevronUp, Flag } from 'lucide-react';
+import { Plus, Trash2, RefreshCw, Search, AlertCircle, Settings, X, Check, Target, Edit3, Clock, Briefcase, ChevronLeft, ChevronRight, LogOut, Flag } from 'lucide-react';
 
 // --- 1. 타입 정의 ---
 interface Milestone {
@@ -133,6 +133,28 @@ const generateWeeks = (startDateStr: string, numWeeks = 60, mockToday: Date) => 
   return weeks;
 };
 
+const generateDays = (startDateStr: string, numDays = 120, mockToday: Date) => {
+  const days = [];
+  const current = parseDate(startDateStr);
+  const todayStr = formatDate(mockToday);
+  for (let i = 0; i < numDays; i++) {
+    const start = new Date(current);
+    const end = new Date(current);
+    end.setHours(23, 59, 59, 999);
+    const dateStr = formatDate(start);
+    days.push({
+      id: i,
+      label: `${start.getMonth() + 1}/${start.getDate()}`,
+      subLabel: ['일', '월', '화', '수', '목', '금', '토'][start.getDay()],
+      start,
+      end,
+      isTodayWeek: dateStr === todayStr
+    });
+    current.setDate(current.getDate() + 1);
+  }
+  return days;
+};
+
 const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, min), max);
 const hexToRgb = (hex: string) => {
   const cleaned = hex.replace('#', '');
@@ -234,15 +256,6 @@ const MOCK_PROJECTS_2025: Project[] = [
   { id: 7, name: '관리자 페이지 고도화', person: '손흥민', team: '개발팀', start: '2025-03-01', end: '2025-04-15', colorIdx: 5 }, 
 ];
 
-const stringToColorClass = (str: string) => {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const colors = ['text-red-600', 'text-orange-600', 'text-amber-600', 'text-green-600', 'text-emerald-600', 'text-teal-600', 'text-cyan-600', 'text-sky-600', 'text-blue-600', 'text-indigo-600', 'text-violet-600', 'text-purple-600', 'text-pink-600', 'text-rose-600'];
-  return colors[Math.abs(hash) % colors.length];
-};
-
 // --- 4. 메인 컴포넌트 ---
 export default function ResourceGanttChart() {
   const router = useRouter();
@@ -302,7 +315,6 @@ export default function ResourceGanttChart() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [banner, setBanner] = useState<{ text: string; tone?: 'success' | 'error' | 'info' } | null>(null);
-  const [recentlyAddedProject, setRecentlyAddedProject] = useState<string | null>(null);
 
   const [editingTeams, setEditingTeams] = useState<Team[]>([]);
 
@@ -368,8 +380,22 @@ export default function ResourceGanttChart() {
     fetchTeams();
   }, [router]);
 
-  const weeks = useMemo(() => generateWeeks(chartStartDate, 60, todayDate), [chartStartDate, todayDate]);
-  const chartTotalDays = weeks.length * 7;
+  useEffect(() => {
+    if (viewMode === 'week') {
+      setChartStartDate(prev => formatDate(getStartOfWeek(new Date(prev))));
+    }
+  }, [viewMode]);
+
+  const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
+  const timeline = useMemo(() => viewMode === 'week'
+    ? generateWeeks(chartStartDate, 52, todayDate)
+    : generateDays(chartStartDate, 120, todayDate), [chartStartDate, todayDate, viewMode]);
+  const chartTotalDays = useMemo(() => {
+    if (timeline.length === 0) return 0;
+    const start = parseDate(formatDate(timeline[0].start));
+    const end = parseDate(formatDate(timeline[timeline.length - 1].end));
+    return getDaysDiff(start, end) + 1;
+  }, [timeline]);
 
   const activeProjectsToday = useMemo(() => {
     const todayTime = todayDate.getTime();
@@ -393,7 +419,7 @@ export default function ResourceGanttChart() {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [isLoading]);
+  }, [isLoading, viewMode, timeline]);
 
   type ApiResponse<T> = { success: boolean; data?: T; error?: string };
   type ProjectPayload = Omit<Project, 'id'> & { id?: string | number; _id?: string };
@@ -430,17 +456,27 @@ export default function ResourceGanttChart() {
 
   const handlePrevMonth = () => {
     const d = new Date(chartStartDate);
-    d.setMonth(d.getMonth() - 1);
-    setChartStartDate(formatDate(getStartOfWeek(d)));
+    if (viewMode === 'week') {
+      d.setMonth(d.getMonth() - 1);
+      setChartStartDate(formatDate(getStartOfWeek(d)));
+    } else {
+      d.setDate(d.getDate() - 14);
+      setChartStartDate(formatDate(d));
+    }
   };
   const handleNextMonth = () => {
     const d = new Date(chartStartDate);
-    d.setMonth(d.getMonth() + 1);
-    setChartStartDate(formatDate(getStartOfWeek(d)));
+    if (viewMode === 'week') {
+      d.setMonth(d.getMonth() + 1);
+      setChartStartDate(formatDate(getStartOfWeek(d)));
+    } else {
+      d.setDate(d.getDate() + 14);
+      setChartStartDate(formatDate(d));
+    }
   };
   const handleJumpToToday = () => {
     const base = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
-    const startPoint = getStartOfWeek(base);
+    const startPoint = viewMode === 'week' ? getStartOfWeek(base) : todayDate;
     setChartStartDate(formatDate(startPoint));
     setTimeout(() => {
         todayColumnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
@@ -462,11 +498,11 @@ export default function ResourceGanttChart() {
   };
 
   const getProjectStyle = (proj: Project & { row: number }) => {
-    if (weeks.length === 0) return null;
-    const chartStart = parseDate(formatDate(weeks[0].start));
+    if (timeline.length === 0 || chartTotalDays === 0) return null;
+    const chartStart = parseDate(formatDate(timeline[0].start));
+    const chartEnd = parseDate(formatDate(timeline[timeline.length - 1].end));
     const pStart = parseDate(proj.start);
     const pEnd = parseDate(proj.end);
-    const chartEnd = parseDate(formatDate(weeks[weeks.length - 1].end));
 
     if (pEnd < chartStart || pStart > chartEnd) return null;
 
@@ -478,7 +514,7 @@ export default function ResourceGanttChart() {
 
     const left = (offsetDays / chartTotalDays) * 100;
     const width = (durationDays / chartTotalDays) * 100;
-    return { left: `${left}%`, width: `${width}%`, top: `${proj.row * 30 + 4}px` };
+    return { style: { left: `${left}%`, width: `${width}%`, top: `${proj.row * 30 + 4}px` }, displayStart, displayEnd };
   };
 
   const getSuggestions = useCallback((input: string) => {
@@ -495,7 +531,7 @@ export default function ResourceGanttChart() {
 
     const timeout = setTimeout(() => {
       const { date, rowId } = pendingScrollTarget;
-      const chartStart = parseDate(chartStartDate);
+      const chartStart = timeline.length > 0 ? parseDate(formatDate(timeline[0].start)) : parseDate(chartStartDate);
       const diffDays = getDaysDiff(chartStart, date);
       const container = chartContainerRef.current!;
       const scrollWidth = container.scrollWidth;
@@ -515,7 +551,7 @@ export default function ResourceGanttChart() {
     }, 100);
 
     return () => clearTimeout(timeout);
-  }, [pendingScrollTarget, chartStartDate, chartTotalDays]);
+  }, [pendingScrollTarget, chartStartDate, chartTotalDays, timeline]);
 
   const groupedProjects = useMemo(() => {
     const map = new Map<string, GroupedProject>();
@@ -552,13 +588,6 @@ export default function ResourceGanttChart() {
     setProjectMilestones(prev => [...prev, m]);
     setProjectMilestoneLabel('');
     setProjectMilestoneDate('');
-  };
-  const addMasterMilestone = () => {
-    if (!masterMilestoneLabel || !masterMilestoneDate) return;
-    const m: Milestone = { id: `${Date.now()}`, label: masterMilestoneLabel, date: masterMilestoneDate, color: getRandomHexColor() };
-    setMasterMilestones(prev => [...prev, m]);
-    setMasterMilestoneLabel('');
-    setMasterMilestoneDate('');
   };
   const removeAssignee = (idx: number) => {
     const newArr = [...selectedAssignees]; newArr.splice(idx, 1); setSelectedAssignees(newArr);
@@ -623,6 +652,7 @@ export default function ResourceGanttChart() {
       isTentative: finalTentative,
       customColor: finalCustomColor || undefined,
       notes: projectNotes || undefined,
+      milestones: projectMilestones,
     }));
     
     const res = await apiCreateProject(newEntries);
@@ -632,12 +662,10 @@ export default function ResourceGanttChart() {
           return { ...p, _id: normalizedId, id: normalizedId };
         });
         setProjects(prev => dedupeProjects([...prev, ...normalized]));
-        setProjectName(''); setSelectedAssignees([]); setProjectDocUrl(''); setProjectDocName(''); setProjectTentative(false); setProjectCustomColor(''); setProjectNotes('');
+        setProjectName(''); setSelectedAssignees([]); setProjectDocUrl(''); setProjectDocName(''); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([]); setProjectMilestoneLabel(''); setProjectMilestoneDate('');
         showBanner('프로젝트가 추가되었습니다.', 'success');
-        setRecentlyAddedProject(targetName);
         setHoveredProjectName(targetName);
         setTimeout(() => setHoveredProjectName(null), 2000);
-        setTimeout(() => setRecentlyAddedProject(null), 2500);
     } else {
       showBanner(res.error || '프로젝트 추가에 실패했습니다.', 'error');
     }
@@ -684,7 +712,7 @@ export default function ResourceGanttChart() {
     for (const m of deletedMembers) { 
       const deleteId = typeof m._id === 'string' ? m._id : (typeof m.id === 'string' ? m.id : undefined);
       if (deleteId) {
-        try { await apiDeleteProject(deleteId); } catch (err) { deleteFailed = true; }
+        try { await apiDeleteProject(deleteId); } catch { deleteFailed = true; }
       }
     }
 
@@ -717,7 +745,6 @@ export default function ResourceGanttChart() {
     } catch {}
     showBanner('프로젝트가 저장되었습니다.', 'success');
     if (deleteFailed) showBanner('일부 항목 삭제에 실패했습니다.', 'error');
-    setRecentlyAddedProject(masterProjectName);
     setIsModalOpen(false);
   };
 
@@ -746,19 +773,24 @@ export default function ResourceGanttChart() {
   };
   
   const handleShortcutClick = (group: GroupedProject) => {
-    if (!chartTotalDays || weeks.length === 0) return;
+    if (!chartTotalDays || timeline.length === 0) return;
     const firstMember = group.members[0]; 
     const rowId = `${firstMember.team}-${firstMember.person}`; 
     const projStart = parseDate(group.start);
     
-    const chartStart = parseDate(formatDate(weeks[0].start));
+    const chartStart = parseDate(formatDate(timeline[0].start));
     const diffDays = getDaysDiff(chartStart, projStart);
     
     let desiredStart = chartStartDate;
     if (diffDays < 0 || diffDays > chartTotalDays) {
         const newStart = new Date(projStart);
-        newStart.setDate(newStart.getDate() - 7);
-        desiredStart = formatDate(getStartOfWeek(newStart));
+        if (viewMode === 'week') {
+          newStart.setDate(newStart.getDate() - 7);
+          desiredStart = formatDate(getStartOfWeek(newStart));
+        } else {
+          newStart.setDate(newStart.getDate() - 3);
+          desiredStart = formatDate(newStart);
+        }
         setChartStartDate(desiredStart);
     }
 
@@ -1048,6 +1080,45 @@ export default function ResourceGanttChart() {
                  <label className="block text-xs font-bold text-gray-400 mb-1">간단 메모</label>
                  <input type="text" value={projectNotes} onChange={(e) => setProjectNotes(e.target.value)} placeholder="메모를 남겨보세요 (선택사항)" className="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none"/>
             </div>
+            <div className="md:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-gray-400">프로젝트 문서 (URL 또는 PDF)</label>
+                <input type="url" value={projectDocUrl} onChange={e => setProjectDocUrl(e.target.value)} placeholder="공유 문서 링크" className="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none"/>
+                <div className="flex items-center gap-2">
+                  <input type="file" accept="application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePdfUpload(f, setProjectDocUrl, setProjectDocName); }} className="text-xs" />
+                  {projectDocName && <span className="text-xs text-gray-600 truncate">첨부됨: {projectDocName}</span>}
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 text-xs font-semibold text-gray-600">
+                    <input type="checkbox" checked={projectTentative} onChange={(e) => setProjectTentative(e.target.checked)} className="w-4 h-4"/>
+                    미확정
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">컬러</span>
+                    <input type="color" value={projectCustomColor} onChange={(e) => setProjectCustomColor(e.target.value)} className="w-10 h-8 border border-gray-300 rounded" />
+                    <button type="button" onClick={() => setProjectCustomColor(getRandomHexColor())} className="text-xs text-indigo-600 font-bold hover:underline">랜덤</button>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-gray-400">중요 일정 (시사일/PPM 등)</label>
+                <div className="flex flex-wrap gap-2 items-center">
+                  <input type="text" value={projectMilestoneLabel} onChange={(e) => setProjectMilestoneLabel(e.target.value)} placeholder="이벤트 이름" className="flex-1 min-w-[140px] border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none" />
+                  <input type="date" value={projectMilestoneDate} onChange={(e) => setProjectMilestoneDate(e.target.value)} className="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none" />
+                  <button type="button" onClick={addProjectMilestone} className="px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700">추가</button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {projectMilestones.map(m => (
+                    <span key={m.id} className="px-2 py-1 rounded border border-gray-200 bg-gray-50 text-xs flex items-center gap-2">
+                      <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: m.color }}></span>
+                      <span className="font-bold text-gray-800">{m.label}</span>
+                      <span className="text-gray-500">{m.date}</span>
+                      <button onClick={() => setProjectMilestones(prev => prev.filter(x => x.id !== m.id))} className="text-gray-400 hover:text-red-500">×</button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1108,11 +1179,15 @@ export default function ResourceGanttChart() {
         </div>
 
         {/* Chart Controls */}
-        <div className="flex items-center justify-between px-1 pb-2">
+        <div className="flex items-center justify-between px-1 pb-2 gap-3">
             <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
-                <button onClick={handlePrevMonth} className="p-1.5 hover:bg-gray-100 rounded text-gray-600 flex items-center gap-1 text-xs font-bold"><ChevronLeft className="w-4 h-4"/> 이전 달</button>
+                <button onClick={handlePrevMonth} className="p-1.5 hover:bg-gray-100 rounded text-gray-600 flex items-center gap-1 text-xs font-bold"><ChevronLeft className="w-4 h-4"/> 이전</button>
                 <button onClick={handleJumpToToday} className="px-3 py-1 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded border border-indigo-100">오늘 (Today)</button>
-                <button onClick={handleNextMonth} className="p-1.5 hover:bg-gray-100 rounded text-gray-600 flex items-center gap-1 text-xs font-bold">다음 달 <ChevronRight className="w-4 h-4"/></button>
+                <button onClick={handleNextMonth} className="p-1.5 hover:bg-gray-100 rounded text-gray-600 flex items-center gap-1 text-xs font-bold">다음 <ChevronRight className="w-4 h-4"/></button>
+            </div>
+            <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
+              <button onClick={() => setViewMode('week')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'week' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>주차</button>
+              <button onClick={() => setViewMode('day')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'day' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>일간</button>
             </div>
             <div className="text-xs font-medium text-gray-500 flex items-center gap-2">
                 <div className="flex items-center gap-1"><span className="w-2 h-2 bg-gray-200 rounded-full"></span> 대기</div>
@@ -1123,19 +1198,20 @@ export default function ResourceGanttChart() {
       </div>
 
       {/* --- Main Gantt Table (Scrollable) --- */}
-      <div className="flex-1 overflow-hidden rounded-xl shadow-sm bg-white border border-gray-200 flex flex-col w-full relative mx-auto max-w-[1600px] mb-6" ref={chartContainerRef}>
-        <div className="overflow-auto flex-1 custom-scrollbar">
-          <table className="w-full border-collapse min-w-[4000px]"> 
+      <div className="flex-1 rounded-xl shadow-sm bg-white border border-gray-200 flex flex-col w-full relative mx-auto max-w-[1600px] mb-10 overflow-x-auto" ref={chartContainerRef}>
+        <div className="overflow-auto custom-scrollbar">
+          <table className="w-full border-collapse min-w-[1200px]"> 
             <thead className="sticky top-0 z-50 bg-white shadow-sm">
               <tr>
                 <th className="sticky left-0 z-50 bg-gray-50 w-24 min-w-[96px] text-left py-3 pl-4 text-xs font-bold text-gray-500 uppercase border-b border-r border-gray-200">Team</th>
                 <th className="sticky left-24 z-50 bg-gray-50 w-28 min-w-[112px] text-left py-3 pl-4 text-xs font-bold text-gray-500 uppercase border-b border-r border-gray-200 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)]">Member</th>
                 
-                {weeks.map(w => (
+                {timeline.map(w => (
                     <th 
                         key={w.id} 
                         ref={w.isTodayWeek ? todayColumnRef : null}
-                        className={`min-w-[140px] py-2 text-center border-b border-r border-gray-300/70 ${w.isTodayWeek ? 'bg-indigo-50/50' : 'bg-white'}`}
+                        style={{ minWidth: viewMode === 'week' ? 140 : 80 }}
+                        className={`py-2 text-center border-b border-r border-gray-300/70 ${w.isTodayWeek ? 'bg-indigo-50/50' : 'bg-white'}`}
                     >
                         <div className={`text-xs font-bold ${w.isTodayWeek ? 'text-indigo-600' : 'text-gray-700'}`}>
                             {w.label} {w.isTodayWeek && <span className="inline-block w-1.5 h-1.5 bg-indigo-500 rounded-full ml-1 align-middle mb-0.5"></span>}
@@ -1165,22 +1241,23 @@ export default function ResourceGanttChart() {
                                         <div>{member}</div>
                                     </td>
                                     
-                                    <td colSpan={weeks.length} className="relative p-0 align-top border-b border-gray-200" style={{ height: rowHeight }}>
+                                    <td colSpan={timeline.length} className="relative p-0 align-top border-b border-gray-200" style={{ height: rowHeight }}>
                                         <div className="absolute inset-0 w-full h-full flex pointer-events-none">
-                                            {weeks.map(w => <div key={w.id} className={`flex-1 border-r border-gray-300/70 last:border-0 ${w.isTodayWeek ? 'bg-indigo-50/10' : ''}`}></div>)} 
+                                            {timeline.map(w => <div key={w.id} className={`flex-1 border-r border-gray-300/70 last:border-0 ${w.isTodayWeek ? 'bg-indigo-50/10' : ''}`}></div>)} 
                                         </div>
                                         
                                         {packed.map(proj => {
-                                            const style = getProjectStyle(proj);
-                                            if(!style) return null;
+                                            const projPlacement = getProjectStyle(proj);
+                                            if(!projPlacement) return null;
+                                            const { style, displayStart, displayEnd } = projPlacement;
                                             const isDimmed = hoveredProjectName && hoveredProjectName !== proj.name;
                                             const isHighlighted = hoveredProjectName === proj.name;
-                                            const colorSet = BAR_COLORS[proj.colorIdx % BAR_COLORS.length];
-                                            // 마일스톤 렌더링 준비
+                                            const colorSet = getColorSet(proj);
                                             const projStart = parseDate(proj.start);
                                             const projEnd = parseDate(proj.end);
-                                            const duration = getDaysDiff(projStart, projEnd) + 1;
-                                            const chartStart = parseDate(chartStartDate);
+                                            const effectiveStart = displayStart || projStart;
+                                            const effectiveEnd = displayEnd || projEnd;
+                                            const duration = Math.max(1, getDaysDiff(effectiveStart, effectiveEnd) + 1);
 
                                             return (
                                                 <div 
@@ -1188,27 +1265,27 @@ export default function ResourceGanttChart() {
                                                     onClick={() => handleProjectClick(proj)}
                                                     onMouseEnter={() => setHoveredProjectName(proj.name)}
                                                     onMouseLeave={() => setHoveredProjectName(null)}
-                                                    style={style}
                                                     className={`
                                                         absolute h-7 rounded shadow-sm cursor-pointer flex items-center px-2 z-20 transition-all duration-200 border group/bar
-                                                        ${colorSet.bg} ${colorSet.border}
+                                                        ${colorSet.customBg ? '' : `${colorSet.bg} ${colorSet.border}`}
                                                         ${isDimmed ? 'opacity-20 grayscale' : 'opacity-100 hover:shadow-md'}
                                                         ${isHighlighted ? 'ring-2 ring-indigo-400 ring-offset-1 scale-[1.01] z-30' : ''}
                                                     `}
+                                                    style={{ ...style, backgroundColor: colorSet.customBg, borderColor: colorSet.customBorder }}
                                                 >
-                                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${colorSet.bar}`}></div>
-                                                    <span className={`text-[11px] font-bold truncate ml-1 ${colorSet.text}`}>{proj.name}</span>
+                                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${colorSet.barClass || ''}`} style={{ backgroundColor: colorSet.barColor }}></div>
+                                                    <span className={`text-[11px] font-bold truncate ml-1 ${colorSet.textClass || ''}`} style={{ color: colorSet.customText }}>{proj.name}</span>
 
                                                     {/* Milestone Markers on Bar */}
                                                     {(proj.milestones || []).map(m => {
                                                         const mDate = parseDate(m.date);
-                                                        if (mDate < projStart || mDate > projEnd) return null;
-                                                        const offset = getDaysDiff(projStart, mDate);
+                                                        if (mDate < effectiveStart || mDate > effectiveEnd) return null;
+                                                        const offset = getDaysDiff(effectiveStart, mDate);
                                                         const leftPos = (offset / duration) * 100;
                                                         return (
                                                             <div key={m.id} 
                                                                  className="absolute top-1 bottom-1 w-1.5 rounded-sm z-40 hover:scale-125 transition-transform cursor-help"
-                                                                 style={{ left: `${leftPos}%`, backgroundColor: m.color }}
+                                                                 style={{ left: `${leftPos}%`, backgroundColor: m.color || '#ef4444' }}
                                                                  title={`${m.label} (${m.date})`}
                                                             />
                                                         )
