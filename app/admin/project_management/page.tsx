@@ -2,11 +2,16 @@
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation'; 
-import { Plus, Trash2, RefreshCw, Search, AlertCircle, Settings, X, Check, Target, Edit3, Clock, Briefcase, ChevronLeft, ChevronRight, LogOut, Paperclip, StickyNote, ChevronDown, ChevronUp } from 'lucide-react';
-import { clearLoginToken, hasValidLoginToken } from '@/lib/auth';
-
+import { Plus, Trash2, RefreshCw, Search, AlertCircle, Settings, X, Check, Target, Edit3, Clock, Briefcase, ChevronLeft, ChevronRight, LogOut, Paperclip, StickyNote, ChevronDown, ChevronUp, Flag } from 'lucide-react';
 
 // --- 1. 타입 정의 ---
+interface Milestone {
+  id: string;
+  date: string;
+  label: string;
+  color: string;
+}
+
 interface Project {
   _id?: string; 
   id: string | number;   
@@ -58,26 +63,10 @@ interface EditingMember {
   isDeleted?: boolean;
 }
 
-type Milestone = {
-  id: string;
-  date: string;
-  label: string;
-  color: string;
-};
-
 type ApiProjectsResponse = {
   success: boolean;
   data?: Array<Project & { _id?: string }>;
   error?: string;
-};
-
-type MemoNote = {
-  id: number;
-  title: string;
-  content: string;
-  relatedProject?: string;
-  createdAt: string;
-  isOpen?: boolean;
 };
 
 // --- 2. 유틸리티 함수 ---
@@ -119,8 +108,6 @@ const getStartOfWeek = (date: Date) => {
 const generateWeeks = (startDateStr: string, numWeeks = 60, mockToday: Date) => {
   const weeks = [];
   const current = parseDate(startDateStr);
-  
-  // 오늘 날짜 비교용 (Time 제거)
   const todayTime = mockToday.getTime();
   
   for (let i = 0; i < numWeeks; i++) {
@@ -129,7 +116,6 @@ const generateWeeks = (startDateStr: string, numWeeks = 60, mockToday: Date) => 
     end.setDate(end.getDate() + 6);
     end.setHours(23, 59, 59, 999);
     
-    // 주차 내에 오늘이 포함되는지 확인
     const startTime = start.getTime();
     const endTime = end.getTime();
     const isTodayWeek = todayTime >= startTime && todayTime <= endTime;
@@ -145,27 +131,6 @@ const generateWeeks = (startDateStr: string, numWeeks = 60, mockToday: Date) => 
     current.setDate(current.getDate() + 7);
   }
   return weeks;
-};
-
-const generateDays = (startDateStr: string, numDays = 120, mockToday: Date) => {
-  const days = [];
-  const current = parseDate(startDateStr);
-  const todayStr = formatDate(mockToday);
-  for (let i = 0; i < numDays; i++) {
-    const dayStart = new Date(current);
-    const dayEnd = new Date(current);
-    dayEnd.setHours(23, 59, 59, 999);
-    days.push({
-      id: i,
-      label: `${dayStart.getMonth() + 1}/${dayStart.getDate()}`,
-      subLabel: ['일', '월', '화', '수', '목', '금', '토'][dayStart.getDay()],
-      start: dayStart,
-      end: dayEnd,
-      isTodayWeek: formatDate(dayStart) === todayStr
-    });
-    current.setDate(current.getDate() + 1);
-  }
-  return days;
 };
 
 const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, min), max);
@@ -193,7 +158,7 @@ const getReadableTextColor = (hex: string) => {
   return luminance > 0.6 ? '#111827' : '#f8fafc';
 };
 const getRandomHexColor = () => {
-  const colors = ['#2563eb', '#16a34a', '#7c3aed', '#f97316', '#ec4899', '#0ea5e9', '#f59e0b', '#111827', '#059669', '#9333ea'];
+  const colors = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#f43f5e'];
   return colors[Math.floor(Math.random() * colors.length)];
 };
 
@@ -207,13 +172,6 @@ const mergeMilestones = (a: Milestone[] = [], b: Milestone[] = []) => {
   });
   return Array.from(map.values());
 };
-
-const readPdfAsDataUrl = (file: File): Promise<string> => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
-  reader.onerror = reject;
-  reader.readAsDataURL(file);
-});
 
 // --- 3. 상수 데이터 ---
 const BAR_COLORS = [
@@ -266,25 +224,30 @@ const dedupeProjects = (list: Project[]) => {
   return Array.from(map.values());
 };
 
-// [수정] API 호출 실패 시 보여줄 예시 데이터 (2025년 기준)
 const MOCK_PROJECTS_2025: Project[] = [
-  { id: 1, name: '2025 웹사이트 리뉴얼', person: '김철수', team: '기획팀', start: '2025-01-05', end: '2025-02-20', colorIdx: 0, docUrl: 'https://example.com/spec', isTentative: false },
-  { id: 2, name: '2025 웹사이트 리뉴얼', person: '박지성', team: '개발팀', start: '2025-01-05', end: '2025-02-20', colorIdx: 0, docUrl: 'https://example.com/spec', isTentative: false },
-  { id: 3, name: '2025 웹사이트 리뉴얼', person: '홍길동', team: '디자인팀', start: '2025-01-10', end: '2025-02-10', colorIdx: 0, docUrl: 'https://example.com/spec', isTentative: false },
+  { id: 1, name: '2025 웹사이트 리뉴얼', person: '김철수', team: '기획팀', start: '2025-01-05', end: '2025-02-20', colorIdx: 0, docUrl: 'https://example.com', isTentative: false },
+  { id: 2, name: '2025 웹사이트 리뉴얼', person: '박지성', team: '개발팀', start: '2025-01-05', end: '2025-02-20', colorIdx: 0, docUrl: 'https://example.com', isTentative: false },
+  { id: 3, name: '2025 웹사이트 리뉴얼', person: '홍길동', team: '디자인팀', start: '2025-01-10', end: '2025-02-10', colorIdx: 0, docUrl: 'https://example.com', isTentative: false },
   { id: 4, name: '모바일 앱 기획', person: '이영희', team: '기획팀', start: '2025-02-01', end: '2025-03-15', colorIdx: 1, isTentative: true },
   { id: 5, name: '모바일 앱 기획', person: '최기획', team: '기획팀', start: '2025-02-01', end: '2025-03-15', colorIdx: 1, isTentative: true },
   { id: 6, name: '관리자 페이지 고도화', person: '박지성', team: '개발팀', start: '2025-03-01', end: '2025-04-15', colorIdx: 5 }, 
   { id: 7, name: '관리자 페이지 고도화', person: '손흥민', team: '개발팀', start: '2025-03-01', end: '2025-04-15', colorIdx: 5 }, 
 ];
 
+const stringToColorClass = (str: string) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const colors = ['text-red-600', 'text-orange-600', 'text-amber-600', 'text-green-600', 'text-emerald-600', 'text-teal-600', 'text-cyan-600', 'text-sky-600', 'text-blue-600', 'text-indigo-600', 'text-violet-600', 'text-purple-600', 'text-pink-600', 'text-rose-600'];
+  return colors[Math.abs(hash) % colors.length];
+};
+
 // --- 4. 메인 컴포넌트 ---
 export default function ResourceGanttChart() {
   const router = useRouter();
   const [chartStartDate, setChartStartDate] = useState('2025-01-01');
-  
-  // 실제 오늘 날짜 (프로덕션용은 new Date() 사용)
-  // const todayDate = useMemo(() => new Date('2025-02-15'), []); // 테스트용
-  const todayDate = useMemo(() => new Date(), []); // 실제용
+  const todayDate = useMemo(() => new Date(), []); 
   
   const rowRefs = useRef<{ [key: string]: HTMLTableRowElement | null }>({});
   const chartContainerRef = useRef<HTMLDivElement>(null);
@@ -293,8 +256,6 @@ export default function ResourceGanttChart() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState(false);
-  const [authChecked, setAuthChecked] = useState(false);
   
   const [masterProjectName, setMasterProjectName] = useState('');
   const [masterColorIdx, setMasterColorIdx] = useState(0);
@@ -318,11 +279,7 @@ export default function ResourceGanttChart() {
   const [hoveredProjectName, setHoveredProjectName] = useState<string | null>(null);
   const [ambiguousCandidates, setAmbiguousCandidates] = useState<Assignee[]>([]); 
   const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [pendingScrollTarget, setPendingScrollTarget] = useState<{
-    date: Date;
-    rowId: string;
-    desiredStart: string;
-  } | null>(null);
+  const [pendingScrollTarget, setPendingScrollTarget] = useState<{ date: Date; rowId: string; desiredStart: string } | null>(null);
 
   // Data State
   const [teams, setTeams] = useState<Team[]>(DEFAULT_TEAMS);
@@ -330,18 +287,14 @@ export default function ResourceGanttChart() {
 
   // Input Form State
   const [projectName, setProjectName] = useState('');
-  // 입력 폼 초기값도 2025년 기준 (오늘 날짜)
   const [projectStart, setProjectStart] = useState(formatDate(todayDate));
   const [projectEnd, setProjectEnd] = useState(formatDate(new Date(todayDate.getTime() + 86400000 * 30)));
   const [projectDocUrl, setProjectDocUrl] = useState('');
   const [projectDocName, setProjectDocName] = useState('');
   const [projectTentative, setProjectTentative] = useState(false);
-  const [projectCustomColor, setProjectCustomColor] = useState(getRandomHexColor());
+  const [projectCustomColor, setProjectCustomColor] = useState('');
   const [projectNotes, setProjectNotes] = useState('');
-  const [projectMilestones, setProjectMilestones] = useState<Milestone[]>([]);
-  const [projectMilestoneLabel, setProjectMilestoneLabel] = useState('');
-  const [projectMilestoneDate, setProjectMilestoneDate] = useState('');
-  const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([]);
+  const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([{ name: '김철수', team: '기획팀' }]);
   const [assigneeInput, setAssigneeInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -349,13 +302,6 @@ export default function ResourceGanttChart() {
   const [recentlyAddedProject, setRecentlyAddedProject] = useState<string | null>(null);
 
   const [editingTeams, setEditingTeams] = useState<Team[]>([]);
-  const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
-  const [highlightDate, setHighlightDate] = useState('');
-  const [notes, setNotes] = useState<MemoNote[]>([]);
-  const [memoTitle, setMemoTitle] = useState('');
-  const [memoContent, setMemoContent] = useState('');
-  const [memoProject, setMemoProject] = useState('');
-  const [memoCollapsed, setMemoCollapsed] = useState(false);
 
   useEffect(() => {
     if (banner) {
@@ -370,12 +316,6 @@ export default function ResourceGanttChart() {
   };
 
   useEffect(() => {
-    if (viewMode === 'week') {
-      setChartStartDate(prev => formatDate(getStartOfWeek(new Date(prev))));
-    }
-  }, [viewMode]);
-
-  useEffect(() => {
     const lockScroll = isModalOpen || isTeamModalOpen;
     if (lockScroll) {
       const original = document.body.style.overflow;
@@ -385,74 +325,30 @@ export default function ResourceGanttChart() {
   }, [isModalOpen, isTeamModalOpen]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const raw = localStorage.getItem('gantt-memos');
-      if (raw) {
-        const parsed = JSON.parse(raw) as MemoNote[];
-        setNotes(parsed);
-      }
-    } catch (error) {
-      console.error('메모 로드 실패', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem('gantt-memos', JSON.stringify(notes));
-    } catch (error) {
-      console.error('메모 저장 실패', error);
-    }
-  }, [notes]);
-
-  // --- Auth & Data Fetch ---
-  useEffect(() => {
-    if (!hasValidLoginToken()) {
-      clearLoginToken();
-      setIsAuthorized(false);
-      setAuthChecked(true);
-      setIsLoading(false);
-      router.replace('/login');
-      return;
+    if (typeof window !== 'undefined') {
+        const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+        if (!isLoggedIn) {
+        //   router.replace('/login'); // 실제 배포시 주석 해제
+        }
     }
 
-    setIsAuthorized(true);
-    setAuthChecked(true);
-
-    // 프로젝트 불러오기
     const fetchProjects = async () => {
       try {
         const res = await fetch('/api/projects');
         const data = (await res.json()) as ApiProjectsResponse;
-
         if (!res.ok || !data.success) {
-          const reason = data?.error || `Status ${res.status}`;
-          console.error('[API] /api/projects failed:', reason);
           setProjects(MOCK_PROJECTS_2025);
           return;
         }
-
-        const loadedProjects = (data.data || []).map((p, idx) => {
-          const normalizedId = typeof p._id === 'string'
-            ? p._id
-            : p._id
-            ? String(p._id)
-            : typeof p.id === 'string'
-            ? p.id
-            : `local-${idx}`;
-          return { ...p, _id: normalizedId, id: normalizedId };
-        });
+        const loadedProjects = (data.data || []).map((p) => ({ ...p, id: p._id ?? p.id }));
         setProjects(dedupeProjects(loadedProjects));
       } catch (error) {
-        console.error('API Fetch failed (Preview Mode), using mock data.', error);
+        console.error('API Fetch failed, using mock data.', error);
         setProjects(dedupeProjects(MOCK_PROJECTS_2025));
       } finally {
         setIsLoading(false);
       }
     };
-
-    // 팀 불러오기 (실패 시 기본값 사용)
     const fetchTeams = async () => {
       try {
         const res = await fetch('/api/teams');
@@ -462,36 +358,24 @@ export default function ResourceGanttChart() {
           setTeams(loaded);
           return;
         }
-      } catch (error) {
-        console.error('[API] /api/teams failed, using defaults.', error);
-      }
+      } catch {}
       setTeams(DEFAULT_TEAMS);
     };
-
     fetchProjects();
     fetchTeams();
   }, [router]);
 
-  const highlightDateObj = useMemo(() => highlightDate ? parseDate(highlightDate) : null, [highlightDate]);
+  const weeks = useMemo(() => generateWeeks(chartStartDate, 60, todayDate), [chartStartDate, todayDate]);
+  const chartTotalDays = weeks.length * 7;
 
-  const timeline = useMemo(() => {
-    const blocks = viewMode === 'week'
-      ? generateWeeks(chartStartDate, 60, todayDate)
-      : generateDays(chartStartDate, 120, todayDate);
-    const hTime = highlightDateObj ? highlightDateObj.getTime() : null;
-    return blocks.map(b => ({
-      ...b,
-      isHighlight: hTime !== null ? (b.start.getTime() <= hTime && hTime <= b.end.getTime()) : false,
-      isToday: b.isTodayWeek || (formatDate(b.start) === formatDate(todayDate))
-    }));
-  }, [chartStartDate, todayDate, viewMode, highlightDateObj]);
-
-  const chartTotalDays = useMemo(() => {
-    if (timeline.length === 0) return 0;
-    const start = parseDate(formatDate(timeline[0].start));
-    const end = parseDate(formatDate(timeline[timeline.length - 1].end));
-    return getDaysDiff(start, end) + 1;
-  }, [timeline]);
+  const activeProjectsToday = useMemo(() => {
+    const todayTime = todayDate.getTime();
+    return projects.filter(p => {
+        const s = parseDate(p.start).getTime();
+        const e = parseDate(p.end).getTime();
+        return todayTime >= s && todayTime <= e;
+    });
+  }, [projects, todayDate]);
 
   const allMembers = useMemo(() => {
     const list: Assignee[] = [];
@@ -499,21 +383,18 @@ export default function ResourceGanttChart() {
     return list;
   }, [teams]);
 
-  // Initial Scroll to Today
   useEffect(() => {
     if (!isLoading && todayColumnRef.current && chartContainerRef.current) {
-      // 렌더링 타이밍 이슈를 위해 약간의 지연
       const timer = setTimeout(() => {
         todayColumnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [isLoading, viewMode, timeline]);
+  }, [isLoading]);
 
   type ApiResponse<T> = { success: boolean; data?: T; error?: string };
   type ProjectPayload = Omit<Project, 'id'> & { id?: string | number; _id?: string };
 
-  // --- API Wrappers ---
   const apiCreateProject = async (newProjects: ProjectPayload[]): Promise<ApiResponse<ProjectPayload[]>> => {
     try {
       const res = await fetch('/api/projects', {
@@ -541,40 +422,23 @@ export default function ResourceGanttChart() {
   };
 
   const apiDeleteProject = async (id: string) => {
-    const res = await fetch(`/api/projects?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(text || `DELETE failed: ${res.status}`);
-    }
+    try { await fetch(`/api/projects?id=${encodeURIComponent(id)}`, { method: 'DELETE' }); } catch {}
   };
 
-  // --- Handlers ---
   const handlePrevMonth = () => {
     const d = new Date(chartStartDate);
-    if (viewMode === 'week') {
-      d.setMonth(d.getMonth() - 1);
-      setChartStartDate(formatDate(getStartOfWeek(d)));
-    } else {
-      d.setDate(d.getDate() - 14);
-      setChartStartDate(formatDate(d));
-    }
+    d.setMonth(d.getMonth() - 1);
+    setChartStartDate(formatDate(getStartOfWeek(d)));
   };
   const handleNextMonth = () => {
     const d = new Date(chartStartDate);
-    if (viewMode === 'week') {
-      d.setMonth(d.getMonth() + 1);
-      setChartStartDate(formatDate(getStartOfWeek(d)));
-    } else {
-      d.setDate(d.getDate() + 14);
-      setChartStartDate(formatDate(d));
-    }
+    d.setMonth(d.getMonth() + 1);
+    setChartStartDate(formatDate(getStartOfWeek(d)));
   };
   const handleJumpToToday = () => {
-    // 차트 시작일을 '오늘이 포함된 달'의 시작(week) 또는 오늘(day)으로 재설정
     const base = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
-    const startPoint = viewMode === 'week' ? getStartOfWeek(base) : todayDate;
+    const startPoint = getStartOfWeek(base);
     setChartStartDate(formatDate(startPoint));
-    
     setTimeout(() => {
         todayColumnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }, 300);
@@ -595,11 +459,11 @@ export default function ResourceGanttChart() {
   };
 
   const getProjectStyle = (proj: Project & { row: number }) => {
-    if (timeline.length === 0 || chartTotalDays <= 0) return null;
-    const chartStart = parseDate(formatDate(timeline[0].start));
+    if (weeks.length === 0) return null;
+    const chartStart = parseDate(formatDate(weeks[0].start));
     const pStart = parseDate(proj.start);
     const pEnd = parseDate(proj.end);
-    const chartEnd = parseDate(formatDate(timeline[timeline.length - 1].end));
+    const chartEnd = parseDate(formatDate(weeks[weeks.length - 1].end));
 
     if (pEnd < chartStart || pStart > chartEnd) return null;
 
@@ -611,7 +475,6 @@ export default function ResourceGanttChart() {
 
     const left = (offsetDays / chartTotalDays) * 100;
     const width = (durationDays / chartTotalDays) * 100;
-
     return { left: `${left}%`, width: `${width}%`, top: `${proj.row * 30 + 4}px` };
   };
 
@@ -625,24 +488,18 @@ export default function ResourceGanttChart() {
 
   useEffect(() => {
     if (!pendingScrollTarget || !chartContainerRef.current) return;
-    
-    // 차트 시작일이 변경되었다면 렌더링 완료까지 대기
     if (chartStartDate !== pendingScrollTarget.desiredStart) return;
-    if (timeline.length === 0 || chartTotalDays <= 0) return;
 
     const timeout = setTimeout(() => {
       const { date, rowId } = pendingScrollTarget;
-      
-      // 1. 가로 스크롤 이동
-      const chartStart = parseDate(formatDate(timeline[0].start));
+      const chartStart = parseDate(chartStartDate);
       const diffDays = getDaysDiff(chartStart, date);
-      const offsetRatio = Math.max(0, Math.min(1, diffDays / chartTotalDays));
       const container = chartContainerRef.current!;
-      const scrollableWidth = Math.max(0, container.scrollWidth - container.clientWidth);
-      const scrollPos = Math.max(0, Math.min(scrollableWidth, scrollableWidth * offsetRatio - 300));
+      const scrollWidth = container.scrollWidth;
+      const offsetRatio = Math.max(0, Math.min(1, diffDays / chartTotalDays));
+      const scrollPos = Math.max(0, (scrollWidth * offsetRatio) - 250);
       container.scrollTo({ left: scrollPos, behavior: 'smooth' });
 
-      // 2. 세로 스크롤 이동
       const row = rowRefs.current[rowId];
       if (row) {
         row.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -651,12 +508,11 @@ export default function ResourceGanttChart() {
       } else {
         showBanner('행을 찾을 수 없습니다. 팀/멤버를 확인하세요.', 'info');
       }
-
       setPendingScrollTarget(null);
-    }, 100); // 렌더링 안정화 대기
+    }, 100);
 
     return () => clearTimeout(timeout);
-  }, [pendingScrollTarget, chartStartDate, chartTotalDays, timeline]);
+  }, [pendingScrollTarget, chartStartDate, chartTotalDays]);
 
   const groupedProjects = useMemo(() => {
     const map = new Map<string, GroupedProject>();
@@ -671,26 +527,11 @@ export default function ResourceGanttChart() {
       group.milestones = mergeMilestones(group.milestones, p.milestones);
       if (!group.notes && p.notes) group.notes = p.notes;
       if (!group.members.find(m => m.person === p.person && m.team === p.team)) group.members.push({ person: p.person, team: p.team });
-      // 그룹의 기간을 멤버 중 가장 이른 시작/늦은 종료로 업데이트
       if (parseDate(p.start) < parseDate(group.start)) group.start = p.start;
       if (parseDate(p.end) > parseDate(group.end)) group.end = p.end;
     });
     return Array.from(map.values());
   }, [projects]);
-
-  const activeProjectGroups = useMemo(() => {
-    const todayTime = parseDate(formatDate(todayDate)).getTime();
-    return groupedProjects.filter(g => {
-      const s = parseDate(g.start).getTime();
-      const e = parseDate(g.end).getTime();
-      return todayTime >= s && todayTime <= e;
-    });
-  }, [groupedProjects, todayDate]);
-
-  const isEventComposing = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    const native = e.nativeEvent as unknown as { isComposing?: boolean };
-    return Boolean(native?.isComposing);
-  };
 
   const addAssignee = (assignee: Assignee) => {
     const exists = selectedAssignees.find(a => a.name === assignee.name && a.team === assignee.team);
@@ -701,7 +542,6 @@ export default function ResourceGanttChart() {
     const newArr = [...selectedAssignees]; newArr.splice(idx, 1); setSelectedAssignees(newArr);
   };
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (isEventComposing(e)) return;
     if (e.key === 'Backspace' && assigneeInput === '' && selectedAssignees.length > 0) { removeAssignee(selectedAssignees.length - 1); return; }
     if (e.key === 'Enter' && assigneeInput.trim()) {
       e.preventDefault();
@@ -712,43 +552,6 @@ export default function ResourceGanttChart() {
       let newName = assigneeInput.trim(); let newTeam = '미배정';
       if (newName.includes('-')) { const parts = newName.split('-'); newTeam = parts[0].trim(); newName = parts[1].trim(); }
       addAssignee({ name: newName, team: newTeam, isNew: true });
-    }
-  };
-
-  const addMemoNote = () => {
-    if (!memoTitle.trim() && !memoContent.trim()) return;
-    const note: MemoNote = {
-      id: Date.now(),
-      title: memoTitle.trim() || '메모',
-      content: memoContent.trim(),
-      relatedProject: memoProject || undefined,
-      createdAt: new Date().toISOString(),
-      isOpen: true,
-    };
-    setNotes(prev => [note, ...prev]);
-    setMemoTitle('');
-    setMemoContent('');
-    setMemoProject('');
-  };
-
-  const toggleMemoOpen = (id: number) => setNotes(prev => prev.map(n => n.id === id ? { ...n, isOpen: !n.isOpen } : n));
-  const removeMemoNote = (id: number) => setNotes(prev => prev.filter(n => n.id !== id));
-
-  const handlePdfUpload = async (file: File, setUrl: (v: string) => void, setName: (v: string) => void) => {
-    if (!file || file.type !== 'application/pdf') {
-      alert('PDF 파일만 업로드 가능합니다.');
-      return;
-    }
-    if (file.size > 8 * 1024 * 1024) {
-      alert('PDF는 8MB 이하로 업로드해주세요.');
-      return;
-    }
-    try {
-      const dataUrl = await readPdfAsDataUrl(file);
-      setUrl(dataUrl);
-      setName(file.name);
-    } catch {
-      alert('파일을 읽는 중 오류가 발생했습니다.');
     }
   };
 
@@ -797,23 +600,16 @@ export default function ResourceGanttChart() {
       isTentative: finalTentative,
       customColor: finalCustomColor || undefined,
       notes: projectNotes || undefined,
-      milestones: projectMilestones,
     }));
     
     const res = await apiCreateProject(newEntries);
     if (res.success && res.data) {
         const normalized = res.data.map((p, idx) => {
-          const normalizedId = typeof p._id === 'string'
-            ? p._id
-            : p._id
-            ? String(p._id)
-            : typeof p.id === 'string'
-            ? p.id
-            : `${Date.now()}-${idx}`;
+          const normalizedId = typeof p._id === 'string' ? p._id : p._id ? String(p._id) : typeof p.id === 'string' ? p.id : `${Date.now()}-${idx}`;
           return { ...p, _id: normalizedId, id: normalizedId };
         });
         setProjects(prev => dedupeProjects([...prev, ...normalized]));
-        setProjectName(''); setSelectedAssignees([]); setProjectDocUrl(''); setProjectDocName(''); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([]);
+        setProjectName(''); setSelectedAssignees([]); setProjectDocUrl(''); setProjectDocName(''); setProjectTentative(false); setProjectCustomColor(''); setProjectNotes('');
         showBanner('프로젝트가 추가되었습니다.', 'success');
         setRecentlyAddedProject(targetName);
         setHoveredProjectName(targetName);
@@ -844,19 +640,13 @@ export default function ResourceGanttChart() {
         team: p.team,
         start: p.start,
         end: p.end,
-        docUrl: p.docUrl,
-        docName: p.docName,
-        isTentative: p.isTentative,
-        customColor: p.customColor,
-        notes: p.notes,
-        milestones: p.milestones,
     }));
     setEditingMembers(members); setIsModalOpen(true);
   };
 
   const addMemberInModal = (assignee: Assignee) => {
     if (editingMembers.some(m => m.person === assignee.name && m.team === assignee.team && !m.isDeleted)) { setModalAssigneeInput(''); return; }
-    const newMember: EditingMember = { id: Date.now(), person: assignee.name, team: assignee.team, start: masterStart, end: masterEnd, isNew: true, docUrl: masterDocUrl, docName: masterDocName, isTentative: masterTentative, customColor: masterCustomColor, notes: masterNotes, milestones: [...masterMilestones] };
+    const newMember: EditingMember = { id: Date.now(), person: assignee.name, team: assignee.team, start: masterStart, end: masterEnd, isNew: true };
     setEditingMembers([...editingMembers, newMember]); setModalAssigneeInput(''); setModalShowSuggestions(false); modalInputRef.current?.focus();
   };
   const removeMemberInModal = (index: number) => { const updated = [...editingMembers]; updated[index].isDeleted = true; setEditingMembers(updated); };
@@ -869,12 +659,7 @@ export default function ResourceGanttChart() {
     for (const m of deletedMembers) { 
       const deleteId = typeof m._id === 'string' ? m._id : (typeof m.id === 'string' ? m.id : undefined);
       if (deleteId) {
-        try {
-          await apiDeleteProject(deleteId); 
-        } catch (err) {
-          deleteFailed = true;
-          console.error('[DELETE] member failed', err);
-        }
+        try { await apiDeleteProject(deleteId); } catch (err) { deleteFailed = true; }
       }
     }
 
@@ -892,143 +677,86 @@ export default function ResourceGanttChart() {
         });
     }
 
-    // Refresh Data
     try {
         const res = await fetch('/api/projects');
         if (res.ok) {
             const data = await res.json() as ApiResponse<ProjectPayload[]>;
             if (data.success && data.data) { 
               const normalized = data.data.map((p, idx) => {
-                const normalizedId = typeof p._id === 'string'
-                  ? p._id
-                  : p._id
-                  ? String(p._id)
-                  : typeof p.id === 'string'
-                  ? p.id
-                  : `reload-${idx}`;
+                const normalizedId = typeof p._id === 'string' ? p._id : p._id ? String(p._id) : typeof p.id === 'string' ? p.id : `reload-${idx}`;
                 return { ...p, _id: normalizedId, id: normalizedId };
               });
               setProjects(dedupeProjects(normalized)); 
             }
         }
-    } catch {
-      showBanner('프로젝트를 다시 불러오는데 실패했습니다.', 'error');
-    }
+    } catch {}
     showBanner('프로젝트가 저장되었습니다.', 'success');
-    if (deleteFailed) showBanner('일부 항목 삭제에 실패했습니다. 새로고침 후 다시 시도하세요.', 'error');
+    if (deleteFailed) showBanner('일부 항목 삭제에 실패했습니다.', 'error');
     setRecentlyAddedProject(masterProjectName);
     setIsModalOpen(false);
   };
 
   const handleDeleteAll = async () => { 
-      const idsToDelete = editingMembers
-        .filter(m => !m.isNew)
-        .map(m => {
-          if (typeof m._id === 'string') return m._id;
-          if (typeof m.id === 'string') return m.id;
-          return String(m.id);
-        })
-        .filter(Boolean);
-
-      let deleteFailed = false;
-      for (const id of idsToDelete) { 
-        try { await apiDeleteProject(id); } catch (err) { 
-          deleteFailed = true;
-          console.error('[DELETE] failed', err); 
-        }
-      }
-
-      // 로컬 업데이트: _id 비교
+      const idsToDelete = editingMembers.filter(m => !m.isNew).map(m => typeof m._id === 'string' ? m._id : String(m.id)).filter(Boolean);
+      for (const id of idsToDelete) { try { await apiDeleteProject(id); } catch {} }
       setProjects(prev => prev.filter(p => {
         const key = typeof p._id === 'string' ? p._id : (typeof p.id === 'string' ? p.id : String(p.id));
         return !idsToDelete.includes(key);
       }));
-
-      // 서버와 동기화 시도
       try {
         const res = await fetch('/api/projects');
         if (res.ok) {
           const data = await res.json() as ApiResponse<ProjectPayload[]>;
           if (data.success && data.data) {
             const normalized = data.data.map((p, idx) => {
-              const normalizedId = typeof p._id === 'string'
-                ? p._id
-                : p._id
-                ? String(p._id)
-                : typeof p.id === 'string'
-                ? p.id
-                : `reload-${idx}`;
-              return { ...p, _id: normalizedId, id: normalizedId };
+               const normalizedId = typeof p._id === 'string' ? p._id : p._id ? String(p._id) : typeof p.id === 'string' ? p.id : `reload-${idx}`;
+               return { ...p, _id: normalizedId, id: normalizedId };
             });
             setProjects(dedupeProjects(normalized));
           }
         }
-      } catch (err) {
-        console.error('[DELETE ALL] reload failed', err);
-      }
-
+      } catch {}
       setIsModalOpen(false); 
-      if (deleteFailed) {
-        showBanner('일부 항목 삭제에 실패했습니다. 새로고침 후 다시 시도하세요.', 'error');
-      } else {
-        showBanner(idsToDelete.length > 0 ? '프로젝트가 삭제되었습니다.' : '삭제할 항목이 없습니다.', 'info');
-      }
+      showBanner('프로젝트가 삭제되었습니다.', 'info');
   };
   
   const handleShortcutClick = (group: GroupedProject) => {
-    if (!chartTotalDays || timeline.length === 0) return;
+    if (!chartTotalDays || weeks.length === 0) return;
     const firstMember = group.members[0]; 
     const rowId = `${firstMember.team}-${firstMember.person}`; 
     const projStart = parseDate(group.start);
     
-    // 현재 차트 범위 계산
-    const chartStart = timeline.length > 0 ? parseDate(formatDate(timeline[0].start)) : parseDate(chartStartDate);
+    const chartStart = parseDate(formatDate(weeks[0].start));
     const diffDays = getDaysDiff(chartStart, projStart);
     
     let desiredStart = chartStartDate;
-
-    // 화면 범위(60주) 밖이면 시작일을 조정해 여유 있게 이동
     if (diffDays < 0 || diffDays > chartTotalDays) {
         const newStart = new Date(projStart);
-        newStart.setDate(newStart.getDate() - (viewMode === 'week' ? 7 : 3));
-        desiredStart = formatDate(viewMode === 'week' ? getStartOfWeek(newStart) : newStart);
+        newStart.setDate(newStart.getDate() - 7);
+        desiredStart = formatDate(getStartOfWeek(newStart));
         setChartStartDate(desiredStart);
     }
 
-    setPendingScrollTarget({ 
-        date: projStart, 
-        rowId,
-        desiredStart 
-    });
-
+    setPendingScrollTarget({ date: projStart, rowId, desiredStart });
     setHoveredProjectName(group.name); 
     setTimeout(() => setHoveredProjectName(null), 3000);
   };
 
   const openTeamModal = () => { setEditingTeams(JSON.parse(JSON.stringify(teams))); setIsTeamModalOpen(true); };
-
   const saveTeams = async () => {
     try {
       const payload = editingTeams.map(({ name, members }) => ({ name, members }));
-      const res = await fetch('/api/teams', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch('/api/teams', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data?.error || `Status ${res.status}`);
-      }
+      if (!res.ok || !data.success) throw new Error(data?.error);
       const stored = (data.data as Team[]).map((t, idx) => ({ ...t, id: t._id || `t${idx}` }));
       setTeams(stored);
       setIsTeamModalOpen(false);
       showBanner('팀 정보가 저장되었습니다.', 'success');
-    } catch (error) {
-      console.error('[API] save teams failed:', error);
-      // 실패해도 로컬 상태 적용은 유지
+    } catch {
       setTeams(editingTeams);
       setIsTeamModalOpen(false);
-      showBanner('팀 저장에 실패했습니다. 네트워크를 확인하세요.', 'error');
+      showBanner('팀 저장에 실패했습니다. (로컬 적용됨)', 'error');
     }
   };
 
@@ -1037,22 +765,22 @@ export default function ResourceGanttChart() {
   const addMemberToTeam = (teamIdx: number) => { const name = prompt("이름:"); if (name) { const n = [...editingTeams]; n[teamIdx].members.push(name); setEditingTeams(n); } };
   const removeMember = (tIdx: number, mIdx: number) => { const n = [...editingTeams]; n[tIdx].members.splice(mIdx, 1); setEditingTeams(n); };
   const handleModalInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (isEventComposing(e)) return;
     if (e.key === 'Enter' && modalAssigneeInput.trim()) { e.preventDefault(); if (modalSuggestions.length === 1) { addMemberInModal(modalSuggestions[0]); return; } const exact = allMembers.filter(m => m.name === modalAssigneeInput.trim()); if (exact.length === 1) { addMemberInModal(exact[0]); return; } let newName = modalAssigneeInput.trim(); let newTeam = '미배정'; if (newName.includes('-')) { const parts = newName.split('-'); newTeam = parts[0].trim(); newName = parts[1].trim(); } addMemberInModal({ name: newName, team: newTeam, isNew: true }); }
   };
   useEffect(() => { if (isModalOpen) setDeleteConfirmMode(false); }, [isModalOpen]);
 
-  const handleLogout = () => { clearLoginToken(); router.push('/login'); };
+  const handleLogout = () => { 
+    if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('isLoggedIn'); 
+        document.cookie = 'auth_token=; Max-Age=0; path=/;';
+    }
+    router.push('/login'); 
+  };
 
-  if (!authChecked) return <div className="min-h-screen flex items-center justify-center font-bold text-xl text-gray-500">Access 확인 중...</div>;
-  if (!isAuthorized) return <div className="min-h-screen flex items-center justify-center font-bold text-xl text-gray-500">로그인이 필요합니다. 이동 중...</div>;
   if (isLoading) return <div className="min-h-screen flex items-center justify-center font-bold text-xl text-gray-500">Loading Projects...</div>;
 
   return (
-    <div
-      className={`flex flex-col min-h-screen bg-gray-50 font-sans relative text-gray-900 px-3 md:px-6 lg:px-8 ${isModalOpen || isTeamModalOpen ? 'overflow-visible' : ''}`}
-      onClick={() => { setShowSuggestions(false); setModalShowSuggestions(false); }}
-    >
+    <div className={`flex flex-col min-h-screen bg-gray-50 font-sans relative text-gray-900 ${isModalOpen || isTeamModalOpen ? 'overflow-hidden' : ''}`} onClick={() => { setShowSuggestions(false); setModalShowSuggestions(false); }}>
       
       {/* --- Modals --- */}
       {ambiguousCandidates.length > 0 && (
@@ -1078,7 +806,7 @@ export default function ResourceGanttChart() {
       {isTeamModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh]">
-            <div className="bg-white px-6 py-4 flex justify-between items-center border-b border-gray-100">
+            <div className="bg-white px-6 py-4 flex justify-between items-center border-b border-gray-100 flex-shrink-0">
               <h3 className="font-bold text-lg text-gray-800">팀 & 멤버 관리</h3>
               <button onClick={() => setIsTeamModalOpen(false)}><X className="w-5 h-5 text-gray-400 hover:text-gray-600 transition-colors"/></button>
             </div>
@@ -1104,7 +832,7 @@ export default function ResourceGanttChart() {
               ))}
               <button onClick={addTeam} className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 hover:bg-white hover:border-gray-400 hover:text-gray-600 flex items-center justify-center gap-2 font-medium text-sm"><Plus className="w-4 h-4"/> 새 팀 추가</button>
             </div>
-            <div className="p-4 border-t border-gray-100 flex justify-end gap-2 bg-white">
+            <div className="p-4 border-t border-gray-100 flex justify-end gap-2 bg-white flex-shrink-0">
               <button onClick={() => setIsTeamModalOpen(false)} className="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors">취소</button>
               <button onClick={saveTeams} className="px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg text-sm font-bold shadow-sm transition-all">저장하기</button>
             </div>
@@ -1113,18 +841,19 @@ export default function ResourceGanttChart() {
       )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 md:p-6">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl md:w-[90vw] overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200 border border-indigo-100">
-            <div className="bg-indigo-600 px-6 py-4 text-white flex justify-between items-start">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-200">
+            <div className="bg-indigo-600 px-6 py-4 text-white flex justify-between items-start flex-shrink-0">
               <div className="flex-1">
-                <div className="text-[11px] font-semibold text-indigo-200 mb-1 uppercase tracking-[0.08em]">Project Edit</div>
+                <div className="text-xs font-medium text-indigo-200 mb-1 uppercase tracking-wider">Project Edit</div>
                 <input type="text" value={masterProjectName} onChange={(e) => setMasterProjectName(e.target.value)} className="bg-transparent border-b border-indigo-400 focus:border-white outline-none p-0 text-xl font-bold w-full placeholder-indigo-300 text-white"/>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className="p-1 -mr-2 text-indigo-100 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
+              <button onClick={() => setIsModalOpen(false)}><X className="w-6 h-6 text-indigo-200 hover:text-white transition-colors" /></button>
             </div>
+            
             <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
                 <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm mb-6">
+                    <h4 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2"><Settings className="w-4 h-4 text-gray-500" /> 통합 설정 (Global)</h4>
                     <div className="flex flex-wrap items-end gap-6">
                         <div className="flex-1 min-w-[140px]">
                             <label className="block text-xs font-bold text-gray-500 mb-2">기간 설정</label>
@@ -1134,65 +863,45 @@ export default function ResourceGanttChart() {
                                 <input type="date" value={masterEnd} onChange={(e) => setMasterEnd(e.target.value)} className="w-full p-2 border border-gray-300 rounded bg-white text-sm text-gray-700 focus:border-indigo-500 outline-none transition-all"/>
                             </div>
                         </div>
-                        <div className="min-w-[140px]">
+                        <div className="min-w-[120px]">
                             <label className="block text-xs font-bold text-gray-500 mb-2">색상 태그</label>
-                            <div className="flex gap-2 flex-wrap">
-                                {BAR_COLORS.map((color, idx) => (
-                                    <button key={idx} onClick={() => setMasterColorIdx(idx)} className={`w-7 h-7 rounded-full border-2 ${color.bg} ${color.border} ${masterColorIdx === idx ? 'ring-2 ring-indigo-500 border-white shadow' : ''} transition-all`}/>
+                            <div className="flex gap-2">
+                                {BAR_COLORS.slice(0, 5).map((color, idx) => (
+                                    <button key={idx} onClick={() => setMasterColorIdx(idx)} className={`w-6 h-6 rounded-full border-2 ${color.bg} ${color.border} ${masterColorIdx === idx ? 'ring-2 ring-gray-500 border-white' : ''} transition-all`}/>
                                 ))}
                             </div>
                         </div>
-                        <div className="min-w-[160px]">
-                            <label className="block text-xs font-bold text-gray-500 mb-2">커스텀 컬러</label>
-                            <div className="flex items-center gap-2">
-                                <input type="color" value={masterCustomColor || '#2563eb'} onChange={(e) => setMasterCustomColor(e.target.value)} className="w-12 h-10 border border-gray-300 rounded cursor-pointer"/>
-                                <button onClick={() => setMasterCustomColor(getRandomHexColor())} className="text-xs font-bold text-indigo-600 hover:underline">랜덤</button>
-                                <button onClick={() => setMasterCustomColor('')} className="text-xs text-gray-400 hover:underline">기본</button>
-                            </div>
-                        </div>
-                        <div className="flex-1 min-w-[180px]">
-                            <label className="block text-xs font-bold text-gray-500 mb-2">프로젝트 문서 링크</label>
-                            <input type="url" value={masterDocUrl} onChange={(e) => setMasterDocUrl(e.target.value)} className="w-full p-2 border border-gray-300 rounded bg-white text-sm text-gray-700 focus:border-indigo-500 outline-none transition-all" placeholder="문서 URL 입력"/>
-                            <div className="mt-2 flex items-center gap-2">
-                              <input type="file" accept="application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePdfUpload(f, setMasterDocUrl, setMasterDocName); }} className="text-xs" />
-                              {masterDocName && <span className="text-xs text-gray-600">첨부됨: {masterDocName}</span>}
-                            </div>
-                        </div>
-                        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 select-none">
-                            <input type="checkbox" className="w-4 h-4 text-indigo-600 border-gray-300" checked={masterTentative} onChange={(e) => setMasterTentative(e.target.checked)} />
-                            미확정 상태
-                        </label>
                         <button onClick={syncDatesToAll} className="px-3 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded hover:bg-indigo-100 text-xs font-bold flex items-center gap-1.5 h-[38px] transition-colors"><RefreshCw className="w-3.5 h-3.5"/> 일정 동기화</button>
                     </div>
                 </div>
-
+                
                 <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
-                    <h4 className="text-sm font-bold text-gray-700 mb-2">메모</h4>
-                    <textarea value={masterNotes} onChange={(e) => setMasterNotes(e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:ring-1 focus:ring-indigo-500 outline-none min-h-[90px]" placeholder="프로젝트 메모 수정" />
+                  <h4 className="text-sm font-bold text-gray-700 mb-2">메모</h4>
+                  <textarea value={masterNotes} onChange={(e) => setMasterNotes(e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:ring-1 focus:ring-indigo-500 outline-none min-h-[90px]" placeholder="프로젝트 메모 수정" />
                 </div>
 
                 <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
-                    <h4 className="text-sm font-bold text-gray-700 mb-3">중요 일정 (시사일/PPM 등)</h4>
-                    <div className="flex flex-wrap gap-2 items-center">
-                      <input type="text" value={masterMilestoneLabel} onChange={(e) => setMasterMilestoneLabel(e.target.value)} placeholder="이벤트 이름" className="flex-1 min-w-[140px] border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none" />
-                      <input type="date" value={masterMilestoneDate} onChange={(e) => setMasterMilestoneDate(e.target.value)} className="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none" />
-                      <button type="button" onClick={() => {
-                        if (!masterMilestoneLabel || !masterMilestoneDate) return;
-                        const m: Milestone = { id: `${Date.now()}`, label: masterMilestoneLabel, date: masterMilestoneDate, color: getRandomHexColor() };
-                        setMasterMilestones(prev => [...prev, m]);
-                        setMasterMilestoneLabel(''); setMasterMilestoneDate('');
-                      }} className="px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700">추가</button>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {masterMilestones.map(m => (
-                        <span key={m.id} className="px-2 py-1 rounded border border-gray-200 bg-gray-50 text-xs flex items-center gap-2">
-                          <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: m.color }}></span>
-                          <span className="font-bold text-gray-800">{m.label}</span>
-                          <span className="text-gray-500">{m.date}</span>
-                          <button onClick={() => setMasterMilestones(prev => prev.filter(x => x.id !== m.id))} className="text-gray-400 hover:text-red-500">×</button>
-                        </span>
-                      ))}
-                    </div>
+                  <h4 className="text-sm font-bold text-gray-700 mb-3">중요 일정 (시사일/PPM 등)</h4>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <input type="text" value={masterMilestoneLabel} onChange={(e) => setMasterMilestoneLabel(e.target.value)} placeholder="이벤트 이름" className="flex-1 min-w-[140px] border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none" />
+                    <input type="date" value={masterMilestoneDate} onChange={(e) => setMasterMilestoneDate(e.target.value)} className="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none" />
+                    <button type="button" onClick={() => {
+                      if (!masterMilestoneLabel || !masterMilestoneDate) return;
+                      const m: Milestone = { id: `${Date.now()}`, label: masterMilestoneLabel, date: masterMilestoneDate, color: getRandomHexColor() };
+                      setMasterMilestones(prev => [...prev, m]);
+                      setMasterMilestoneLabel(''); setMasterMilestoneDate('');
+                    }} className="px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700">추가</button>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {masterMilestones.map(m => (
+                      <span key={m.id} className="px-2 py-1 rounded border border-gray-200 bg-gray-50 text-xs flex items-center gap-2">
+                        <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: m.color }}></span>
+                        <span className="font-bold text-gray-800">{m.label}</span>
+                        <span className="text-gray-500">{m.date}</span>
+                        <button onClick={() => setMasterMilestones(prev => prev.filter(x => x.id !== m.id))} className="text-gray-400 hover:text-red-500">×</button>
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -1230,13 +939,14 @@ export default function ResourceGanttChart() {
                         <input ref={modalInputRef} type="text" className="flex-1 bg-transparent outline-none text-sm placeholder-gray-400 text-gray-900" placeholder="새로운 멤버 검색 (엔터로 추가)" value={modalAssigneeInput} onChange={(e) => { setModalAssigneeInput(e.target.value); setModalShowSuggestions(true); }} onFocus={() => setModalShowSuggestions(true)} onKeyDown={handleModalInputKeyDown}/>
                     </div>
                     {modalShowSuggestions && modalAssigneeInput && (
-                         <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-[200]">
+                         <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-[60]">
                             {modalSuggestions.length > 0 ? modalSuggestions.map((s, idx) => (<button key={idx} onClick={() => addMemberInModal(s)} className="w-full flex items-center gap-3 p-2 hover:bg-gray-50 text-left transition-colors border-b border-gray-50 last:border-0"><span className="text-sm font-bold text-gray-700 ml-1">{s.name}</span> <span className="text-xs text-gray-400">{s.team}</span></button>)) : <div className="p-3 text-xs text-center text-gray-400">엔터로 추가하기</div>}
                          </div>
                     )}
                 </div>
             </div>
-            <div className="bg-white px-6 py-4 flex justify-between items-center border-t border-gray-100">
+
+            <div className="bg-white px-6 py-4 flex justify-between items-center border-t border-gray-100 flex-shrink-0">
                {!deleteConfirmMode ? (<button onClick={() => setDeleteConfirmMode(true)} className="text-gray-400 hover:text-red-600 text-xs font-medium flex items-center gap-1.5 transition-colors"><Trash2 className="w-3.5 h-3.5" /> 전체 삭제</button>) : (<div className="flex items-center gap-3"><span className="text-xs text-red-600 font-bold">정말 삭제할까요?</span><button onClick={handleDeleteAll} className="text-red-600 text-xs font-bold hover:underline">네</button><button onClick={() => setDeleteConfirmMode(false)} className="text-gray-400 text-xs hover:underline">아니오</button></div>)}
                <div className="flex gap-2"><button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 rounded">취소</button><button onClick={handleSaveMasterProject} className="px-5 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded shadow-sm transition-all">저장 완료</button></div>
             </div>
@@ -1245,7 +955,7 @@ export default function ResourceGanttChart() {
       )}
       
       {/* --- Header & Controls Area (Fixed at top) --- */}
-      <div className="flex-none space-y-6 mb-4 px-4 pt-4">
+      <div className="flex-none space-y-6 mb-4 px-3 md:px-6 lg:px-8 pt-4 w-full max-w-[1600px] mx-auto">
         <div className="flex justify-between items-end">
             <div>
                 <h1 className="text-2xl font-bold text-gray-900 tracking-tight mb-1 flex items-center gap-2">
@@ -1258,205 +968,110 @@ export default function ResourceGanttChart() {
                 <button onClick={handleLogout} className="h-10 w-10 bg-gray-200 text-gray-600 rounded-lg flex items-center justify-center hover:bg-red-100 hover:text-red-500 transition"><LogOut className="w-4 h-4" /></button>
             </div>
         </div>
+
         {banner && (
-          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border shadow-sm ${
-            banner.tone === 'error'
-              ? 'bg-red-50 text-red-700 border-red-100'
-              : banner.tone === 'info'
-              ? 'bg-blue-50 text-blue-700 border-blue-100'
-              : 'bg-emerald-50 text-emerald-700 border-emerald-100'
-          }`}>
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border shadow-sm ${banner.tone === 'error' ? 'bg-red-50 text-red-700 border-red-100' : banner.tone === 'info' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100'}`}>
             <Check className="w-4 h-4" />
             <span className="text-sm font-semibold">{banner.text}</span>
           </div>
         )}
-
+        
         {/* Input Row */}
-      
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-          <div className="md:col-span-3">
-            <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Project Name</label>
-            <div className="h-10 flex items-center border border-gray-300 rounded px-3 bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all">
-                <input type="text" value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="프로젝트 이름" className="w-full bg-transparent outline-none text-sm text-gray-900" />
-            </div>
-          </div>
-          
-          <div className="md:col-span-5 relative z-50">
-            <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Assignees</label>
-            <div className="h-10 flex flex-wrap gap-1 items-center px-2 border border-gray-300 rounded bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all overflow-x-auto scrollbar-hide" onClick={() => inputRef.current?.focus()}>
-                {selectedAssignees.map((assignee, idx) => (
-                    <span key={idx} className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold animate-in zoom-in-95 duration-100 border border-indigo-100 whitespace-nowrap">
-                        {assignee.name}
-                        <button onClick={(e) => { e.stopPropagation(); removeAssignee(idx); }} className="hover:text-indigo-900 transition-colors ml-1"><X className="w-3 h-3" /></button>
-                    </span>
-                ))}
-                <input ref={inputRef} type="text" value={assigneeInput} onChange={(e) => { setAssigneeInput(e.target.value); setShowSuggestions(true); }} onFocus={() => setShowSuggestions(true)} onClick={(e) => { e.stopPropagation(); setShowSuggestions(true); }} onKeyDown={handleInputKeyDown} placeholder={selectedAssignees.length === 0 ? "담당자 입력 (엔터)" : ""} className="flex-1 min-w-[100px] bg-transparent outline-none text-sm placeholder-gray-400 text-gray-900"/>
-            </div>
-            {showSuggestions && assigneeInput && (
-                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg py-1 min-w-[200px] w-full z-[60]">
-                    {mainSuggestions.length > 0 ? mainSuggestions.map((s, idx) => (<button key={idx} onClick={(e) => { e.stopPropagation(); addAssignee(s); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex justify-between items-center transition-colors"><span className="font-bold text-gray-700">{s.name}</span><span className="text-gray-400 text-xs">{s.team}</span></button>)) : <div className="px-3 py-2 text-xs text-gray-400 text-center">엔터로 추가하기</div>}
+        <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+          <h2 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider">프로젝트 추가</h2>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+            <div className="md:col-span-3">
+                <label className="block text-xs font-bold text-gray-400 mb-1">프로젝트명</label>
+                <div className="h-10 flex items-center border border-gray-300 rounded px-3 bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all">
+                    <input type="text" value={projectName} onChange={e => setProjectName(e.target.value)} placeholder="프로젝트 이름" className="w-full bg-transparent outline-none text-sm text-gray-900" />
                 </div>
-            )}
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Start</label>
-            <div className="h-10 flex items-center border border-gray-300 rounded px-2 bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all">
-                <input type="date" value={projectStart} onChange={e => setProjectStart(e.target.value)} className="w-full bg-transparent outline-none text-sm text-gray-700"/>
             </div>
-          </div>
-          <div className="md:col-span-2 flex items-end gap-2">
-            <div className="flex-1">
-                <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">End</label>
+            <div className="md:col-span-5 relative z-50">
+                <label className="block text-xs font-bold text-gray-400 mb-1">담당자</label>
+                <div className="h-10 flex flex-wrap gap-1 items-center px-2 border border-gray-300 rounded bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all overflow-x-auto scrollbar-hide" onClick={() => inputRef.current?.focus()}>
+                    {selectedAssignees.map((assignee, idx) => (
+                        <span key={idx} className="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold animate-in zoom-in-95 duration-100 border border-indigo-100 whitespace-nowrap">
+                            {assignee.name}
+                            <button onClick={(e) => { e.stopPropagation(); removeAssignee(idx); }} className="hover:text-indigo-900 transition-colors ml-1"><X className="w-3 h-3" /></button>
+                        </span>
+                    ))}
+                    <input ref={inputRef} type="text" value={assigneeInput} onChange={(e) => { setAssigneeInput(e.target.value); setShowSuggestions(true); }} onFocus={() => setShowSuggestions(true)} onClick={(e) => { e.stopPropagation(); setShowSuggestions(true); }} onKeyDown={handleInputKeyDown} placeholder={selectedAssignees.length === 0 ? "담당자 입력 (엔터)" : ""} className="flex-1 min-w-[100px] bg-transparent outline-none text-sm placeholder-gray-400 text-gray-900"/>
+                </div>
+                {showSuggestions && assigneeInput && (
+                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg py-1 min-w-[200px] w-full z-[60]">
+                        {mainSuggestions.length > 0 ? mainSuggestions.map((s, idx) => (<button key={idx} onClick={(e) => { e.stopPropagation(); addAssignee(s); }} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex justify-between items-center transition-colors"><span className="font-bold text-gray-700">{s.name}</span><span className="text-gray-400 text-xs">{s.team}</span></button>)) : <div className="px-3 py-2 text-xs text-gray-400 text-center">엔터로 추가하기</div>}
+                    </div>
+                )}
+            </div>
+            <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-gray-400 mb-1">시작일</label>
                 <div className="h-10 flex items-center border border-gray-300 rounded px-2 bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all">
-                    <input type="date" value={projectEnd} onChange={e => setProjectEnd(e.target.value)} className="w-full bg-transparent outline-none text-sm text-gray-700"/>
+                    <input type="date" value={projectStart} onChange={e => setProjectStart(e.target.value)} className="w-full bg-transparent outline-none text-sm text-gray-700"/>
                 </div>
             </div>
-            <button onClick={handleAddProject} className="h-10 px-4 bg-indigo-600 text-white rounded flex items-center justify-center gap-2 hover:bg-indigo-700 active:opacity-70 active:scale-95 transition-all shadow-sm flex-shrink-0 text-sm font-bold">
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="md:col-span-3">
-            <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Color</label>
-            <div className="flex items-center gap-2">
-              <input type="color" value={projectCustomColor} onChange={(e) => setProjectCustomColor(e.target.value)} className="w-12 h-10 border border-gray-300 rounded cursor-pointer" />
-              <div className="h-10 flex items-center border border-gray-300 rounded px-3 bg-white flex-1 text-sm text-gray-700">
-                <span className="mr-2 text-gray-400">HEX</span>
-                <input type="text" value={projectCustomColor} onChange={(e) => setProjectCustomColor(e.target.value)} className="flex-1 bg-transparent outline-none" />
-                <button type="button" onClick={() => setProjectCustomColor(getRandomHexColor())} className="text-xs font-bold text-indigo-600 hover:underline ml-2">랜덤</button>
-              </div>
+            <div className="md:col-span-2 flex items-end gap-2">
+                <div className="flex-1">
+                    <label className="block text-xs font-bold text-gray-400 mb-1">종료일</label>
+                    <div className="h-10 flex items-center border border-gray-300 rounded px-2 bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all">
+                        <input type="date" value={projectEnd} onChange={e => setProjectEnd(e.target.value)} className="w-full bg-transparent outline-none text-sm text-gray-700"/>
+                    </div>
+                </div>
+                <button onClick={handleAddProject} className="h-10 w-10 bg-indigo-600 text-white rounded flex items-center justify-center hover:bg-indigo-700 transition-all shadow-sm flex-shrink-0"><Plus className="w-5 h-5" /></button>
             </div>
-          </div>
-          <div className="md:col-span-5">
-            <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Project Document (URL)</label>
-            <div className="h-10 flex items-center border border-gray-300 rounded px-3 bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all">
-                <input type="url" value={projectDocUrl} onChange={e => setProjectDocUrl(e.target.value)} placeholder="공유 문서 링크 붙여넣기" className="w-full bg-transparent outline-none text-sm text-gray-900" />
-            </div>
-            <div className="mt-2 flex items-center gap-2">
-              <input type="file" accept="application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePdfUpload(f, setProjectDocUrl, setProjectDocName); }} className="text-xs" />
-              {projectDocName && <span className="text-xs text-gray-600">첨부됨: {projectDocName}</span>}
-            </div>
-          </div>
-          <div className="md:col-span-2 flex items-center gap-2">
-            <input id="tentative-checkbox" type="checkbox" checked={projectTentative} onChange={(e) => setProjectTentative(e.target.checked)} className="w-4 h-4 text-indigo-600 border-gray-300 rounded"/>
-            <label htmlFor="tentative-checkbox" className="text-sm font-medium text-gray-700">미확정 프로젝트</label>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-          <div className="md:col-span-6">
-            <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">메모</label>
-            <textarea value={projectNotes} onChange={(e) => setProjectNotes(e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:ring-1 focus:ring-indigo-500 outline-none min-h-[80px]" placeholder="프로젝트 메모를 적어주세요" />
-          </div>
-          <div className="md:col-span-6">
-            <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">중요 일정 추가 (시사일/PPM 등)</label>
-            <div className="flex flex-wrap gap-2 items-center">
-              <input type="text" value={projectMilestoneLabel} onChange={(e) => setProjectMilestoneLabel(e.target.value)} placeholder="이벤트 이름" className="flex-1 min-w-[140px] border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none" />
-              <input type="date" value={projectMilestoneDate} onChange={(e) => setProjectMilestoneDate(e.target.value)} className="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none" />
-              <button type="button" onClick={() => {
-                if (!projectMilestoneLabel || !projectMilestoneDate) return;
-                const newMilestone: Milestone = { id: `${Date.now()}`, label: projectMilestoneLabel, date: projectMilestoneDate, color: getRandomHexColor() };
-                setProjectMilestones(prev => [...prev, newMilestone]);
-                setProjectMilestoneLabel(''); setProjectMilestoneDate('');
-              }} className="px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700">추가</button>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {projectMilestones.map(m => (
-                <span key={m.id} className="px-2 py-1 rounded border border-gray-200 bg-gray-50 text-xs flex items-center gap-2">
-                  <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: m.color }}></span>
-                  <span className="font-bold text-gray-800">{m.label}</span>
-                  <span className="text-gray-500">{m.date}</span>
-                  <button onClick={() => setProjectMilestones(prev => prev.filter(x => x.id !== m.id))} className="text-gray-400 hover:text-red-500">×</button>
-                </span>
-              ))}
+            <div className="md:col-span-12 mt-2">
+                 <label className="block text-xs font-bold text-gray-400 mb-1">간단 메모</label>
+                 <input type="text" value={projectNotes} onChange={(e) => setProjectNotes(e.target.value)} placeholder="메모를 남겨보세요 (선택사항)" className="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none"/>
             </div>
           </div>
         </div>
 
         {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 w-full">
-            <div className="lg:col-span-4 bg-white p-5 rounded-xl shadow-sm border border-orange-100 flex flex-col">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 w-full h-[180px]">
+            <div className="lg:col-span-4 bg-white p-4 rounded-xl shadow-sm border border-orange-100 flex flex-col h-full overflow-hidden">
                 <h2 className="text-xs font-bold text-gray-800 mb-3 uppercase tracking-wider flex items-center gap-2 flex-shrink-0">
                     <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span> Today&apos;s Active
                     <span className="text-[10px] font-normal text-gray-400 ml-auto">{todayDate.toLocaleDateString()}</span>
                 </h2>
-                <div className="space-y-2">
-                    {activeProjectGroups.length === 0 ? (
+                <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar">
+                    {activeProjectsToday.length === 0 ? 
                         <div className="h-full flex flex-col items-center justify-center text-gray-400 text-xs">
                             <Clock className="w-4 h-4 mb-1 opacity-50"/>
                             진행 중인 프로젝트가 없습니다.
                         </div> 
-                    ) : (
-                      activeProjectGroups.map(group => {
-                        const colorSet = getColorSet(group);
-                        const memberLabel = group.members.map(m => `${m.person} (${m.team})`).join(', ');
-                        const nextMilestone = (group.milestones || []).map(m => ({ ...m, time: parseDate(m.date).getTime() })).filter(m => m.time >= parseDate(formatDate(todayDate)).getTime()).sort((a, b) => a.time - b.time)[0];
-                        return (
-                          <div key={group.name} className="flex justify-between items-start text-xs p-2 bg-orange-50/60 rounded border border-orange-100 hover:bg-orange-50 transition-colors gap-3">
-                            <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className={`w-2 h-2 rounded-full ${colorSet.barClass || ''}`} style={{ backgroundColor: colorSet.barColor }}></span>
-                                  <span className="font-semibold text-gray-800 truncate">{group.name}</span>
-                                  {group.isTentative && <span className="text-[10px] text-amber-600 font-bold bg-white px-1 rounded border border-amber-200">미확정</span>}
-                                </div>
-                                {nextMilestone && (
-                                  <div className="mt-1 text-[11px] font-bold text-rose-600 flex items-center gap-1">
-                                    <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: nextMilestone.color || '#ef4444' }}></span>
-                                    {nextMilestone.label} · {nextMilestone.date}
-                                  </div>
-                                )}
-                                <div className="text-[10px] text-gray-500 mt-1 leading-snug break-words">{memberLabel}</div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {group.docUrl && <a href={group.docUrl} target="_blank" rel="noreferrer" className="text-[10px] text-indigo-600 hover:underline flex items-center gap-1"><Paperclip className="w-3 h-3"/>문서</a>}
-                              <span className="text-[10px] text-gray-500 bg-white px-2 py-0.5 rounded border border-orange-100">진행중</span>
-                            </div>
+                    : activeProjectsToday.map(p => (
+                        <div key={p.id} className="flex justify-between items-center text-xs p-2 bg-orange-50/50 rounded border border-orange-100 hover:bg-orange-50 transition-colors">
+                            <span className="font-medium text-gray-700 truncate max-w-[65%]">{p.name}</span>
+                            <span className="text-gray-500 bg-white px-1.5 py-0.5 rounded border border-orange-100 text-[10px]">{p.person}</span>
                         </div>
-                        );
-                      })
-                    )}
+                    ))}
                 </div>
             </div>
 
-            <div className="lg:col-span-8 bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col">
+            <div className="lg:col-span-8 bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col h-full overflow-hidden">
                 <h2 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider flex items-center gap-2 flex-shrink-0">
                     <Target className="w-3.5 h-3.5"/> All Projects <span className="text-[10px] font-normal text-gray-400 lowercase">(click to jump)</span>
                 </h2>
-                <div className="pr-1">
+                <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                         {groupedProjects.map((group) => (
-                            <div key={group.id || group.name} onClick={() => handleShortcutClick(group)} 
+                            <div key={group.id} onClick={() => handleShortcutClick(group)} 
                                 className={`
-                                    group cursor-pointer p-2.5 rounded border border-gray-200 bg-white shadow-sm hover:shadow active:opacity-70 active:scale-95 transition-all relative overflow-hidden hover:border-indigo-300 hover:-translate-y-0.5 min-h-[70px] flex flex-col justify-between
+                                    group cursor-pointer p-2.5 rounded border border-gray-200 bg-white shadow-sm hover:shadow transition-all relative overflow-hidden hover:border-indigo-300 hover:-translate-y-0.5 min-h-[70px] flex flex-col justify-between
                                     ${hoveredProjectName === group.name ? 'ring-2 ring-indigo-100 border-indigo-300' : ''}
-                                    ${recentlyAddedProject === group.name ? 'ring-2 ring-emerald-200 border-emerald-300 animate-pulse' : ''}
                                 `}
                             >
-                                {(() => { const colorSet = getColorSet(group); return <div className={`absolute left-0 top-0 bottom-0 w-1 ${colorSet.barClass || ''}`} style={{ backgroundColor: colorSet.barColor }}></div>; })()}
+                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${BAR_COLORS[group.colorIdx % BAR_COLORS.length].bar}`}></div>
                                 <div className="pl-2">
                                     <div className="text-xs font-bold text-gray-800 truncate mb-1" title={group.name}>{group.name}</div>
                                     <div className="flex flex-wrap gap-1">
                                         {group.members.slice(0, 2).map((m, i) => <span key={i} className="text-[9px] text-gray-500 bg-gray-100 px-1 rounded border border-gray-200">{m.person}</span>)}
                                         {group.members.length > 2 && <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1 rounded border border-indigo-100">+{group.members.length - 2}</span>}
                                     </div>
-                                    {(group.milestones?.length || 0) > 0 && (
-                                      <div className="text-[10px] text-rose-600 font-bold mt-1 flex items-center gap-1">
-                                        <span className="inline-block w-2 h-2 rounded-full bg-rose-500"></span>
-                                        주요 일정 {group.milestones?.length}건
-                                      </div>
-                                    )}
                                 </div>
                                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100" onClick={(e) => { e.stopPropagation(); handleProjectClick(group); }}>
                                     <div className="bg-white p-1 rounded border border-gray-200 text-gray-400 hover:text-indigo-600 shadow-sm">
                                         <Edit3 className="w-3 h-3" />
                                     </div>
-                                </div>
-                                <div className="flex items-center justify-between text-[10px] text-gray-500 mt-2 pr-1">
-                                  <div className="flex items-center gap-2">
-                                    {group.docUrl && <a href={group.docUrl} onClick={(e) => e.stopPropagation()} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-indigo-600 hover:underline"><Paperclip className="w-3 h-3"/>문서</a>}
-                                    {group.isTentative && <span className="text-amber-600 font-bold bg-amber-50 px-1 rounded border border-amber-200">미확정</span>}
-                                  </div>
-                                  <span className="text-gray-400">{group.start} ~ {group.end}</span>
                                 </div>
                             </div>
                         ))}
@@ -1466,100 +1081,40 @@ export default function ResourceGanttChart() {
             </div>
         </div>
 
-        {/* Memos */}
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mx-4 md:mx-6 mb-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <StickyNote className="w-4 h-4 text-amber-500" />
-              <h3 className="text-sm font-bold text-gray-800">메모 보드</h3>
-              <span className="text-[11px] text-gray-400">(접고 펴서 내용 확인)</span>
-            </div>
-            <button onClick={() => setMemoCollapsed(!memoCollapsed)} className="text-xs text-gray-500 hover:text-indigo-600 flex items-center gap-1">
-              {memoCollapsed ? <>펼치기 <ChevronDown className="w-3 h-3"/></> : <>접기 <ChevronUp className="w-3 h-3"/></>}
-            </button>
-          </div>
-          {!memoCollapsed && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
-                <input value={memoTitle} onChange={(e) => setMemoTitle(e.target.value)} placeholder="메모 제목" className="md:col-span-3 border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none"/>
-                <select value={memoProject} onChange={(e) => setMemoProject(e.target.value)} className="md:col-span-3 border border-gray-300 rounded px-3 py-2 text-sm text-gray-700 focus:ring-1 focus:ring-indigo-500 outline-none">
-                  <option value="">관련 프로젝트 (선택)</option>
-                  {groupedProjects.map((g) => <option key={g.name} value={g.name}>{g.name}</option>)}
-                </select>
-                <textarea value={memoContent} onChange={(e) => setMemoContent(e.target.value)} placeholder="메모 내용을 입력하세요" className="md:col-span-5 border border-gray-300 rounded px-3 py-2 text-sm h-20 resize-none focus:ring-1 focus:ring-indigo-500 outline-none"></textarea>
-                <button onClick={addMemoNote} className="md:col-span-1 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 transition-all shadow-sm">추가</button>
-              </div>
-              <div className="divide-y divide-gray-100 border border-gray-100 rounded-lg">
-                {notes.length === 0 ? (
-                  <div className="p-3 text-xs text-gray-400">저장된 메모가 없습니다.</div>
-                ) : (
-                  notes.map(note => (
-                    <div key={note.id} className="p-3 bg-white hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center justify-between gap-2">
-                        <button onClick={() => toggleMemoOpen(note.id)} className="flex items-center gap-2 text-left flex-1">
-                          <span className="text-sm font-bold text-gray-800">{note.title}</span>
-                          {note.relatedProject && <span className="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100">{note.relatedProject}</span>}
-                          <span className="text-[10px] text-gray-400">{new Date(note.createdAt).toLocaleString()}</span>
-                          {note.isOpen ? <ChevronUp className="w-3 h-3 text-gray-400"/> : <ChevronDown className="w-3 h-3 text-gray-400"/>}
-                        </button>
-                        <button onClick={() => removeMemoNote(note.id)} className="text-[11px] text-gray-400 hover:text-red-500 underline">삭제</button>
-                      </div>
-                      {note.isOpen !== false && (
-                        <div className="mt-2 text-sm text-gray-700 whitespace-pre-line">{note.content || '내용 없음'}</div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
         {/* Chart Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-1 pb-2">
+        <div className="flex items-center justify-between px-1 pb-2">
             <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
-                <button onClick={handlePrevMonth} className="p-1.5 hover:bg-gray-100 rounded text-gray-600 flex items-center gap-1 text-xs font-bold"><ChevronLeft className="w-4 h-4"/> 이전</button>
+                <button onClick={handlePrevMonth} className="p-1.5 hover:bg-gray-100 rounded text-gray-600 flex items-center gap-1 text-xs font-bold"><ChevronLeft className="w-4 h-4"/> 이전 달</button>
                 <button onClick={handleJumpToToday} className="px-3 py-1 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded border border-indigo-100">오늘 (Today)</button>
-                <button onClick={handleNextMonth} className="p-1.5 hover:bg-gray-100 rounded text-gray-600 flex items-center gap-1 text-xs font-bold">다음 <ChevronRight className="w-4 h-4"/></button>
+                <button onClick={handleNextMonth} className="p-1.5 hover:bg-gray-100 rounded text-gray-600 flex items-center gap-1 text-xs font-bold">다음 달 <ChevronRight className="w-4 h-4"/></button>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
-                <button onClick={() => setViewMode('week')} className={`px-3 py-1 text-xs font-bold ${viewMode === 'week' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>주 단위</button>
-                <button onClick={() => setViewMode('day')} className={`px-3 py-1 text-xs font-bold border-l border-gray-200 ${viewMode === 'day' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>일 단위</button>
-              </div>
-              <div className="flex items-center gap-2 bg-white p-2 rounded-lg border border-gray-200 shadow-sm">
-                <span className="text-[11px] text-gray-500 font-bold uppercase tracking-wider">Highlight</span>
-                <input type="date" value={highlightDate} onChange={(e) => setHighlightDate(e.target.value)} className="border border-gray-300 rounded px-2 py-1 text-xs text-gray-700 focus:ring-1 focus:ring-indigo-500 outline-none"/>
-                {highlightDate && <button onClick={() => setHighlightDate('')} className="text-[11px] text-gray-500 hover:text-gray-700 underline">Clear</button>}
-              </div>
-              <div className="text-xs font-medium text-gray-500 flex items-center gap-2">
-                  <div className="flex items-center gap-1"><span className="w-2 h-2 bg-gray-200 rounded-full"></span> 대기</div>
-                  <div className="flex items-center gap-1"><span className="w-2 h-2 bg-blue-500 rounded-full"></span> 진행</div>
-                  <div className="flex items-center gap-1"><span className="w-2 h-2 bg-amber-500 rounded-full"></span> 미확정</div>
-              </div>
+            <div className="text-xs font-medium text-gray-500 flex items-center gap-2">
+                <div className="flex items-center gap-1"><span className="w-2 h-2 bg-gray-200 rounded-full"></span> 대기</div>
+                <div className="flex items-center gap-1"><span className="w-2 h-2 bg-blue-500 rounded-full"></span> 진행</div>
+                <div className="flex items-center gap-1"><Flag className="w-3 h-3 text-red-500" /> 마일스톤</div>
             </div>
         </div>
       </div>
 
       {/* --- Main Gantt Table (Scrollable) --- */}
-      <div className="rounded-xl shadow-sm bg-white border border-gray-200 flex flex-col w-full relative mx-4 md:mx-6 mb-10 overflow-x-auto" ref={chartContainerRef}>
-        <div className="overflow-x-auto custom-scrollbar">
+      <div className="flex-1 overflow-hidden rounded-xl shadow-sm bg-white border border-gray-200 flex flex-col w-full relative mx-auto max-w-[1600px] mb-6" ref={chartContainerRef}>
+        <div className="overflow-auto flex-1 custom-scrollbar">
           <table className="w-full border-collapse min-w-[4000px]"> 
             <thead className="sticky top-0 z-50 bg-white shadow-sm">
               <tr>
                 <th className="sticky left-0 z-50 bg-gray-50 w-24 min-w-[96px] text-left py-3 pl-4 text-xs font-bold text-gray-500 uppercase border-b border-r border-gray-200">Team</th>
                 <th className="sticky left-24 z-50 bg-gray-50 w-28 min-w-[112px] text-left py-3 pl-4 text-xs font-bold text-gray-500 uppercase border-b border-r border-gray-200 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)]">Member</th>
-                {timeline.map(w => (
+                
+                {weeks.map(w => (
                     <th 
                         key={w.id} 
-                        ref={w.isToday ? todayColumnRef : null}
-                        className={`min-w-[140px] py-2 text-center border-b border-r border-gray-200 ${w.isToday ? 'bg-indigo-50/50' : w.isHighlight ? 'bg-yellow-50/70' : 'bg-white'}`}
+                        ref={w.isTodayWeek ? todayColumnRef : null}
+                        className={`min-w-[140px] py-2 text-center border-b border-r border-gray-300/70 ${w.isTodayWeek ? 'bg-indigo-50/50' : 'bg-white'}`}
                     >
-                        <div className={`text-xs font-bold ${w.isToday ? 'text-indigo-600' : w.isHighlight ? 'text-amber-600' : 'text-gray-700'}`}>
-                            {w.label} {w.isToday && <span className="inline-block w-1.5 h-1.5 bg-indigo-500 rounded-full ml-1 align-middle mb-0.5"></span>}
+                        <div className={`text-xs font-bold ${w.isTodayWeek ? 'text-indigo-600' : 'text-gray-700'}`}>
+                            {w.label} {w.isTodayWeek && <span className="inline-block w-1.5 h-1.5 bg-indigo-500 rounded-full ml-1 align-middle mb-0.5"></span>}
                         </div>
                         <div className="text-[9px] text-gray-400 font-medium">{w.subLabel}</div>
-                        {w.isHighlight && <div className="text-[9px] text-amber-500 font-semibold mt-0.5">Highlight</div>}
                     </th>
                 ))}
               </tr>
@@ -1584,41 +1139,22 @@ export default function ResourceGanttChart() {
                                         <div>{member}</div>
                                     </td>
                                     
-                                    <td colSpan={timeline.length} className="relative p-0 align-top border-b border-gray-200" style={{ height: rowHeight }}>
+                                    <td colSpan={weeks.length} className="relative p-0 align-top border-b border-gray-200" style={{ height: rowHeight }}>
                                         <div className="absolute inset-0 w-full h-full flex pointer-events-none">
-                                            {timeline.map(w => (
-                                              <div 
-                                                key={w.id} 
-                                                className={`flex-1 border-r border-gray-300/70 last:border-0 ${w.isToday ? 'bg-indigo-50/10' : ''} ${w.isHighlight ? 'bg-amber-50/50' : ''}`}
-                                              />
-                                            ))} 
+                                            {weeks.map(w => <div key={w.id} className={`flex-1 border-r border-gray-300/70 last:border-0 ${w.isTodayWeek ? 'bg-indigo-50/10' : ''}`}></div>)} 
                                         </div>
                                         
                                         {packed.map(proj => {
-                                            if (timeline.length === 0 || chartTotalDays <= 0) return null;
                                             const style = getProjectStyle(proj);
                                             if(!style) return null;
                                             const isDimmed = hoveredProjectName && hoveredProjectName !== proj.name;
                                             const isHighlighted = hoveredProjectName === proj.name;
-                                            const colorSet = getColorSet(proj);
-                                            const isTentative = Boolean(proj.isTentative);
-                                            const barStyle = {
-                                              ...style,
-                                              backgroundColor: colorSet.customBg,
-                                              borderColor: colorSet.customBorder,
-                                              color: colorSet.customText,
-                                            } as React.CSSProperties;
-                                            const chartStart = parseDate(formatDate(timeline[0].start));
-                                            const chartEnd = parseDate(formatDate(timeline[timeline.length - 1].end));
-                                            const pStart = parseDate(proj.start);
-                                            const pEnd = parseDate(proj.end);
-                                            const displayStart = pStart < chartStart ? chartStart : pStart;
-                                            const displayEnd = pEnd > chartEnd ? chartEnd : pEnd;
-                                            const durationDays = getDaysDiff(displayStart, displayEnd) + 1;
-                                            const visibleMilestones = durationDays > 0 ? (proj.milestones || []).filter(m => {
-                                              const d = parseDate(m.date);
-                                              return d >= displayStart && d <= displayEnd;
-                                            }) : [];
+                                            const colorSet = BAR_COLORS[proj.colorIdx % BAR_COLORS.length];
+                                            // 마일스톤 렌더링 준비
+                                            const projStart = parseDate(proj.start);
+                                            const projEnd = parseDate(proj.end);
+                                            const duration = getDaysDiff(projStart, projEnd) + 1;
+                                            const chartStart = parseDate(chartStartDate);
 
                                             return (
                                                 <div 
@@ -1626,40 +1162,30 @@ export default function ResourceGanttChart() {
                                                     onClick={() => handleProjectClick(proj)}
                                                     onMouseEnter={() => setHoveredProjectName(proj.name)}
                                                     onMouseLeave={() => setHoveredProjectName(null)}
-                                                    style={barStyle}
+                                                    style={style}
                                                     className={`
-                                                        absolute h-7 rounded shadow-sm cursor-pointer flex items-center px-2 z-20 transition-all duration-200 border
-                                                        ${colorSet.customBg ? '' : `${colorSet.bg} ${colorSet.border}`}
-                                                        ${isTentative ? 'border-dashed' : ''}
+                                                        absolute h-7 rounded shadow-sm cursor-pointer flex items-center px-2 z-20 transition-all duration-200 border group/bar
+                                                        ${colorSet.bg} ${colorSet.border}
                                                         ${isDimmed ? 'opacity-20 grayscale' : 'opacity-100 hover:shadow-md'}
-                                                        ${isHighlighted ? 'ring-2 ring-indigo-400 ring-offset-1 scale-[1.01] z-30' : 'active:opacity-70'}
+                                                        ${isHighlighted ? 'ring-2 ring-indigo-400 ring-offset-1 scale-[1.01] z-30' : ''}
                                                     `}
                                                 >
-                                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${colorSet.barClass || ''}`} style={{ backgroundColor: colorSet.barColor }}></div>
-                                                    <span className={`text-[11px] font-bold truncate ml-1 ${colorSet.textClass || ''}`} style={{ color: colorSet.customText }}>{proj.name}</span>
-                                                    {isTentative && <span className="ml-2 text-[10px] font-bold text-amber-600 bg-white/70 px-1 rounded border border-amber-200">미확정</span>}
-                                                    {proj.docUrl && (
-                                                      <a 
-                                                        href={proj.docUrl} 
-                                                        target="_blank" 
-                                                        rel="noreferrer" 
-                                                        className="ml-1 text-[10px] text-indigo-600 hover:underline flex items-center gap-0.5"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        download={proj.docName || undefined}
-                                                      >
-                                                        <Paperclip className="w-3 h-3" /> 문서
-                                                      </a>
-                                                    )}
-                                                    {visibleMilestones.map((m) => {
-                                                      const d = parseDate(m.date);
-                                                      const offset = getDaysDiff(displayStart, d);
-                                                      const leftPercent = (offset / durationDays) * 100;
-                                                      const widthPercent = Math.max(2, 100 / durationDays);
-                                                      return (
-                                                        <div key={m.id} className="absolute top-0 bottom-0 pointer-events-none flex items-stretch" style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}>
-                                                          <div className="w-full h-full opacity-80" style={{ backgroundColor: m.color || getRandomHexColor() }} title={`${m.label} (${m.date})`}></div>
-                                                        </div>
-                                                      );
+                                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${colorSet.bar}`}></div>
+                                                    <span className={`text-[11px] font-bold truncate ml-1 ${colorSet.text}`}>{proj.name}</span>
+
+                                                    {/* Milestone Markers on Bar */}
+                                                    {(proj.milestones || []).map(m => {
+                                                        const mDate = parseDate(m.date);
+                                                        if (mDate < projStart || mDate > projEnd) return null;
+                                                        const offset = getDaysDiff(projStart, mDate);
+                                                        const leftPos = (offset / duration) * 100;
+                                                        return (
+                                                            <div key={m.id} 
+                                                                 className="absolute top-1 bottom-1 w-1.5 rounded-sm z-40 hover:scale-125 transition-transform cursor-help"
+                                                                 style={{ left: `${leftPos}%`, backgroundColor: m.color }}
+                                                                 title={`${m.label} (${m.date})`}
+                                                            />
+                                                        )
                                                     })}
                                                 </div>
                                             )
