@@ -1316,10 +1316,11 @@ export default function ResourceGanttChart() {
                                                         if (mDate < effectiveStart || mDate > effectiveEnd) return null;
                                                         const offset = getDaysDiff(effectiveStart, mDate);
                                                         const leftPos = (offset / duration) * 100;
+                                                        const markerWidth = viewMode === 'day' ? 10 : 6; // 한 날짜만 명확히 표시
                                                         return (
                                                             <div key={m.id} 
-                                                                 className="absolute top-1 bottom-1 rounded-sm z-40 hover:scale-110 transition-transform cursor-help"
-                                                                 style={{ left: `${leftPos}%`, width: `${viewMode === 'day' ? Math.max(100 / duration, 6) : Math.max(3, 100 / duration)}%`, minWidth: viewMode === 'day' ? '6px' : '3px', backgroundColor: m.color || '#ef4444' }}
+                                                                 className="absolute top-1 bottom-1 z-40 hover:scale-110 transition-transform cursor-help rounded-sm shadow-sm"
+                                                                 style={{ left: `${leftPos}%`, width: `${markerWidth}px`, minWidth: `${markerWidth}px`, backgroundColor: m.color || '#ef4444' }}
                                                                  title={`${m.label} (${m.date})`}
                                                             />
                                                         )
