@@ -266,6 +266,7 @@ export default function ResourceGanttChart() {
   const rowRefs = useRef<{ [key: string]: HTMLTableRowElement | null }>({});
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const todayColumnRef = useRef<HTMLTableHeaderCellElement | null>(null); 
+  const initialScrolledRef = useRef(false);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
@@ -424,9 +425,11 @@ export default function ResourceGanttChart() {
   }, [teams]);
 
   useEffect(() => {
+    if (initialScrolledRef.current) return;
     if (!isLoading && todayColumnRef.current && chartContainerRef.current) {
       const timer = setTimeout(() => {
         todayColumnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        initialScrolledRef.current = true;
       }, 500);
       return () => clearTimeout(timer);
     }
