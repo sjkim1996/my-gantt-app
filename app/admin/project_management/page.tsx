@@ -1291,40 +1291,67 @@ export default function ResourceGanttChart() {
                                             const duration = Math.max(1, getDaysDiff(effectiveStart, effectiveEnd) + 1);
                                             const barTitle = proj.notes ? `${proj.name} - 메모: ${proj.notes}` : proj.name;
 
-                                            return (
-                                                <div 
-                                                    key={proj.id}
-                                                    onClick={() => handleProjectClick(proj)}
-                                                    onMouseEnter={() => setHoveredProjectName(proj.name)}
-                                                    onMouseLeave={() => setHoveredProjectName(null)}
-                                                    className={`
-                                                        absolute h-7 rounded shadow-sm cursor-pointer flex items-center px-2 z-20 transition-all duration-200 border group/bar
-                                                        ${colorSet.customBg ? '' : `${colorSet.bg} ${colorSet.border}`}
-                                                        ${isDimmed ? 'opacity-20 grayscale' : 'opacity-100 hover:shadow-md'}
-                                                        ${isHighlighted ? 'ring-2 ring-indigo-400 ring-offset-1 scale-[1.01] z-30' : ''}
-                                                    `}
-                                                    style={{ ...style, backgroundColor: colorSet.customBg, borderColor: colorSet.customBorder }}
-                                                    title={barTitle}
-                                                >
-                                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${colorSet.barClass || ''}`} style={{ backgroundColor: colorSet.barColor }}></div>
-                                                    <span className={`text-[11px] font-bold truncate ml-1 ${colorSet.textClass || ''}`} style={{ color: colorSet.customText }}>{proj.name}</span>
-                                                    {proj.notes && <span className="ml-2 text-[10px] text-gray-700 bg-white/70 px-1 rounded border border-gray-200 truncate max-w-[160px]" title={proj.notes}>{proj.notes}</span>}
+                                            const milestonesInRange = (proj.milestones || []).filter(m => {
+                                                const d = parseDate(m.date);
+                                                return d >= effectiveStart && d <= effectiveEnd;
+                                            }).sort((a, b) => parseDate(a.date).getTime() - parseDate(b.date).getTime());
 
-                                                    {/* Milestone Markers on Bar */}
-                                                    {(proj.milestones || []).map(m => {
-                                                        const mDate = parseDate(m.date);
-                                                        if (mDate < effectiveStart || mDate > effectiveEnd) return null;
-                                                        const offset = getDaysDiff(effectiveStart, mDate);
-                                                        const leftPos = (offset / duration) * 100;
-                                                        const markerWidth = viewMode === 'day' ? 10 : 6; // 한 날짜만 명확히 표시
-                                                        return (
-                                                            <div key={m.id} 
-                                                                 className="absolute top-1 bottom-1 z-40 hover:scale-110 transition-transform cursor-help rounded-sm shadow-sm"
-                                                                 style={{ left: `${leftPos}%`, width: `${markerWidth}px`, minWidth: `${markerWidth}px`, backgroundColor: m.color || '#ef4444' }}
-                                                                 title={`${m.label} (${m.date})`}
-                                                            />
-                                                        )
-                                                    })}
+                                            const segments: { start: Date; end: Date }[] = [];
+                                            if (milestonesInRange.length === 0) {
+                                                segments.push({ start: effectiveStart, end: effectiveEnd });
+                                            } else {
+                                                let curStart = effectiveStart;
+                                                milestonesInRange.forEach(m => {
+                                                    const mDate = parseDate(m.date);
+                                                    segments.push({ start: curStart, end: mDate });
+                                                    curStart = mDate;
+                                                });
+                                                if (curStart <= effectiveEnd) segments.push({ start: curStart, end: effectiveEnd });
+                                            }
+
+                                            return (
+                                                <div key={proj.id}>
+                                                  {segments.map((seg, idx) => {
+                                                    const segOffset = getDaysDiff(effectiveStart, seg.start);
+                                                    const segDuration = Math.max(1, getDaysDiff(seg.start, seg.end));
+                                                    const left = (segOffset / duration) * 100;
+                                                    const width = (segDuration / duration) * 100;
+                                                    return (
+                                                      <div 
+                                                        key={`${proj.id}-seg-${idx}`}
+                                                        onClick={() => handleProjectClick(proj)}
+                                                        onMouseEnter={() => setHoveredProjectName(proj.name)}
+                                                        onMouseLeave={() => setHoveredProjectName(null)}
+                                                        className={`
+                                                            absolute h-7 rounded shadow-sm cursor-pointer flex items-center px-2 z-20 transition-all duration-200 border group/bar
+                                                            ${colorSet.customBg ? '' : `${colorSet.bg} ${colorSet.border}`}
+                                                            ${isDimmed ? 'opacity-20 grayscale' : 'opacity-100 hover:shadow-md'}
+                                                            ${isHighlighted ? 'ring-2 ring-indigo-400 ring-offset-1 scale-[1.01] z-30' : ''}
+                                                        `}
+                                                        style={{ left: `${left}%`, width: `${width}%`, top: style.top, backgroundColor: colorSet.customBg, borderColor: colorSet.customBorder }}
+                                                        title={barTitle}
+                                                      >
+                                                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${colorSet.barClass || ''}`} style={{ backgroundColor: colorSet.barColor }}></div>
+                                                        <span className={`text-[11px] font-bold truncate ml-1 ${colorSet.textClass || ''}`} style={{ color: colorSet.customText }}>{proj.name}</span>
+                                                        {proj.notes && <span className="ml-2 text-[10px] text-gray-700 bg-white/70 px-1 rounded border border-gray-200 truncate max-w-[160px]" title={proj.notes}>{proj.notes}</span>}
+                                                      </div>
+                                                    );
+                                                  })}
+
+                                                  {(proj.milestones || []).map(m => {
+                                                    const mDate = parseDate(m.date);
+                                                    if (mDate < effectiveStart || mDate > effectiveEnd) return null;
+                                                    const offset = getDaysDiff(effectiveStart, mDate);
+                                                    const leftPos = (offset / duration) * 100;
+                                                    const markerWidth = viewMode === 'day' ? 10 : 6;
+                                                    return (
+                                                        <div key={m.id} 
+                                                             className="absolute z-40 hover:scale-110 transition-transform cursor-help rounded-sm shadow-sm"
+                                                             style={{ left: `${leftPos}%`, width: `${markerWidth}px`, minWidth: `${markerWidth}px`, backgroundColor: m.color || '#ef4444', top: style.top }}
+                                                             title={`${m.label} (${m.date})`}
+                                                        />
+                                                    )
+                                                  })}
                                                 </div>
                                             )
                                         })}
