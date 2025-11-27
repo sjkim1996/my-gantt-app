@@ -840,12 +840,6 @@ export default function ResourceGanttChart() {
         {/* Input Row */}
       
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-            <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-gray-800">프로젝트 추가</span>
-                <span className="text-[11px] text-gray-400">새 프로젝트를 바로 등록하세요</span>
-              </div>
-            </div>
           <div className="md:col-span-3">
             <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Project Name</label>
             <div className="h-10 flex items-center border border-gray-300 rounded px-3 bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all">
