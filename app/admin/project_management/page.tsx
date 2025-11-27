@@ -398,12 +398,23 @@ export default function ResourceGanttChart() {
   }, [timeline]);
 
   const activeProjectsToday = useMemo(() => {
-    const todayTime = todayDate.getTime();
-    return projects.filter(p => {
-        const s = parseDate(p.start).getTime();
-        const e = parseDate(p.end).getTime();
-        return todayTime >= s && todayTime <= e;
+    const todayTime = parseDate(formatDate(todayDate)).getTime();
+    const map = new Map<string, GroupedProject>();
+    projects.forEach(p => {
+      const s = parseDate(p.start).getTime();
+      const e = parseDate(p.end).getTime();
+      if (todayTime >= s && todayTime <= e) {
+        if (!map.has(p.name)) {
+          map.set(p.name, { ...p, members: [], start: p.start, end: p.end, milestones: p.milestones ? mergeMilestones(p.milestones, []) : [] });
+        }
+        const group = map.get(p.name)!;
+        if (!group.members.find(m => m.person === p.person && m.team === p.team)) group.members.push({ person: p.person, team: p.team });
+        if (parseDate(p.start) < parseDate(group.start)) group.start = p.start;
+        if (parseDate(p.end) > parseDate(group.end)) group.end = p.end;
+        group.milestones = mergeMilestones(group.milestones, p.milestones);
+      }
     });
+    return Array.from(map.values());
   }, [projects, todayDate]);
 
   const allMembers = useMemo(() => {
@@ -1135,12 +1146,29 @@ export default function ResourceGanttChart() {
                             <Clock className="w-4 h-4 mb-1 opacity-50"/>
                             진행 중인 프로젝트가 없습니다.
                         </div> 
-                    : activeProjectsToday.map(p => (
-                        <div key={p.id} className="flex justify-between items-center text-xs p-2 bg-orange-50/50 rounded border border-orange-100 hover:bg-orange-50 transition-colors">
-                            <span className="font-medium text-gray-700 truncate max-w-[65%]">{p.name}</span>
-                            <span className="text-gray-500 bg-white px-1.5 py-0.5 rounded border border-orange-100 text-[10px]">{p.person}</span>
-                        </div>
-                    ))}
+                    : activeProjectsToday.map(g => {
+                        const nextMilestone = (g.milestones || []).map(m => ({ ...m, time: parseDate(m.date).getTime() })).filter(m => m.time >= parseDate(formatDate(todayDate)).getTime()).sort((a, b) => a.time - b.time)[0];
+                        return (
+                          <div key={g.name} className="flex justify-between items-start text-xs p-2 bg-orange-50/60 rounded border border-orange-100 hover:bg-orange-50 transition-colors gap-2">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="inline-block w-2 h-2 rounded-full bg-orange-500"></span>
+                                  <span className="font-semibold text-gray-800 truncate">{g.name}</span>
+                                </div>
+                                <div className="text-[10px] text-gray-500 mt-1 leading-snug break-words">
+                                  {g.members.map(m => `${m.person} (${m.team})`).join(', ')}
+                                </div>
+                                {nextMilestone && (
+                                  <div className="text-[10px] text-rose-600 font-bold mt-1 flex items-center gap-1">
+                                    <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: nextMilestone.color || '#ef4444' }}></span>
+                                    {nextMilestone.label} · {nextMilestone.date}
+                                  </div>
+                                )}
+                              </div>
+                              <span className="text-gray-500 bg-white px-1.5 py-0.5 rounded border border-orange-100 text-[10px]">{g.start} ~ {g.end}</span>
+                          </div>
+                        );
+                    })}
                 </div>
             </div>
 
