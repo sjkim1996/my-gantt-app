@@ -885,7 +885,6 @@ export default function ResourceGanttChart() {
             </div>
             <button onClick={handleAddProject} className="h-10 px-4 bg-indigo-600 text-white rounded flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-sm flex-shrink-0 text-sm font-bold">
               <Plus className="w-4 h-4" />
-              <span>프로젝트 추가</span>
             </button>
           </div>
         </div>
