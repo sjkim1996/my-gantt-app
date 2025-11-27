@@ -414,18 +414,23 @@ export default function ResourceGanttChart() {
 
   useEffect(() => {
     if (!pendingScrollTarget || !chartContainerRef.current) return;
-    if (chartStartDate !== pendingScrollTarget.desiredStart) return; // wait until chartStartDate 적용
+    
+    // 차트 시작일이 변경되었다면 렌더링 완료까지 대기
+    if (chartStartDate !== pendingScrollTarget.desiredStart) return;
 
     const timeout = setTimeout(() => {
       const { date, rowId } = pendingScrollTarget;
+      
+      // 1. 가로 스크롤 이동
       const chartStart = parseDate(chartStartDate);
       const diffDays = getDaysDiff(chartStart, date);
       const offsetRatio = diffDays / chartTotalDays;
       const container = chartContainerRef.current!;
-      const scrollWidth = container.scrollWidth - container.clientWidth;
-      const scrollPos = Math.max(0, Math.min(scrollWidth, container.scrollWidth * offsetRatio - 300));
+      const scrollWidth = container.scrollWidth;
+      const scrollPos = Math.max(0, (scrollWidth * offsetRatio) - 300);
       container.scrollTo({ left: scrollPos, behavior: 'smooth' });
 
+      // 2. 세로 스크롤 이동
       const row = rowRefs.current[rowId];
       if (row) {
         row.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -434,8 +439,9 @@ export default function ResourceGanttChart() {
       } else {
         showBanner('행을 찾을 수 없습니다. 팀/멤버를 확인하세요.', 'info');
       }
+
       setPendingScrollTarget(null);
-    }, 80); // 레이아웃 안정화 대기
+    }, 100); // 렌더링 안정화 대기
 
     return () => clearTimeout(timeout);
   }, [pendingScrollTarget, chartStartDate, chartTotalDays]);
@@ -612,12 +618,26 @@ export default function ResourceGanttChart() {
     const firstMember = group.members[0]; 
     const rowId = `${firstMember.team}-${firstMember.person}`; 
     const projStart = parseDate(group.start);
-    const desiredStartStr = formatDate(getStartOfWeek(projStart));
-    setPendingScrollTarget({ date: projStart, rowId, desiredStart: desiredStartStr });
+    
+    // 현재 차트 범위 계산
+    const chartStart = parseDate(chartStartDate);
+    const diffDays = getDaysDiff(chartStart, projStart);
+    
+    let desiredStart = chartStartDate;
 
-    if (chartStartDate !== desiredStartStr) {
-      setChartStartDate(desiredStartStr);
+    // 화면 범위(60주) 밖이면 시작일을 조정해 여유 있게 이동
+    if (diffDays < 0 || diffDays > chartTotalDays) {
+        const newStart = new Date(projStart);
+        newStart.setDate(newStart.getDate() - 7);
+        desiredStart = formatDate(getStartOfWeek(newStart));
+        setChartStartDate(desiredStart);
     }
+
+    setPendingScrollTarget({ 
+        date: projStart, 
+        rowId,
+        desiredStart 
+    });
 
     setHoveredProjectName(group.name); 
     setTimeout(() => setHoveredProjectName(null), 3000);
