@@ -17,8 +17,11 @@ interface Project {
   end: string;
   colorIdx: number;
   docUrl?: string;
+  docName?: string;
   isTentative?: boolean;
   customColor?: string;
+  notes?: string;
+  milestones?: Milestone[];
 }
 
 interface Team {
@@ -46,11 +49,21 @@ interface EditingMember {
   start: string;
   end: string;
   docUrl?: string;
+  docName?: string;
   isTentative?: boolean;
   customColor?: string;
+  notes?: string;
+  milestones?: Milestone[];
   isNew?: boolean;
   isDeleted?: boolean;
 }
+
+type Milestone = {
+  id: string;
+  date: string;
+  label: string;
+  color: string;
+};
 
 type ApiProjectsResponse = {
   success: boolean;
@@ -184,6 +197,24 @@ const getRandomHexColor = () => {
   return colors[Math.floor(Math.random() * colors.length)];
 };
 
+const mergeMilestones = (a: Milestone[] = [], b: Milestone[] = []) => {
+  const map = new Map<string, Milestone>();
+  [...a, ...b].forEach(m => {
+    const key = `${m.date}-${m.label}`;
+    if (!map.has(key)) {
+      map.set(key, { ...m, color: m.color || getRandomHexColor() });
+    }
+  });
+  return Array.from(map.values());
+};
+
+const readPdfAsDataUrl = (file: File): Promise<string> => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+  reader.onerror = reject;
+  reader.readAsDataURL(file);
+});
+
 // --- 3. 상수 데이터 ---
 const BAR_COLORS = [
   { bg: 'bg-blue-100', border: 'border-blue-200', text: 'text-blue-800', bar: 'bg-blue-500' },
@@ -224,8 +255,11 @@ const dedupeProjects = (list: Project[]) => {
       map.set(key, {
         ...exist,
         docUrl: exist.docUrl || p.docUrl,
+        docName: exist.docName || p.docName,
         isTentative: exist.isTentative || p.isTentative,
         customColor: exist.customColor || p.customColor,
+        notes: exist.notes || p.notes,
+        milestones: mergeMilestones(exist.milestones, p.milestones),
       });
     }
   });
@@ -267,8 +301,13 @@ export default function ResourceGanttChart() {
   const [masterStart, setMasterStart] = useState('');
   const [masterEnd, setMasterEnd] = useState('');
   const [masterDocUrl, setMasterDocUrl] = useState('');
+  const [masterDocName, setMasterDocName] = useState('');
   const [masterTentative, setMasterTentative] = useState(false);
   const [masterCustomColor, setMasterCustomColor] = useState('');
+  const [masterNotes, setMasterNotes] = useState('');
+  const [masterMilestones, setMasterMilestones] = useState<Milestone[]>([]);
+  const [masterMilestoneLabel, setMasterMilestoneLabel] = useState('');
+  const [masterMilestoneDate, setMasterMilestoneDate] = useState('');
   const [editingMembers, setEditingMembers] = useState<EditingMember[]>([]);
   
   const [modalAssigneeInput, setModalAssigneeInput] = useState('');
@@ -295,8 +334,13 @@ export default function ResourceGanttChart() {
   const [projectStart, setProjectStart] = useState(formatDate(todayDate));
   const [projectEnd, setProjectEnd] = useState(formatDate(new Date(todayDate.getTime() + 86400000 * 30)));
   const [projectDocUrl, setProjectDocUrl] = useState('');
+  const [projectDocName, setProjectDocName] = useState('');
   const [projectTentative, setProjectTentative] = useState(false);
   const [projectCustomColor, setProjectCustomColor] = useState(getRandomHexColor());
+  const [projectNotes, setProjectNotes] = useState('');
+  const [projectMilestones, setProjectMilestones] = useState<Milestone[]>([]);
+  const [projectMilestoneLabel, setProjectMilestoneLabel] = useState('');
+  const [projectMilestoneDate, setProjectMilestoneDate] = useState('');
   const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([]);
   const [assigneeInput, setAssigneeInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -618,12 +662,14 @@ export default function ResourceGanttChart() {
     const map = new Map<string, GroupedProject>();
     projects.forEach(p => {
       if (!map.has(p.name)) {
-        map.set(p.name, { ...p, members: [], start: p.start, end: p.end });
+        map.set(p.name, { ...p, members: [], start: p.start, end: p.end, milestones: p.milestones ? mergeMilestones(p.milestones, []) : [] });
       }
       const group = map.get(p.name)!;
       if (!group.docUrl && p.docUrl) group.docUrl = p.docUrl;
       if (p.isTentative) group.isTentative = true;
       if (!group.customColor && p.customColor) group.customColor = p.customColor;
+      group.milestones = mergeMilestones(group.milestones, p.milestones);
+      if (!group.notes && p.notes) group.notes = p.notes;
       if (!group.members.find(m => m.person === p.person && m.team === p.team)) group.members.push({ person: p.person, team: p.team });
       // 그룹의 기간을 멤버 중 가장 이른 시작/늦은 종료로 업데이트
       if (parseDate(p.start) < parseDate(group.start)) group.start = p.start;
@@ -641,6 +687,11 @@ export default function ResourceGanttChart() {
     });
   }, [groupedProjects, todayDate]);
 
+  const isEventComposing = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const native = e.nativeEvent as unknown as { isComposing?: boolean };
+    return Boolean(native?.isComposing);
+  };
+
   const addAssignee = (assignee: Assignee) => {
     const exists = selectedAssignees.find(a => a.name === assignee.name && a.team === assignee.team);
     if (!exists) setSelectedAssignees([...selectedAssignees, assignee]);
@@ -650,7 +701,7 @@ export default function ResourceGanttChart() {
     const newArr = [...selectedAssignees]; newArr.splice(idx, 1); setSelectedAssignees(newArr);
   };
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if ((e.nativeEvent as any).isComposing) return;
+    if (isEventComposing(e)) return;
     if (e.key === 'Backspace' && assigneeInput === '' && selectedAssignees.length > 0) { removeAssignee(selectedAssignees.length - 1); return; }
     if (e.key === 'Enter' && assigneeInput.trim()) {
       e.preventDefault();
@@ -683,6 +734,24 @@ export default function ResourceGanttChart() {
   const toggleMemoOpen = (id: number) => setNotes(prev => prev.map(n => n.id === id ? { ...n, isOpen: !n.isOpen } : n));
   const removeMemoNote = (id: number) => setNotes(prev => prev.filter(n => n.id !== id));
 
+  const handlePdfUpload = async (file: File, setUrl: (v: string) => void, setName: (v: string) => void) => {
+    if (!file || file.type !== 'application/pdf') {
+      alert('PDF 파일만 업로드 가능합니다.');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      alert('PDF는 8MB 이하로 업로드해주세요.');
+      return;
+    }
+    try {
+      const dataUrl = await readPdfAsDataUrl(file);
+      setUrl(dataUrl);
+      setName(file.name);
+    } catch {
+      alert('파일을 읽는 중 오류가 발생했습니다.');
+    }
+  };
+
   const handleAddProject = async () => {
     if (!projectName || selectedAssignees.length === 0) return;
 
@@ -693,7 +762,9 @@ export default function ResourceGanttChart() {
     let assigneesToAdd = [...selectedAssignees];
     const colorIdx = existingGroup ? existingGroup.colorIdx : Math.floor(Math.random() * BAR_COLORS.length);
     const finalDocUrl = projectDocUrl || existingGroup?.docUrl || '';
+    const finalDocName = projectDocName || existingGroup?.docName || '';
     const finalTentative = projectTentative || Boolean(existingGroup?.isTentative);
+    const finalCustomColor = projectCustomColor || existingGroup?.customColor || '';
 
     if (existingGroup) {
       const isSame = window.confirm(`이미 \"${projectName}\" 프로젝트가 있습니다.\n같은 프로젝트로 인원만 추가할까요?`);
@@ -722,8 +793,11 @@ export default function ResourceGanttChart() {
       end: projectEnd,
       colorIdx,
       docUrl: finalDocUrl || undefined,
+      docName: finalDocName || undefined,
       isTentative: finalTentative,
-      customColor: projectCustomColor || undefined,
+      customColor: finalCustomColor || undefined,
+      notes: projectNotes || undefined,
+      milestones: projectMilestones,
     }));
     
     const res = await apiCreateProject(newEntries);
@@ -739,7 +813,7 @@ export default function ResourceGanttChart() {
           return { ...p, _id: normalizedId, id: normalizedId };
         });
         setProjects(prev => dedupeProjects([...prev, ...normalized]));
-        setProjectName(''); setSelectedAssignees([]); setProjectDocUrl(''); setProjectTentative(false); setProjectCustomColor(getRandomHexColor());
+        setProjectName(''); setSelectedAssignees([]); setProjectDocUrl(''); setProjectDocName(''); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([]);
         showBanner('프로젝트가 추가되었습니다.', 'success');
         setRecentlyAddedProject(targetName);
         setHoveredProjectName(targetName);
@@ -759,7 +833,10 @@ export default function ResourceGanttChart() {
     setMasterStart(project.start); 
     setMasterEnd(project.end);
     setMasterDocUrl(project.docUrl || '');
+    setMasterDocName(project.docName || '');
     setMasterTentative(Boolean(project.isTentative));
+    setMasterNotes(project.notes || '');
+    setMasterMilestones(project.milestones ? mergeMilestones(project.milestones, []) : []);
     const members: EditingMember[] = relatedProjects.map(p => ({ 
         id: p.id,
         _id: typeof p._id === 'string' ? p._id : undefined,
@@ -768,15 +845,18 @@ export default function ResourceGanttChart() {
         start: p.start,
         end: p.end,
         docUrl: p.docUrl,
+        docName: p.docName,
         isTentative: p.isTentative,
         customColor: p.customColor,
+        notes: p.notes,
+        milestones: p.milestones,
     }));
     setEditingMembers(members); setIsModalOpen(true);
   };
 
   const addMemberInModal = (assignee: Assignee) => {
     if (editingMembers.some(m => m.person === assignee.name && m.team === assignee.team && !m.isDeleted)) { setModalAssigneeInput(''); return; }
-    const newMember: EditingMember = { id: Date.now(), person: assignee.name, team: assignee.team, start: masterStart, end: masterEnd, isNew: true, docUrl: masterDocUrl, isTentative: masterTentative, customColor: masterCustomColor };
+    const newMember: EditingMember = { id: Date.now(), person: assignee.name, team: assignee.team, start: masterStart, end: masterEnd, isNew: true, docUrl: masterDocUrl, docName: masterDocName, isTentative: masterTentative, customColor: masterCustomColor, notes: masterNotes, milestones: [...masterMilestones] };
     setEditingMembers([...editingMembers, newMember]); setModalAssigneeInput(''); setModalShowSuggestions(false); modalInputRef.current?.focus();
   };
   const removeMemberInModal = (index: number) => { const updated = [...editingMembers]; updated[index].isDeleted = true; setEditingMembers(updated); };
@@ -801,14 +881,14 @@ export default function ResourceGanttChart() {
     const newMembers = editingMembers.filter(m => (m.isNew || !m._id) && !m.isDeleted);
     if (newMembers.length > 0) {
         await apiCreateProject(newMembers.map(m => ({
-            name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: masterDocUrl, isTentative: masterTentative, customColor: masterCustomColor || undefined
+            name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: masterDocUrl, docName: masterDocName, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: masterMilestones
         })));
     }
 
     const updatedMembers = editingMembers.filter(m => !m.isNew && !m.isDeleted && m._id);
     for (const m of updatedMembers) {
         await apiUpdateProject({
-            _id: m._id, name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: masterDocUrl, isTentative: masterTentative, customColor: masterCustomColor || undefined
+            _id: m._id, name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: masterDocUrl, docName: masterDocName, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: masterMilestones
         });
     }
 
@@ -957,7 +1037,7 @@ export default function ResourceGanttChart() {
   const addMemberToTeam = (teamIdx: number) => { const name = prompt("이름:"); if (name) { const n = [...editingTeams]; n[teamIdx].members.push(name); setEditingTeams(n); } };
   const removeMember = (tIdx: number, mIdx: number) => { const n = [...editingTeams]; n[tIdx].members.splice(mIdx, 1); setEditingTeams(n); };
   const handleModalInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if ((e.nativeEvent as any).isComposing) return;
+    if (isEventComposing(e)) return;
     if (e.key === 'Enter' && modalAssigneeInput.trim()) { e.preventDefault(); if (modalSuggestions.length === 1) { addMemberInModal(modalSuggestions[0]); return; } const exact = allMembers.filter(m => m.name === modalAssigneeInput.trim()); if (exact.length === 1) { addMemberInModal(exact[0]); return; } let newName = modalAssigneeInput.trim(); let newTeam = '미배정'; if (newName.includes('-')) { const parts = newName.split('-'); newTeam = parts[0].trim(); newName = parts[1].trim(); } addMemberInModal({ name: newName, team: newTeam, isNew: true }); }
   };
   useEffect(() => { if (isModalOpen) setDeleteConfirmMode(false); }, [isModalOpen]);
@@ -970,7 +1050,7 @@ export default function ResourceGanttChart() {
 
   return (
     <div
-      className={`flex flex-col h-screen bg-gray-50 font-sans relative text-gray-900 px-3 md:px-6 lg:px-8 ${isModalOpen || isTeamModalOpen ? 'overflow-visible' : 'overflow-hidden'}`}
+      className={`flex flex-col min-h-screen bg-gray-50 font-sans relative text-gray-900 px-3 md:px-6 lg:px-8 ${isModalOpen || isTeamModalOpen ? 'overflow-visible' : ''}`}
       onClick={() => { setShowSuggestions(false); setModalShowSuggestions(false); }}
     >
       
@@ -1062,15 +1142,56 @@ export default function ResourceGanttChart() {
                                 ))}
                             </div>
                         </div>
+                        <div className="min-w-[160px]">
+                            <label className="block text-xs font-bold text-gray-500 mb-2">커스텀 컬러</label>
+                            <div className="flex items-center gap-2">
+                                <input type="color" value={masterCustomColor || '#2563eb'} onChange={(e) => setMasterCustomColor(e.target.value)} className="w-12 h-10 border border-gray-300 rounded cursor-pointer"/>
+                                <button onClick={() => setMasterCustomColor(getRandomHexColor())} className="text-xs font-bold text-indigo-600 hover:underline">랜덤</button>
+                                <button onClick={() => setMasterCustomColor('')} className="text-xs text-gray-400 hover:underline">기본</button>
+                            </div>
+                        </div>
                         <div className="flex-1 min-w-[180px]">
                             <label className="block text-xs font-bold text-gray-500 mb-2">프로젝트 문서 링크</label>
                             <input type="url" value={masterDocUrl} onChange={(e) => setMasterDocUrl(e.target.value)} className="w-full p-2 border border-gray-300 rounded bg-white text-sm text-gray-700 focus:border-indigo-500 outline-none transition-all" placeholder="문서 URL 입력"/>
+                            <div className="mt-2 flex items-center gap-2">
+                              <input type="file" accept="application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePdfUpload(f, setMasterDocUrl, setMasterDocName); }} className="text-xs" />
+                              {masterDocName && <span className="text-xs text-gray-600">첨부됨: {masterDocName}</span>}
+                            </div>
                         </div>
                         <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 select-none">
                             <input type="checkbox" className="w-4 h-4 text-indigo-600 border-gray-300" checked={masterTentative} onChange={(e) => setMasterTentative(e.target.checked)} />
                             미확정 상태
                         </label>
                         <button onClick={syncDatesToAll} className="px-3 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded hover:bg-indigo-100 text-xs font-bold flex items-center gap-1.5 h-[38px] transition-colors"><RefreshCw className="w-3.5 h-3.5"/> 일정 동기화</button>
+                    </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
+                    <h4 className="text-sm font-bold text-gray-700 mb-2">메모</h4>
+                    <textarea value={masterNotes} onChange={(e) => setMasterNotes(e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:ring-1 focus:ring-indigo-500 outline-none min-h-[90px]" placeholder="프로젝트 메모 수정" />
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
+                    <h4 className="text-sm font-bold text-gray-700 mb-3">중요 일정 (시사일/PPM 등)</h4>
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <input type="text" value={masterMilestoneLabel} onChange={(e) => setMasterMilestoneLabel(e.target.value)} placeholder="이벤트 이름" className="flex-1 min-w-[140px] border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none" />
+                      <input type="date" value={masterMilestoneDate} onChange={(e) => setMasterMilestoneDate(e.target.value)} className="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none" />
+                      <button type="button" onClick={() => {
+                        if (!masterMilestoneLabel || !masterMilestoneDate) return;
+                        const m: Milestone = { id: `${Date.now()}`, label: masterMilestoneLabel, date: masterMilestoneDate, color: getRandomHexColor() };
+                        setMasterMilestones(prev => [...prev, m]);
+                        setMasterMilestoneLabel(''); setMasterMilestoneDate('');
+                      }} className="px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700">추가</button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {masterMilestones.map(m => (
+                        <span key={m.id} className="px-2 py-1 rounded border border-gray-200 bg-gray-50 text-xs flex items-center gap-2">
+                          <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: m.color }}></span>
+                          <span className="font-bold text-gray-800">{m.label}</span>
+                          <span className="text-gray-500">{m.date}</span>
+                          <button onClick={() => setMasterMilestones(prev => prev.filter(x => x.id !== m.id))} className="text-gray-400 hover:text-red-500">×</button>
+                        </span>
+                      ))}
                     </div>
                 </div>
 
@@ -1195,10 +1316,25 @@ export default function ResourceGanttChart() {
               <Plus className="w-4 h-4" />
             </button>
           </div>
+          <div className="md:col-span-3">
+            <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Color</label>
+            <div className="flex items-center gap-2">
+              <input type="color" value={projectCustomColor} onChange={(e) => setProjectCustomColor(e.target.value)} className="w-12 h-10 border border-gray-300 rounded cursor-pointer" />
+              <div className="h-10 flex items-center border border-gray-300 rounded px-3 bg-white flex-1 text-sm text-gray-700">
+                <span className="mr-2 text-gray-400">HEX</span>
+                <input type="text" value={projectCustomColor} onChange={(e) => setProjectCustomColor(e.target.value)} className="flex-1 bg-transparent outline-none" />
+                <button type="button" onClick={() => setProjectCustomColor(getRandomHexColor())} className="text-xs font-bold text-indigo-600 hover:underline ml-2">랜덤</button>
+              </div>
+            </div>
+          </div>
           <div className="md:col-span-5">
             <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Project Document (URL)</label>
             <div className="h-10 flex items-center border border-gray-300 rounded px-3 bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all">
                 <input type="url" value={projectDocUrl} onChange={e => setProjectDocUrl(e.target.value)} placeholder="공유 문서 링크 붙여넣기" className="w-full bg-transparent outline-none text-sm text-gray-900" />
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              <input type="file" accept="application/pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePdfUpload(f, setProjectDocUrl, setProjectDocName); }} className="text-xs" />
+              {projectDocName && <span className="text-xs text-gray-600">첨부됨: {projectDocName}</span>}
             </div>
           </div>
           <div className="md:col-span-2 flex items-center gap-2">
@@ -1207,14 +1343,44 @@ export default function ResourceGanttChart() {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+          <div className="md:col-span-6">
+            <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">메모</label>
+            <textarea value={projectNotes} onChange={(e) => setProjectNotes(e.target.value)} className="w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:ring-1 focus:ring-indigo-500 outline-none min-h-[80px]" placeholder="프로젝트 메모를 적어주세요" />
+          </div>
+          <div className="md:col-span-6">
+            <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">중요 일정 추가 (시사일/PPM 등)</label>
+            <div className="flex flex-wrap gap-2 items-center">
+              <input type="text" value={projectMilestoneLabel} onChange={(e) => setProjectMilestoneLabel(e.target.value)} placeholder="이벤트 이름" className="flex-1 min-w-[140px] border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none" />
+              <input type="date" value={projectMilestoneDate} onChange={(e) => setProjectMilestoneDate(e.target.value)} className="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none" />
+              <button type="button" onClick={() => {
+                if (!projectMilestoneLabel || !projectMilestoneDate) return;
+                const newMilestone: Milestone = { id: `${Date.now()}`, label: projectMilestoneLabel, date: projectMilestoneDate, color: getRandomHexColor() };
+                setProjectMilestones(prev => [...prev, newMilestone]);
+                setProjectMilestoneLabel(''); setProjectMilestoneDate('');
+              }} className="px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700">추가</button>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {projectMilestones.map(m => (
+                <span key={m.id} className="px-2 py-1 rounded border border-gray-200 bg-gray-50 text-xs flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: m.color }}></span>
+                  <span className="font-bold text-gray-800">{m.label}</span>
+                  <span className="text-gray-500">{m.date}</span>
+                  <button onClick={() => setProjectMilestones(prev => prev.filter(x => x.id !== m.id))} className="text-gray-400 hover:text-red-500">×</button>
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Dashboard Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 w-full h-[180px]">
-            <div className="lg:col-span-4 bg-white p-4 rounded-xl shadow-sm border border-orange-100 flex flex-col h-full overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 w-full">
+            <div className="lg:col-span-4 bg-white p-5 rounded-xl shadow-sm border border-orange-100 flex flex-col">
                 <h2 className="text-xs font-bold text-gray-800 mb-3 uppercase tracking-wider flex items-center gap-2 flex-shrink-0">
                     <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span> Today&apos;s Active
                     <span className="text-[10px] font-normal text-gray-400 ml-auto">{todayDate.toLocaleDateString()}</span>
                 </h2>
-                <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar">
+                <div className="space-y-2">
                     {activeProjectGroups.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-gray-400 text-xs">
                             <Clock className="w-4 h-4 mb-1 opacity-50"/>
@@ -1224,6 +1390,7 @@ export default function ResourceGanttChart() {
                       activeProjectGroups.map(group => {
                         const colorSet = getColorSet(group);
                         const memberLabel = group.members.map(m => `${m.person} (${m.team})`).join(', ');
+                        const nextMilestone = (group.milestones || []).map(m => ({ ...m, time: parseDate(m.date).getTime() })).filter(m => m.time >= parseDate(formatDate(todayDate)).getTime()).sort((a, b) => a.time - b.time)[0];
                         return (
                           <div key={group.name} className="flex justify-between items-start text-xs p-2 bg-orange-50/60 rounded border border-orange-100 hover:bg-orange-50 transition-colors gap-3">
                             <div className="flex-1">
@@ -1232,6 +1399,12 @@ export default function ResourceGanttChart() {
                                   <span className="font-semibold text-gray-800 truncate">{group.name}</span>
                                   {group.isTentative && <span className="text-[10px] text-amber-600 font-bold bg-white px-1 rounded border border-amber-200">미확정</span>}
                                 </div>
+                                {nextMilestone && (
+                                  <div className="mt-1 text-[11px] font-bold text-rose-600 flex items-center gap-1">
+                                    <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: nextMilestone.color || '#ef4444' }}></span>
+                                    {nextMilestone.label} · {nextMilestone.date}
+                                  </div>
+                                )}
                                 <div className="text-[10px] text-gray-500 mt-1 leading-snug break-words">{memberLabel}</div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -1245,11 +1418,11 @@ export default function ResourceGanttChart() {
                 </div>
             </div>
 
-            <div className="lg:col-span-8 bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col h-full overflow-hidden">
+            <div className="lg:col-span-8 bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col">
                 <h2 className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider flex items-center gap-2 flex-shrink-0">
                     <Target className="w-3.5 h-3.5"/> All Projects <span className="text-[10px] font-normal text-gray-400 lowercase">(click to jump)</span>
                 </h2>
-                <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+                <div className="pr-1">
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                         {groupedProjects.map((group) => (
                             <div key={group.id || group.name} onClick={() => handleShortcutClick(group)} 
@@ -1259,13 +1432,19 @@ export default function ResourceGanttChart() {
                                     ${recentlyAddedProject === group.name ? 'ring-2 ring-emerald-200 border-emerald-300 animate-pulse' : ''}
                                 `}
                             >
-                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${BAR_COLORS[group.colorIdx % BAR_COLORS.length].bar}`}></div>
+                                {(() => { const colorSet = getColorSet(group); return <div className={`absolute left-0 top-0 bottom-0 w-1 ${colorSet.barClass || ''}`} style={{ backgroundColor: colorSet.barColor }}></div>; })()}
                                 <div className="pl-2">
                                     <div className="text-xs font-bold text-gray-800 truncate mb-1" title={group.name}>{group.name}</div>
                                     <div className="flex flex-wrap gap-1">
                                         {group.members.slice(0, 2).map((m, i) => <span key={i} className="text-[9px] text-gray-500 bg-gray-100 px-1 rounded border border-gray-200">{m.person}</span>)}
                                         {group.members.length > 2 && <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1 rounded border border-indigo-100">+{group.members.length - 2}</span>}
                                     </div>
+                                    {(group.milestones?.length || 0) > 0 && (
+                                      <div className="text-[10px] text-rose-600 font-bold mt-1 flex items-center gap-1">
+                                        <span className="inline-block w-2 h-2 rounded-full bg-rose-500"></span>
+                                        주요 일정 {group.milestones?.length}건
+                                      </div>
+                                    )}
                                 </div>
                                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100" onClick={(e) => { e.stopPropagation(); handleProjectClick(group); }}>
                                     <div className="bg-white p-1 rounded border border-gray-200 text-gray-400 hover:text-indigo-600 shadow-sm">
@@ -1363,8 +1542,8 @@ export default function ResourceGanttChart() {
       </div>
 
       {/* --- Main Gantt Table (Scrollable) --- */}
-      <div className="flex-1 overflow-hidden rounded-xl shadow-sm bg-white border border-gray-200 flex flex-col w-full relative mx-4 md:mx-6 mb-6" ref={chartContainerRef}>
-        <div className="overflow-auto flex-1 custom-scrollbar">
+      <div className="rounded-xl shadow-sm bg-white border border-gray-200 flex flex-col w-full relative mx-4 md:mx-6 mb-10 overflow-x-auto" ref={chartContainerRef}>
+        <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full border-collapse min-w-[4000px]"> 
             <thead className="sticky top-0 z-50 bg-white shadow-sm">
               <tr>
@@ -1416,6 +1595,7 @@ export default function ResourceGanttChart() {
                                         </div>
                                         
                                         {packed.map(proj => {
+                                            if (timeline.length === 0 || chartTotalDays <= 0) return null;
                                             const style = getProjectStyle(proj);
                                             if(!style) return null;
                                             const isDimmed = hoveredProjectName && hoveredProjectName !== proj.name;
@@ -1428,6 +1608,17 @@ export default function ResourceGanttChart() {
                                               borderColor: colorSet.customBorder,
                                               color: colorSet.customText,
                                             } as React.CSSProperties;
+                                            const chartStart = parseDate(formatDate(timeline[0].start));
+                                            const chartEnd = parseDate(formatDate(timeline[timeline.length - 1].end));
+                                            const pStart = parseDate(proj.start);
+                                            const pEnd = parseDate(proj.end);
+                                            const displayStart = pStart < chartStart ? chartStart : pStart;
+                                            const displayEnd = pEnd > chartEnd ? chartEnd : pEnd;
+                                            const durationDays = getDaysDiff(displayStart, displayEnd) + 1;
+                                            const visibleMilestones = durationDays > 0 ? (proj.milestones || []).filter(m => {
+                                              const d = parseDate(m.date);
+                                              return d >= displayStart && d <= displayEnd;
+                                            }) : [];
 
                                             return (
                                                 <div 
@@ -1454,10 +1645,22 @@ export default function ResourceGanttChart() {
                                                         rel="noreferrer" 
                                                         className="ml-1 text-[10px] text-indigo-600 hover:underline flex items-center gap-0.5"
                                                         onClick={(e) => e.stopPropagation()}
+                                                        download={proj.docName || undefined}
                                                       >
                                                         <Paperclip className="w-3 h-3" /> 문서
                                                       </a>
                                                     )}
+                                                    {visibleMilestones.map((m) => {
+                                                      const d = parseDate(m.date);
+                                                      const offset = getDaysDiff(displayStart, d);
+                                                      const leftPercent = (offset / durationDays) * 100;
+                                                      const widthPercent = Math.max(2, 100 / durationDays);
+                                                      return (
+                                                        <div key={m.id} className="absolute top-0 bottom-0 pointer-events-none flex items-stretch" style={{ left: `${leftPercent}%`, width: `${widthPercent}%` }}>
+                                                          <div className="w-full h-full opacity-80" style={{ backgroundColor: m.color || getRandomHexColor() }} title={`${m.label} (${m.date})`}></div>
+                                                        </div>
+                                                      );
+                                                    })}
                                                 </div>
                                             )
                                         })}
