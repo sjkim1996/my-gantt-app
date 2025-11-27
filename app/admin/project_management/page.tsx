@@ -479,6 +479,7 @@ export default function ResourceGanttChart() {
     const newArr = [...selectedAssignees]; newArr.splice(idx, 1); setSelectedAssignees(newArr);
   };
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if ((e.nativeEvent as any).isComposing) return;
     if (e.key === 'Backspace' && assigneeInput === '' && selectedAssignees.length > 0) { removeAssignee(selectedAssignees.length - 1); return; }
     if (e.key === 'Enter' && assigneeInput.trim()) {
       e.preventDefault();
@@ -675,6 +676,7 @@ export default function ResourceGanttChart() {
   const addMemberToTeam = (teamIdx: number) => { const name = prompt("이름:"); if (name) { const n = [...editingTeams]; n[teamIdx].members.push(name); setEditingTeams(n); } };
   const removeMember = (tIdx: number, mIdx: number) => { const n = [...editingTeams]; n[tIdx].members.splice(mIdx, 1); setEditingTeams(n); };
   const handleModalInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if ((e.nativeEvent as any).isComposing) return;
     if (e.key === 'Enter' && modalAssigneeInput.trim()) { e.preventDefault(); if (modalSuggestions.length === 1) { addMemberInModal(modalSuggestions[0]); return; } const exact = allMembers.filter(m => m.name === modalAssigneeInput.trim()); if (exact.length === 1) { addMemberInModal(exact[0]); return; } let newName = modalAssigneeInput.trim(); let newTeam = '미배정'; if (newName.includes('-')) { const parts = newName.split('-'); newTeam = parts[0].trim(); newName = parts[1].trim(); } addMemberInModal({ name: newName, team: newTeam, isNew: true }); }
   };
   useEffect(() => { if (isModalOpen) setDeleteConfirmMode(false); }, [isModalOpen]);
@@ -898,7 +900,7 @@ export default function ResourceGanttChart() {
                     <input type="date" value={projectEnd} onChange={e => setProjectEnd(e.target.value)} className="w-full bg-transparent outline-none text-sm text-gray-700"/>
                 </div>
             </div>
-            <button onClick={handleAddProject} className="h-10 px-4 bg-indigo-600 text-white rounded flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-sm flex-shrink-0 text-sm font-bold">
+            <button onClick={handleAddProject} className="h-10 px-4 bg-indigo-600 text-white rounded flex items-center justify-center gap-2 hover:bg-indigo-700 active:opacity-70 active:scale-95 transition-all shadow-sm flex-shrink-0 text-sm font-bold">
               <Plus className="w-4 h-4" />
             </button>
           </div>
@@ -947,7 +949,7 @@ export default function ResourceGanttChart() {
                         {groupedProjects.map((group) => (
                             <div key={group.id} onClick={() => handleShortcutClick(group)} 
                                 className={`
-                                    group cursor-pointer p-2.5 rounded border border-gray-200 bg-white shadow-sm hover:shadow transition-all relative overflow-hidden hover:border-indigo-300 hover:-translate-y-0.5 min-h-[70px] flex flex-col justify-between
+                                    group cursor-pointer p-2.5 rounded border border-gray-200 bg-white shadow-sm hover:shadow active:opacity-70 active:scale-95 transition-all relative overflow-hidden hover:border-indigo-300 hover:-translate-y-0.5 min-h-[70px] flex flex-col justify-between
                                     ${hoveredProjectName === group.name ? 'ring-2 ring-indigo-100 border-indigo-300' : ''}
                                     ${recentlyAddedProject === group.name ? 'ring-2 ring-emerald-200 border-emerald-300 animate-pulse' : ''}
                                 `}
@@ -1052,7 +1054,7 @@ export default function ResourceGanttChart() {
                                                         absolute h-7 rounded shadow-sm cursor-pointer flex items-center px-2 z-20 transition-all duration-200 border
                                                         ${colorSet.bg} ${colorSet.border}
                                                         ${isDimmed ? 'opacity-20 grayscale' : 'opacity-100 hover:shadow-md'}
-                                                        ${isHighlighted ? 'ring-2 ring-indigo-400 ring-offset-1 scale-[1.01] z-30' : ''}
+                                                        ${isHighlighted ? 'ring-2 ring-indigo-400 ring-offset-1 scale-[1.01] z-30' : 'active:opacity-70'}
                                                     `}
                                                 >
                                                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${colorSet.bar}`}></div>
