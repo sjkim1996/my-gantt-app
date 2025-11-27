@@ -197,8 +197,8 @@ const getColorSet = (proj: Project | GroupedProject | (Project & { row: number }
 };
 
 const DEFAULT_TEAMS: Team[] = [
-  { id: 't1', name: '기획팀', members: ['김철수', '이영희', '최기획'] },
-  { id: 't2', name: '개발팀', members: ['박지성', '손흥민', '김철수', '차범근'] },
+  { id: 't1', name: '기획팀', members: ['이영희', '최기획'] },
+  { id: 't2', name: '개발팀', members: ['박지성', '손흥민', '차범근'] },
   { id: 't3', name: '디자인팀', members: ['홍길동', '신사임당'] },
 ];
 
@@ -225,7 +225,7 @@ const dedupeProjects = (list: Project[]) => {
 };
 
 const MOCK_PROJECTS_2025: Project[] = [
-  { id: 1, name: '2025 웹사이트 리뉴얼', person: '김철수', team: '기획팀', start: '2025-01-05', end: '2025-02-20', colorIdx: 0, docUrl: 'https://example.com', isTentative: false },
+  { id: 1, name: '2025 웹사이트 리뉴얼', person: '이영희', team: '기획팀', start: '2025-01-05', end: '2025-02-20', colorIdx: 0, docUrl: 'https://example.com', isTentative: false },
   { id: 2, name: '2025 웹사이트 리뉴얼', person: '박지성', team: '개발팀', start: '2025-01-05', end: '2025-02-20', colorIdx: 0, docUrl: 'https://example.com', isTentative: false },
   { id: 3, name: '2025 웹사이트 리뉴얼', person: '홍길동', team: '디자인팀', start: '2025-01-10', end: '2025-02-10', colorIdx: 0, docUrl: 'https://example.com', isTentative: false },
   { id: 4, name: '모바일 앱 기획', person: '이영희', team: '기획팀', start: '2025-02-01', end: '2025-03-15', colorIdx: 1, isTentative: true },
@@ -292,9 +292,12 @@ export default function ResourceGanttChart() {
   const [projectDocUrl, setProjectDocUrl] = useState('');
   const [projectDocName, setProjectDocName] = useState('');
   const [projectTentative, setProjectTentative] = useState(false);
-  const [projectCustomColor, setProjectCustomColor] = useState('');
+  const [projectCustomColor, setProjectCustomColor] = useState(getRandomHexColor());
   const [projectNotes, setProjectNotes] = useState('');
-  const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([{ name: '김철수', team: '기획팀' }]);
+  const [projectMilestones, setProjectMilestones] = useState<Milestone[]>([]);
+  const [projectMilestoneLabel, setProjectMilestoneLabel] = useState('');
+  const [projectMilestoneDate, setProjectMilestoneDate] = useState('');
+  const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([]);
   const [assigneeInput, setAssigneeInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -533,15 +536,35 @@ export default function ResourceGanttChart() {
     return Array.from(map.values());
   }, [projects]);
 
+  const isEventComposing = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const native = e.nativeEvent as unknown as { isComposing?: boolean };
+    return Boolean(native?.isComposing);
+  };
+
   const addAssignee = (assignee: Assignee) => {
     const exists = selectedAssignees.find(a => a.name === assignee.name && a.team === assignee.team);
     if (!exists) setSelectedAssignees([...selectedAssignees, assignee]);
     setAssigneeInput(''); setShowSuggestions(false); inputRef.current?.focus();
   };
+  const addProjectMilestone = () => {
+    if (!projectMilestoneLabel || !projectMilestoneDate) return;
+    const m: Milestone = { id: `${Date.now()}`, label: projectMilestoneLabel, date: projectMilestoneDate, color: getRandomHexColor() };
+    setProjectMilestones(prev => [...prev, m]);
+    setProjectMilestoneLabel('');
+    setProjectMilestoneDate('');
+  };
+  const addMasterMilestone = () => {
+    if (!masterMilestoneLabel || !masterMilestoneDate) return;
+    const m: Milestone = { id: `${Date.now()}`, label: masterMilestoneLabel, date: masterMilestoneDate, color: getRandomHexColor() };
+    setMasterMilestones(prev => [...prev, m]);
+    setMasterMilestoneLabel('');
+    setMasterMilestoneDate('');
+  };
   const removeAssignee = (idx: number) => {
     const newArr = [...selectedAssignees]; newArr.splice(idx, 1); setSelectedAssignees(newArr);
   };
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (isEventComposing(e)) return;
     if (e.key === 'Backspace' && assigneeInput === '' && selectedAssignees.length > 0) { removeAssignee(selectedAssignees.length - 1); return; }
     if (e.key === 'Enter' && assigneeInput.trim()) {
       e.preventDefault();
@@ -633,6 +656,8 @@ export default function ResourceGanttChart() {
     setMasterTentative(Boolean(project.isTentative));
     setMasterNotes(project.notes || '');
     setMasterMilestones(project.milestones ? mergeMilestones(project.milestones, []) : []);
+    setMasterMilestoneLabel('');
+    setMasterMilestoneDate('');
     const members: EditingMember[] = relatedProjects.map(p => ({ 
         id: p.id,
         _id: typeof p._id === 'string' ? p._id : undefined,
@@ -765,6 +790,7 @@ export default function ResourceGanttChart() {
   const addMemberToTeam = (teamIdx: number) => { const name = prompt("이름:"); if (name) { const n = [...editingTeams]; n[teamIdx].members.push(name); setEditingTeams(n); } };
   const removeMember = (tIdx: number, mIdx: number) => { const n = [...editingTeams]; n[tIdx].members.splice(mIdx, 1); setEditingTeams(n); };
   const handleModalInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (isEventComposing(e)) return;
     if (e.key === 'Enter' && modalAssigneeInput.trim()) { e.preventDefault(); if (modalSuggestions.length === 1) { addMemberInModal(modalSuggestions[0]); return; } const exact = allMembers.filter(m => m.name === modalAssigneeInput.trim()); if (exact.length === 1) { addMemberInModal(exact[0]); return; } let newName = modalAssigneeInput.trim(); let newTeam = '미배정'; if (newName.includes('-')) { const parts = newName.split('-'); newTeam = parts[0].trim(); newName = parts[1].trim(); } addMemberInModal({ name: newName, team: newTeam, isNew: true }); }
   };
   useEffect(() => { if (isModalOpen) setDeleteConfirmMode(false); }, [isModalOpen]);
