@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock } from 'lucide-react';
+import { setLoginToken } from '@/lib/auth';
 
 export default function LoginPage() {
   const [id, setId] = useState('');
@@ -13,7 +14,7 @@ export default function LoginPage() {
     e.preventDefault();
     // 요청하신 아이디와 비밀번호
     if (id === 'capra_admin' && pw === 'capra0311!!') {
-      sessionStorage.setItem('isLoggedIn', 'true');
+      setLoginToken();
       // 로그인 성공 시 관리자 페이지로 이동
       router.push('/admin/project_management');
     } else {
