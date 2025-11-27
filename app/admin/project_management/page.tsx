@@ -1303,7 +1303,11 @@ export default function ResourceGanttChart() {
                                                 let curStart = effectiveStart;
                                                 milestonesInRange.forEach(m => {
                                                     const mDate = parseDate(m.date);
-                                                    segments.push({ start: curStart, end: mDate });
+                                                    const leftEnd = new Date(mDate);
+                                                    leftEnd.setDate(leftEnd.getDate() - 1);
+                                                    if (leftEnd >= curStart) {
+                                                      segments.push({ start: curStart, end: leftEnd });
+                                                    }
                                                     curStart = mDate;
                                                 });
                                                 if (curStart <= effectiveEnd) segments.push({ start: curStart, end: effectiveEnd });
@@ -1313,7 +1317,7 @@ export default function ResourceGanttChart() {
                                                 <div key={proj.id}>
                                                   {segments.map((seg, idx) => {
                                                     const segOffset = getDaysDiff(effectiveStart, seg.start);
-                                                    const segDuration = Math.max(1, getDaysDiff(seg.start, seg.end));
+                                                    const segDuration = Math.max(1, getDaysDiff(seg.start, seg.end) + 1);
                                                     const left = (segOffset / duration) * 100;
                                                     const width = (segDuration / duration) * 100;
                                                     return (
