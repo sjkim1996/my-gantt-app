@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation'; 
 import { Plus, Trash2, RefreshCw, Search, AlertCircle, Settings, X, Check, Target, Edit3, Clock, Briefcase, ChevronLeft, ChevronRight, LogOut, Flag } from 'lucide-react';
+import { handlePdfUpload } from '@/lib/pdfUpload';
 
 // --- 1. 타입 정의 ---
 interface Milestone {
@@ -380,13 +381,12 @@ export default function ResourceGanttChart() {
     fetchTeams();
   }, [router]);
 
+  const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
   useEffect(() => {
     if (viewMode === 'week') {
       setChartStartDate(prev => formatDate(getStartOfWeek(new Date(prev))));
     }
   }, [viewMode]);
-
-  const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
   const timeline = useMemo(() => viewMode === 'week'
     ? generateWeeks(chartStartDate, 52, todayDate)
     : generateDays(chartStartDate, 120, todayDate), [chartStartDate, todayDate, viewMode]);
