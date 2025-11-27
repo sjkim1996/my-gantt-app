@@ -1024,7 +1024,7 @@ export default function ResourceGanttChart() {
       )}
       
       {/* --- Header & Controls Area (Fixed at top) --- */}
-      <div className="flex-none space-y-6 mb-4 px-3 md:px-6 lg:px-8 pt-4 w-full max-w-[1600px] mx-auto">
+      <div className="flex-none space-y-6 mb-4 px-3 md:px-6 lg:px-8 pt-4 w-full max-w-[1400px] mx-auto">
         <div className="flex justify-between items-end">
             <div>
                 <h1 className="text-2xl font-bold text-gray-900 tracking-tight mb-1 flex items-center gap-2">
@@ -1226,9 +1226,9 @@ export default function ResourceGanttChart() {
       </div>
 
       {/* --- Main Gantt Table (Scrollable) --- */}
-      <div className="flex-1 rounded-xl shadow-sm bg-white border border-gray-200 flex flex-col w-full relative mx-auto max-w-[1600px] mb-10 overflow-x-auto" ref={chartContainerRef}>
+      <div className="flex-1 rounded-xl shadow-sm bg-white border border-gray-200 flex flex-col w-full relative mx-auto max-w-[1400px] mb-10 overflow-x-auto px-2 md:px-3" ref={chartContainerRef}>
         <div className="overflow-auto custom-scrollbar">
-          <table className="w-full border-collapse min-w-[1200px]"> 
+          <table className="w-full border-collapse min-w-[1100px]"> 
             <thead className="sticky top-0 z-50 bg-white shadow-sm">
               <tr>
                 <th className="sticky left-0 z-50 bg-gray-50 w-24 min-w-[96px] text-left py-3 pl-4 text-xs font-bold text-gray-500 uppercase border-b border-r border-gray-200">Team</th>
@@ -1286,6 +1286,7 @@ export default function ResourceGanttChart() {
                                             const effectiveStart = displayStart || projStart;
                                             const effectiveEnd = displayEnd || projEnd;
                                             const duration = Math.max(1, getDaysDiff(effectiveStart, effectiveEnd) + 1);
+                                            const barTitle = proj.notes ? `${proj.name} - 메모: ${proj.notes}` : proj.name;
 
                                             return (
                                                 <div 
@@ -1300,9 +1301,11 @@ export default function ResourceGanttChart() {
                                                         ${isHighlighted ? 'ring-2 ring-indigo-400 ring-offset-1 scale-[1.01] z-30' : ''}
                                                     `}
                                                     style={{ ...style, backgroundColor: colorSet.customBg, borderColor: colorSet.customBorder }}
+                                                    title={barTitle}
                                                 >
                                                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${colorSet.barClass || ''}`} style={{ backgroundColor: colorSet.barColor }}></div>
                                                     <span className={`text-[11px] font-bold truncate ml-1 ${colorSet.textClass || ''}`} style={{ color: colorSet.customText }}>{proj.name}</span>
+                                                    {proj.notes && <span className="ml-2 text-[10px] text-gray-700 bg-white/70 px-1 rounded border border-gray-200 truncate max-w-[160px]" title={proj.notes}>{proj.notes}</span>}
 
                                                     {/* Milestone Markers on Bar */}
                                                     {(proj.milestones || []).map(m => {
@@ -1312,8 +1315,8 @@ export default function ResourceGanttChart() {
                                                         const leftPos = (offset / duration) * 100;
                                                         return (
                                                             <div key={m.id} 
-                                                                 className="absolute top-1 bottom-1 w-1.5 rounded-sm z-40 hover:scale-125 transition-transform cursor-help"
-                                                                 style={{ left: `${leftPos}%`, backgroundColor: m.color || '#ef4444' }}
+                                                                 className="absolute top-1 bottom-1 rounded-sm z-40 hover:scale-110 transition-transform cursor-help"
+                                                                 style={{ left: `${leftPos}%`, width: `${viewMode === 'day' ? Math.max(100 / duration, 6) : Math.max(3, 100 / duration)}%`, minWidth: viewMode === 'day' ? '6px' : '3px', backgroundColor: m.color || '#ef4444' }}
                                                                  title={`${m.label} (${m.date})`}
                                                             />
                                                         )
