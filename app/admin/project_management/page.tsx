@@ -254,10 +254,16 @@ export default function ResourceGanttChart() {
           return;
         }
 
-        const loadedProjects = (data.data || []).map((p, idx) => ({
-          ...p,
-          id: p._id ?? p.id ?? `local-${idx}`,
-        }));
+        const loadedProjects = (data.data || []).map((p, idx) => {
+          const normalizedId = typeof p._id === 'string'
+            ? p._id
+            : p._id
+            ? String(p._id)
+            : typeof p.id === 'string'
+            ? p.id
+            : `local-${idx}`;
+          return { ...p, _id: normalizedId, id: normalizedId };
+        });
         setProjects(dedupeProjects(loadedProjects));
       } catch (error) {
         console.error('API Fetch failed (Preview Mode), using mock data.', error);
@@ -340,7 +346,7 @@ export default function ResourceGanttChart() {
 
   const apiDeleteProject = async (id: string) => {
     try {
-      await fetch(`/api/projects?id=${id}`, { method: 'DELETE' });
+      await fetch(`/api/projects?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
     } catch {
       // ignore
     }
@@ -424,10 +430,10 @@ export default function ResourceGanttChart() {
       // 1. 가로 스크롤 이동
       const chartStart = parseDate(chartStartDate);
       const diffDays = getDaysDiff(chartStart, date);
-      const offsetRatio = diffDays / chartTotalDays;
+      const offsetRatio = Math.max(0, Math.min(1, diffDays / chartTotalDays));
       const container = chartContainerRef.current!;
-      const scrollWidth = container.scrollWidth;
-      const scrollPos = Math.max(0, (scrollWidth * offsetRatio) - 300);
+      const scrollableWidth = Math.max(0, container.scrollWidth - container.clientWidth);
+      const scrollPos = Math.max(0, Math.min(scrollableWidth, scrollableWidth * offsetRatio - 300));
       container.scrollTo({ left: scrollPos, behavior: 'smooth' });
 
       // 2. 세로 스크롤 이동
@@ -533,10 +539,16 @@ export default function ResourceGanttChart() {
     
     const res = await apiCreateProject(newEntries);
     if (res.success && res.data) {
-        const normalized = res.data.map((p, idx) => ({
-          ...p,
-          id: p._id ?? p.id ?? `${Date.now()}-${idx}`,
-        }));
+        const normalized = res.data.map((p, idx) => {
+          const normalizedId = typeof p._id === 'string'
+            ? p._id
+            : p._id
+            ? String(p._id)
+            : typeof p.id === 'string'
+            ? p.id
+            : `${Date.now()}-${idx}`;
+          return { ...p, _id: normalizedId, id: normalizedId };
+        });
         setProjects(prev => dedupeProjects([...prev, ...normalized]));
         setProjectName(''); setSelectedAssignees([]);
         showBanner('프로젝트가 추가되었습니다.', 'success');
@@ -575,16 +587,19 @@ export default function ResourceGanttChart() {
   
   const handleSaveMasterProject = async () => {
     const deletedMembers = editingMembers.filter(m => m.isDeleted && !m.isNew);
-    for (const m of deletedMembers) { if(m._id) await apiDeleteProject(m._id); }
+    for (const m of deletedMembers) { 
+      const deleteId = m._id ?? (typeof m.id === 'string' ? m.id : undefined);
+      if(deleteId) await apiDeleteProject(deleteId); 
+    }
 
-    const newMembers = editingMembers.filter(m => m.isNew && !m.isDeleted);
+    const newMembers = editingMembers.filter(m => (m.isNew || !m._id) && !m.isDeleted);
     if (newMembers.length > 0) {
         await apiCreateProject(newMembers.map(m => ({
             name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx
         })));
     }
 
-    const updatedMembers = editingMembers.filter(m => !m.isNew && !m.isDeleted);
+    const updatedMembers = editingMembers.filter(m => !m.isNew && !m.isDeleted && m._id);
     for (const m of updatedMembers) {
         await apiUpdateProject({
             _id: m._id, name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx
@@ -596,7 +611,19 @@ export default function ResourceGanttChart() {
         const res = await fetch('/api/projects');
         if (res.ok) {
             const data = await res.json() as ApiResponse<ProjectPayload[]>;
-            if (data.success && data.data) { setProjects(dedupeProjects(data.data.map((p, idx) => ({ ...p, id: p._id ?? p.id ?? `reload-${idx}` })))); }
+            if (data.success && data.data) { 
+              const normalized = data.data.map((p, idx) => {
+                const normalizedId = typeof p._id === 'string'
+                  ? p._id
+                  : p._id
+                  ? String(p._id)
+                  : typeof p.id === 'string'
+                  ? p.id
+                  : `reload-${idx}`;
+                return { ...p, _id: normalizedId, id: normalizedId };
+              });
+              setProjects(dedupeProjects(normalized)); 
+            }
         }
     } catch {
       showBanner('프로젝트를 다시 불러오는데 실패했습니다.', 'error');
@@ -607,10 +634,24 @@ export default function ResourceGanttChart() {
   };
 
   const handleDeleteAll = async () => { 
-      const idsToDelete = editingMembers.filter(m => !m.isNew).map(m => m._id);
+      const idsToDelete = editingMembers
+        .filter(m => !m.isNew)
+        .map(m => {
+          if (typeof m._id === 'string') return m._id;
+          if (m._id) return String(m._id);
+          if (typeof m.id === 'string') return m.id;
+          return String(m.id);
+        })
+        .filter(Boolean);
+
       for (const id of idsToDelete) { if (id) await apiDeleteProject(id); }
-      // 로컬 업데이트
-      setProjects(prev => prev.filter(p => p._id && !idsToDelete.includes(p._id)));
+
+      // 로컬 업데이트: _id 또는 id 둘 다 비교
+      setProjects(prev => prev.filter(p => {
+        const key = p._id ?? (typeof p.id === 'string' ? p.id : String(p.id));
+        return !idsToDelete.includes(key);
+      }));
+
       setIsModalOpen(false); 
       showBanner('프로젝트가 삭제되었습니다.', 'info');
   };
