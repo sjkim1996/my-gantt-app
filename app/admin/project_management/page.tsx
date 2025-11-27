@@ -203,7 +203,7 @@ export default function ResourceGanttChart() {
   // 입력 폼 초기값도 2025년 기준 (오늘 날짜)
   const [projectStart, setProjectStart] = useState(formatDate(todayDate));
   const [projectEnd, setProjectEnd] = useState(formatDate(new Date(todayDate.getTime() + 86400000 * 30)));
-  const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([{ name: '김철수', team: '기획팀' }]);
+  const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([]);
   const [assigneeInput, setAssigneeInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -290,15 +290,6 @@ export default function ResourceGanttChart() {
   // 60주 렌더링 (약 1년치)
   const weeks = useMemo(() => generateWeeks(chartStartDate, 60, todayDate), [chartStartDate, todayDate]);
   const chartTotalDays = weeks.length * 7;
-
-  const activeProjectsToday = useMemo(() => {
-    const todayTime = todayDate.getTime();
-    return projects.filter(p => {
-        const s = parseDate(p.start).getTime();
-        const e = parseDate(p.end).getTime();
-        return todayTime >= s && todayTime <= e;
-    });
-  }, [projects, todayDate]);
 
   const allMembers = useMemo(() => {
     const list: Assignee[] = [];
@@ -463,6 +454,15 @@ export default function ResourceGanttChart() {
     });
     return Array.from(map.values());
   }, [projects]);
+
+  const activeProjectGroups = useMemo(() => {
+    const todayTime = parseDate(formatDate(todayDate)).getTime();
+    return groupedProjects.filter(g => {
+      const s = parseDate(g.start).getTime();
+      const e = parseDate(g.end).getTime();
+      return todayTime >= s && todayTime <= e;
+    });
+  }, [groupedProjects, todayDate]);
 
   const addAssignee = (assignee: Assignee) => {
     const exists = selectedAssignees.find(a => a.name === assignee.name && a.team === assignee.team);
@@ -665,7 +665,7 @@ export default function ResourceGanttChart() {
 
   return (
     <div
-      className={`flex flex-col h-screen bg-gray-50 font-sans relative text-gray-900 ${isModalOpen || isTeamModalOpen ? 'overflow-visible' : 'overflow-hidden'}`}
+      className={`flex flex-col h-screen bg-gray-50 font-sans relative text-gray-900 px-3 md:px-6 lg:px-8 ${isModalOpen || isTeamModalOpen ? 'overflow-visible' : 'overflow-hidden'}`}
       onClick={() => { setShowSuggestions(false); setModalShowSuggestions(false); }}
     >
       
@@ -838,6 +838,12 @@ export default function ResourceGanttChart() {
         )}
 
         {/* Input Row */}
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-gray-800">프로젝트 추가</span>
+            <span className="text-[11px] text-gray-400">새 프로젝트를 바로 등록하세요</span>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end bg-white p-5 rounded-xl shadow-sm border border-gray-200">
           <div className="md:col-span-3">
             <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Project Name</label>
@@ -877,7 +883,10 @@ export default function ResourceGanttChart() {
                     <input type="date" value={projectEnd} onChange={e => setProjectEnd(e.target.value)} className="w-full bg-transparent outline-none text-sm text-gray-700"/>
                 </div>
             </div>
-            <button onClick={handleAddProject} className="h-10 w-10 bg-indigo-600 text-white rounded flex items-center justify-center hover:bg-indigo-700 transition-all shadow-sm flex-shrink-0"><Plus className="w-5 h-5" /></button>
+            <button onClick={handleAddProject} className="h-10 px-4 bg-indigo-600 text-white rounded flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-sm flex-shrink-0 text-sm font-bold">
+              <Plus className="w-4 h-4" />
+              <span>프로젝트 추가</span>
+            </button>
           </div>
         </div>
 
@@ -889,17 +898,29 @@ export default function ResourceGanttChart() {
                     <span className="text-[10px] font-normal text-gray-400 ml-auto">{todayDate.toLocaleDateString()}</span>
                 </h2>
                 <div className="flex-1 overflow-y-auto pr-1 space-y-2 custom-scrollbar">
-                    {activeProjectsToday.length === 0 ? 
+                    {activeProjectGroups.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-gray-400 text-xs">
                             <Clock className="w-4 h-4 mb-1 opacity-50"/>
                             진행 중인 프로젝트가 없습니다.
                         </div> 
-                    : activeProjectsToday.map(p => (
-                        <div key={p.id} className="flex justify-between items-center text-xs p-2 bg-orange-50/50 rounded border border-orange-100 hover:bg-orange-50 transition-colors">
-                            <span className="font-medium text-gray-700 truncate max-w-[65%]">{p.name}</span>
-                            <span className="text-gray-500 bg-white px-1.5 py-0.5 rounded border border-orange-100 text-[10px]">{p.person}</span>
+                    ) : (
+                      activeProjectGroups.map(group => {
+                        const colorSet = BAR_COLORS[group.colorIdx % BAR_COLORS.length];
+                        const memberLabel = group.members.map(m => `${m.person} (${m.team})`).join(', ');
+                        return (
+                          <div key={group.name} className="flex justify-between items-start text-xs p-2 bg-orange-50/60 rounded border border-orange-100 hover:bg-orange-50 transition-colors gap-3">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className={`w-2 h-2 rounded-full ${colorSet.bar}`}></span>
+                                  <span className="font-semibold text-gray-800 truncate">{group.name}</span>
+                                </div>
+                                <div className="text-[10px] text-gray-500 mt-1 leading-snug break-words">{memberLabel}</div>
+                            </div>
+                            <span className="text-[10px] text-gray-500 bg-white px-2 py-0.5 rounded border border-orange-100">진행중</span>
                         </div>
-                    ))}
+                        );
+                      })
+                    )}
                 </div>
             </div>
 
