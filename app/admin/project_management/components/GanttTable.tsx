@@ -98,12 +98,14 @@ const GanttTable: React.FC<Props> = ({
                   const { packed, totalRows } = getPackedProjects(myProjects);
                   const memberVacations = (() => {
                     const map = new Map<string, { label: string; start: Date; end: Date; color: string }>();
-                    myProjects.forEach(p => (p.vacations || []).forEach(v => {
-                      const s = parseDate(v.start);
-                      const e = parseDate(v.end);
-                      const key = `${v.label || ''}-${v.start}-${v.end}`;
-                      if (!map.has(key)) map.set(key, { label: v.label || '', start: s, end: e, color: v.color || '#94a3b8' });
-                    }));
+                    projects
+                      .filter(p => p.person.toLowerCase() === member.toLowerCase())
+                      .forEach(p => (p.vacations || []).forEach(v => {
+                        const s = parseDate(v.start);
+                        const e = parseDate(v.end);
+                        const key = `${v.label || ''}-${v.start}-${v.end}`;
+                        if (!map.has(key)) map.set(key, { label: v.label || '', start: s, end: e, color: v.color || '#94a3b8' });
+                      }));
                     return Array.from(map.values());
                   })();
                   const hasNotes = myProjects.some(p => p.notes && p.notes.trim().length > 0);

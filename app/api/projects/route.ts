@@ -47,7 +47,9 @@ const sanitizeProject = (p?: IncomingProject | null) => {
         .map((m) => ({ ...m, color: m.color || '#ef4444' }))
     : [];
   const cleanVacations = Array.isArray(p.vacations)
-    ? p.vacations.filter((v) => v && v.person && isValidDate(v.start) && isValidDate(v.end) && new Date(v.start) <= new Date(v.end))
+    ? p.vacations
+        .filter((v) => v && v.person && isValidDate(v.start) && isValidDate(v.end) && new Date(v.start) <= new Date(v.end))
+        .map((v) => ({ ...v, team: v.team || '미배정', color: v.color || '#94a3b8' }))
     : [];
   return { ...p, milestones: cleanMilestones, vacations: cleanVacations };
 };

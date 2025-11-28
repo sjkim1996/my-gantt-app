@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Trash2 } from 'lucide-react';
 import { Vacation, Assignee } from '../types';
 import styles from '../styles/VacationModal.module.css';
 
@@ -41,10 +41,10 @@ const VacationModal: React.FC<Props> = ({
             <div className={styles.col3}>구성원명</div>
             <div className={styles.col3}>휴가 시작일</div>
             <div className={styles.col3}>휴가 종료일</div>
-            <div className={styles.col3}>비고</div>
+            <div className={styles.col3}>비고 / 삭제</div>
           </div>
           {vacations.map((v) => (
-            <div key={v.id} className="bg-gray-50 p-3 rounded border border-gray-100 space-y-2">
+            <div key={v.id} className="bg-gray-50 p-3 rounded border border-gray-100 space-y-2 shadow-sm">
               <div className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-3 relative">
                   <input
@@ -93,10 +93,10 @@ const VacationModal: React.FC<Props> = ({
                 />
                 <button
                   onClick={() => onRemove(v.id)}
-                  className="col-span-1 text-sm font-bold text-red-500 hover:text-red-600 border border-red-200 rounded px-2 py-1 transition"
+                  className="col-span-1 text-sm font-bold text-red-600 hover:text-red-700 border border-red-200 rounded px-2 py-2 transition flex items-center justify-center gap-1 bg-red-50"
                   aria-label="휴가 삭제"
                 >
-                  -
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
               <div className="grid grid-cols-12 gap-2 items-center">
