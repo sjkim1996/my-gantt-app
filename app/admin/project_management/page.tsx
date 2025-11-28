@@ -510,7 +510,7 @@ export default function ResourceGanttChart() {
           };
         });
         setProjects(prev => dedupeProjects([...prev, ...normalized]));
-        setProjectName(''); setSelectedAssignees([]); setProjectDocUrl(''); setProjectDocName(''); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([{ id: `${Date.now()}`, label: '', date: '', color: getRandomHexColor() }]); setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]); setVacationSearch(''); setShowVacationSuggestions(false);
+        setProjectName(''); setSelectedAssignees([]); setProjectDocUrl(''); setProjectDocName(''); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([{ id: `${Date.now()}`, label: '', date: '', color: getRandomHexColor() }]); setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
         showBanner('프로젝트가 추가되었습니다.', 'success');
         setRecentlyAddedProject(targetName);
         setHoveredProjectName(targetName);
