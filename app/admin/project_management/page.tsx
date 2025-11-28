@@ -14,6 +14,7 @@ import ProjectForm from './components/ProjectForm';
 import VacationModal from './components/VacationModal';
 import { Vacation } from './types';
 import pageStyles from './styles/Page.module.css';
+import { handlePdfUpload } from '@/lib/pdfUpload';
 
 // Auth Logic (Inlined for single-file stability)
 const hasValidLoginToken = () => {
@@ -834,6 +835,25 @@ export default function ResourceGanttChart() {
                         </div>
                         <button onClick={syncDatesToAll} className={pageStyles.syncButton}><RefreshCw className="w-3.5 h-3.5"/> 일정 동기화</button>
                     </div>
+                    <div className={pageStyles.docRow}>
+                      <div className="md:col-span-5">
+                        <label className={pageStyles.inputLabel}>문서 제목</label>
+                        <input value={masterDocName} onChange={(e) => setMasterDocName(e.target.value)} placeholder="파일명 또는 제목" className={pageStyles.docInput}/>
+                      </div>
+                      <div className="md:col-span-5">
+                        <label className={pageStyles.inputLabel}>문서 URL</label>
+                        <input value={masterDocUrl} onChange={(e) => setMasterDocUrl(e.target.value)} placeholder="URL 입력 (선택)" className={pageStyles.docInput}/>
+                      </div>
+                      <div className="md:col-span-2 flex items-end">
+                        <label className={pageStyles.docUpload}>
+                          PDF 업로드
+                          <input type="file" accept="application/pdf" className="hidden" onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) await handlePdfUpload(file, setMasterDocUrl, setMasterDocName);
+                          }}/>
+                        </label>
+                      </div>
+                    </div>
                 </div>
 
                 {/* 2. Notes & Milestones */}
@@ -983,6 +1003,10 @@ export default function ResourceGanttChart() {
           handleAddProject={handleAddProject}
           projectNotes={projectNotes}
           setProjectNotes={setProjectNotes}
+          projectDocUrl={projectDocUrl}
+          setProjectDocUrl={setProjectDocUrl}
+          projectDocName={projectDocName}
+          setProjectDocName={setProjectDocName}
           projectMilestones={projectMilestones}
           addProjectMilestone={addProjectMilestone}
           updateProjectMilestone={updateProjectMilestone}

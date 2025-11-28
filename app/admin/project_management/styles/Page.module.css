@@ -138,7 +138,7 @@
 }
 
 .editModal {
-  @apply bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] border border-indigo-100;
+  @apply bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] border border-indigo-100;
 }
 
 .editHeader {
@@ -223,6 +223,18 @@
 
 .syncButton {
   @apply px-3 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded hover:bg-indigo-100 text-xs font-bold flex items-center gap-1.5 h-[38px] transition-colors;
+}
+
+.docRow {
+  @apply grid grid-cols-1 md:grid-cols-12 gap-3 items-end mt-3;
+}
+
+.docInput {
+  @apply w-full p-2 border border-gray-300 rounded bg-white text-sm text-gray-700 focus:border-indigo-500 outline-none transition-all;
+}
+
+.docUpload {
+  @apply px-3 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-bold text-center cursor-pointer hover:bg-indigo-100;
 }
 
 .textarea {
