@@ -1,6 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { Vacation } from '../types';
+import { useState } from 'react';
+import { Vacation, Assignee } from '../types';
 import styles from '../styles/VacationModal.module.css';
 
 type Props = {
@@ -10,12 +11,8 @@ type Props = {
   onChange: (id: string, field: 'person' | 'team' | 'label' | 'start' | 'end', value: string) => void;
   onAdd: () => void;
   onRemove: (id: string) => void;
-  onSave: () => void;
-  searchValue: string;
-  onSearchChange: (v: string) => void;
-  suggestions: { name: string; team: string }[];
-  onSelectSuggestion: (a: { name: string; team: string }) => void;
-  onSearchFocus: () => void;
+  onSave: (v: Vacation[]) => void;
+  allAssignees: Assignee[];
 };
 
 const VacationModal: React.FC<Props> = ({
@@ -26,12 +23,10 @@ const VacationModal: React.FC<Props> = ({
   onAdd,
   onRemove,
   onSave,
-  searchValue,
-  onSearchChange,
-  suggestions,
-  onSelectSuggestion,
-  onSearchFocus,
+  allAssignees,
 }) => {
+  const [openSuggestId, setOpenSuggestId] = useState<string | null>(null);
+
   if (!isOpen) return null;
   return (
     <div className={styles.overlay}>
@@ -43,34 +38,6 @@ const VacationModal: React.FC<Props> = ({
           </button>
         </div>
         <div className={styles.body}>
-          <div className="relative mb-3">
-            <div className="flex items-center gap-2 border border-gray-300 rounded p-2 bg-white focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-colors">
-              <input
-                type="text"
-                value={searchValue}
-                onChange={(e) => onSearchChange(e.target.value)}
-                onFocus={onSearchFocus}
-                placeholder="구성원 검색 후 선택"
-                className="flex-1 bg-transparent outline-none text-sm placeholder-gray-400 text-gray-900"
-              />
-            </div>
-            {searchValue && suggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg py-1 z-[95] max-h-48 overflow-y-auto">
-                {suggestions.map((s, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => onSelectSuggestion({ name: s.name, team: s.team })}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex justify-between items-center transition-colors"
-                  >
-                    <span className="font-bold text-gray-700">{s.name}</span>
-                    <span className="text-gray-400 text-xs">{s.team}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <p className="text-xs text-gray-500 mb-2">검색에서 선택하면 새 휴가 행이 추가되며, 직접 입력도 가능합니다.</p>
-
           <div className={styles.gridHeader}>
             <div className={styles.col3}>구성원명</div>
             <div className={styles.col3}>휴가 시작일</div>
@@ -80,12 +47,39 @@ const VacationModal: React.FC<Props> = ({
           {vacations.map((v) => (
             <div key={v.id} className="bg-gray-50 p-3 rounded border border-gray-100 space-y-2">
               <div className="grid grid-cols-12 gap-2 items-center">
-                <input
-                  className={`${styles.input} col-span-3`}
-                  value={v.person}
-                  onChange={(e) => onChange(v.id, 'person', e.target.value)}
-                  placeholder="이름"
-                />
+                <div className="col-span-3 relative">
+                  <input
+                    className={`${styles.input} w-full`}
+                    value={v.person}
+                    onFocus={() => setOpenSuggestId(v.id)}
+                    onChange={(e) => {
+                      onChange(v.id, 'person', e.target.value);
+                      setOpenSuggestId(v.id);
+                    }}
+                    placeholder="이름"
+                  />
+                  {openSuggestId === v.id && v.person && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded shadow-lg py-1 z-[95] max-h-40 overflow-y-auto">
+                      {allAssignees
+                        .filter((s) => s.name.toLowerCase().includes(v.person.toLowerCase()))
+                        .slice(0, 8)
+                        .map((s, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              onChange(v.id, 'person', s.name);
+                              onChange(v.id, 'team', s.team);
+                              setOpenSuggestId(null);
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex justify-between items-center transition-colors"
+                          >
+                            <span className="font-bold text-gray-700">{s.name}</span>
+                            <span className="text-gray-400 text-xs">{s.team}</span>
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
                 <input
                   type="date"
                   className={`${styles.input} col-span-3`}
@@ -119,7 +113,7 @@ const VacationModal: React.FC<Props> = ({
         </div>
         <div className={styles.footer}>
           <button onClick={onClose} className={styles.cancel}>취소</button>
-          <button onClick={onSave} className={styles.save}>저장</button>
+          <button onClick={() => onSave(vacations)} className={styles.save}>저장</button>
         </div>
       </div>
     </div>

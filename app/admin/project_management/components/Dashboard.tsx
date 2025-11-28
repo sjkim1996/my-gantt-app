@@ -105,17 +105,18 @@ const Dashboard: React.FC<Props> = ({
                     )}
                   </div>
                 </div>
-                <div
+                <button
                   className={styles.editButton}
                   onClick={(e) => {
                     e.stopPropagation();
                     onProjectClick(group);
                   }}
+                  aria-label="프로젝트 수정"
                 >
                   <div className={styles.editButtonInner}>
                     <Edit3 className="w-3 h-3" />
                   </div>
-                </div>
+                </button>
               </div>
             ))}
             {groupedProjects.length === 0 && (

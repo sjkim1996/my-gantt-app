@@ -19,17 +19,53 @@ export async function GET() {
   }
 }
 
+const isValidDate = (d?: string) => !!d && !isNaN(Date.parse(d));
+type IncomingProject = {
+  _id?: string;
+  id?: string | number;
+  name: string;
+  person: string;
+  team: string;
+  start: string;
+  end: string;
+  colorIdx?: number;
+  docUrl?: string;
+  docName?: string;
+  isTentative?: boolean;
+  customColor?: string;
+  notes?: string;
+  milestones?: { id: string; label: string; date: string; color?: string }[];
+  vacations?: { id: string; person: string; team?: string; label?: string; start: string; end: string; color?: string }[];
+};
+
+const sanitizeProject = (p?: IncomingProject | null) => {
+  if (!p || !p.name || !p.person || !p.team || !isValidDate(p.start) || !isValidDate(p.end)) return null;
+  if (new Date(p.start) > new Date(p.end)) return null;
+  const cleanMilestones = Array.isArray(p.milestones)
+    ? p.milestones
+        .filter((m) => m && m.label && isValidDate(m.date))
+        .map((m) => ({ ...m, color: m.color || '#ef4444' }))
+    : [];
+  const cleanVacations = Array.isArray(p.vacations)
+    ? p.vacations.filter((v) => v && v.person && isValidDate(v.start) && isValidDate(v.end) && new Date(v.start) <= new Date(v.end))
+    : [];
+  return { ...p, milestones: cleanMilestones, vacations: cleanVacations };
+};
+
 // [POST] 프로젝트 추가하기
 export async function POST(req: Request) {
   try {
     await dbConnect();
     const body = await req.json();
-    // 배열이면 여러 개 추가, 객체면 하나 추가
     if (Array.isArray(body)) {
-      const projects = await Project.insertMany(body);
+      const sanitized = body.map(sanitizeProject).filter(Boolean);
+      if (!sanitized.length) return NextResponse.json({ success: false, error: '유효한 프로젝트 데이터가 없습니다.' }, { status: 400 });
+      const projects = await Project.insertMany(sanitized);
       return NextResponse.json({ success: true, data: projects });
     } else {
-      const project = await Project.create(body);
+      const sanitized = sanitizeProject(body);
+      if (!sanitized) return NextResponse.json({ success: false, error: '필수 필드 또는 날짜가 잘못되었습니다.' }, { status: 400 });
+      const project = await Project.create(sanitized);
       return NextResponse.json({ success: true, data: project });
     }
   } catch (error) {
@@ -43,8 +79,9 @@ export async function PUT(req: Request) {
   try {
     await dbConnect();
     const body = await req.json();
-    // _id를 기준으로 찾아서 업데이트
-    const project = await Project.findByIdAndUpdate(body._id, body, {
+    const sanitized = sanitizeProject(body);
+    if (!sanitized || !body._id) return NextResponse.json({ success: false, error: '필수 필드 또는 날짜가 잘못되었습니다.' }, { status: 400 });
+    const project = await Project.findByIdAndUpdate(body._id, sanitized, {
       new: true,
       runValidators: true,
     });

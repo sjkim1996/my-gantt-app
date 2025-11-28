@@ -100,8 +100,7 @@ export default function ResourceGanttChart() {
   const [projectNotes, setProjectNotes] = useState('');
   const [projectMilestones, setProjectMilestones] = useState<Milestone[]>([{ id: 'init-m1', label: '', date: '', color: getRandomHexColor() }]);
   const [projectVacations, setProjectVacations] = useState<Vacation[]>([{ id: 'init-v1', person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
-  const [vacationSearch, setVacationSearch] = useState('');
-  const [showVacationSuggestions, setShowVacationSuggestions] = useState(false);
+  const [vacationFromEdit, setVacationFromEdit] = useState(false);
   const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([]);
   const [assigneeInput, setAssigneeInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -414,6 +413,12 @@ export default function ResourceGanttChart() {
   };
   const removeProjectVacation = (id: string) => {
     setProjectVacations(prev => prev.filter(v => v.id !== id));
+  };
+  const distributeVacationsToMembers = (vacs: Vacation[]) => {
+    setEditingMembers(prev => prev.map(m => {
+      const matched = vacs.filter(v => (v.person || '').toLowerCase() === m.person.toLowerCase() && (v.team || '').toLowerCase() === m.team.toLowerCase());
+      return { ...m, vacations: matched.length ? matched : m.vacations || [] };
+    }));
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -888,10 +893,15 @@ export default function ResourceGanttChart() {
                   </div>
                 </div>
 
-                <div className={pageStyles.cardTight}>
+        <div className={pageStyles.cardTight}>
                   <div className={pageStyles.vacationHeader}>
                     <h4 className={pageStyles.subTitle}>구성원 휴가</h4>
-                    <button onClick={() => setIsVacationModalOpen(true)} className={pageStyles.vacationButton}>휴가 입력</button>
+                    <button onClick={() => {
+                      const combined = editingMembers.flatMap(m => (m.vacations || []).map(v => ({ ...v, person: v.person || m.person, team: v.team || m.team })));
+                      setProjectVacations(combined.length ? combined : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
+                      setVacationFromEdit(true);
+                      setIsVacationModalOpen(true);
+                    }} className={pageStyles.vacationButton}>휴가 입력</button>
                   </div>
                   {editingMembers.some(m => m.vacations && m.vacations.length) ? (
                     <div className={pageStyles.vacationList}>
@@ -1023,16 +1033,12 @@ export default function ResourceGanttChart() {
           onChange={updateProjectVacation}
           onAdd={addProjectVacation}
           onRemove={removeProjectVacation}
-          onSave={() => setIsVacationModalOpen(false)}
-          searchValue={vacationSearch}
-          onSearchChange={(v) => { setVacationSearch(v); setShowVacationSuggestions(true); }}
-          suggestions={showVacationSuggestions && vacationSearch ? mainSuggestions : []}
-          onSelectSuggestion={(a) => {
-            setProjectVacations(prev => [...prev, { id: `${Date.now()}`, person: a.name, team: a.team, label: '', start: '', end: '', color: '#94a3b8' }]);
-            setVacationSearch('');
-            setShowVacationSuggestions(false);
+          onSave={(vacs) => {
+            setProjectVacations(vacs);
+            if (vacationFromEdit) distributeVacationsToMembers(vacs);
+            setIsVacationModalOpen(false);
           }}
-          onSearchFocus={() => setShowVacationSuggestions(true)}
+          allAssignees={allMembers}
         />
 
         {/* Dashboard Grid */}
