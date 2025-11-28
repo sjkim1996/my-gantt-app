@@ -97,7 +97,7 @@
 }
 
 .vacation {
-  @apply absolute h-3 rounded bg-slate-200/70 border border-slate-300/80 z-10;
+  @apply absolute h-3 rounded bg-slate-700 border border-slate-800 z-50;
 }
 
 .projectBlock {

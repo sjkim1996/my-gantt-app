@@ -151,7 +151,7 @@ const GanttTable: React.FC<Props> = ({
                             <div
                               key={`vac-${rowKey}-${idx}`}
                               className={styles.vacation}
-                              style={{ left: `${left}%`, width: `${width}%`, top: '2px' }}
+                              style={{ left: `${left}%`, width: `${width}%`, top: '0px' }}
                               title={vac.label ? `휴가: ${vac.label}` : '휴가'}
                             />
                           );

@@ -114,7 +114,7 @@ const Dashboard: React.FC<Props> = ({
                   aria-label="프로젝트 수정"
                 >
                   <div className={styles.editButtonInner}>
-                    <Edit3 className="w-3 h-3" /> Edit
+                    <Edit3 className="w-3 h-3" />
                   </div>
                 </button>
               </div>

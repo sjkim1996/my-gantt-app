@@ -724,6 +724,7 @@ export default function ResourceGanttChart() {
   const updateTeamName = (idx: number, name: string) => { const n = [...editingTeams]; n[idx].name = name; setEditingTeams(n); };
   const addMemberToTeam = (teamIdx: number) => { const name = prompt("이름:"); if (name) { const n = [...editingTeams]; n[teamIdx].members.push(name); setEditingTeams(n); } };
   const removeMember = (tIdx: number, mIdx: number) => { const n = [...editingTeams]; n[tIdx].members.splice(mIdx, 1); setEditingTeams(n); };
+  const removeTeamCompletely = (tIdx: number) => { const n = [...editingTeams]; n.splice(tIdx, 1); setEditingTeams(n); };
   const handleModalInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (isEventComposing(e)) return;
     if (e.key === 'Enter' && modalAssigneeInput.trim()) { e.preventDefault(); if (modalSuggestions.length === 1) { addMemberInModal(modalSuggestions[0]); return; } const exact = allMembers.filter(m => m.name === modalAssigneeInput.trim()); if (exact.length === 1) { addMemberInModal(exact[0]); return; } let newName = modalAssigneeInput.trim(); let newTeam = '미배정'; if (newName.includes('-')) { const parts = newName.split('-'); newTeam = parts[0].trim(); newName = parts[1].trim(); } addMemberInModal({ name: newName, team: newTeam, isNew: true }); }
@@ -774,7 +775,7 @@ export default function ResourceGanttChart() {
       )}
 
       {isTeamModalOpen && (
-        <div className={`${pageStyles.overlay} ${pageStyles.overlayMid}`}>
+        <div className={`${pageStyles.overlay} ${pageStyles.overlayHigh}`}>
            <div className={pageStyles.teamModal}>
             <div className={pageStyles.teamModalHeader}>
               <h3 className={pageStyles.teamModalTitle}>팀 & 멤버 관리</h3>
@@ -787,6 +788,7 @@ export default function ResourceGanttChart() {
                     <span className={pageStyles.teamLabel}>Team</span>
                     <input className={pageStyles.teamInput} value={team.name} onChange={(e) => updateTeamName(tIdx, e.target.value)} />
                     <button onClick={() => addMemberToTeam(tIdx)} className={pageStyles.teamAddMember}>+ 추가</button>
+                    <button onClick={() => removeTeamCompletely(tIdx)} className="text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded border border-red-200">삭제</button>
                   </div>
                   <div className={pageStyles.memberList}>
                     {team.members.length === 0 ? <span className={pageStyles.emptyMembers}>구성원 없음</span> :
