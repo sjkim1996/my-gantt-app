@@ -1,0 +1,41 @@
+@reference "../../../globals.css";
+
+.controls {
+  @apply flex items-center justify-between px-1 pb-2 gap-3;
+}
+
+.buttonGroup {
+  @apply flex items-center gap-2 bg-white p-1 rounded-lg border border-gray-200 shadow-sm;
+}
+
+.navButton {
+  @apply p-1.5 hover:bg-gray-100 rounded text-gray-600 flex items-center gap-1 text-xs font-bold;
+}
+
+.todayButton {
+  @apply px-3 py-1 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded border border-indigo-100;
+}
+
+.viewButton {
+  @apply px-3 py-1 text-xs font-bold rounded;
+}
+
+.viewActive {
+  @apply bg-indigo-600 text-white;
+}
+
+.viewInactive {
+  @apply text-gray-700 hover:bg-gray-100;
+}
+
+.legend {
+  @apply text-xs font-medium text-gray-500 flex items-center gap-2;
+}
+
+.legendItem {
+  @apply flex items-center gap-1;
+}
+
+.legendDot {
+  @apply w-2 h-2 rounded-full;
+}

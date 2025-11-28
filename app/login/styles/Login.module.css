@@ -1,0 +1,37 @@
+@reference "../../globals.css";
+
+.container {
+  @apply min-h-screen flex items-center justify-center bg-gray-100;
+}
+
+.form {
+  @apply bg-white p-8 rounded-xl shadow-lg w-96;
+}
+
+.iconRow {
+  @apply flex justify-center mb-6;
+}
+
+.iconCircle {
+  @apply bg-indigo-100 p-3 rounded-full;
+}
+
+.title {
+  @apply text-2xl font-bold text-center mb-6 text-gray-800;
+}
+
+.fieldGroup {
+  @apply space-y-4;
+}
+
+.label {
+  @apply block text-sm font-bold text-gray-600 mb-1;
+}
+
+.input {
+  @apply w-full p-2 border rounded focus:ring-2 focus:ring-indigo-500 outline-none text-black;
+}
+
+.submit {
+  @apply w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 transition;
+}

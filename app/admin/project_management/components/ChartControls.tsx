@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight, Flag } from 'lucide-react';
+import styles from '../styles/ChartControls.module.css';
 
 type Props = {
   viewMode: 'week' | 'day';
@@ -11,40 +12,40 @@ type Props = {
 
 const ChartControls: React.FC<Props> = ({ viewMode, onPrev, onNext, onToday, onViewChange }) => {
   return (
-    <div className="flex items-center justify-between px-1 pb-2 gap-3">
-      <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
-        <button onClick={onPrev} className="p-1.5 hover:bg-gray-100 rounded text-gray-600 flex items-center gap-1 text-xs font-bold">
+    <div className={styles.controls}>
+      <div className={styles.buttonGroup}>
+        <button onClick={onPrev} className={styles.navButton}>
           <ChevronLeft className="w-4 h-4" /> 이전
         </button>
-        <button onClick={onToday} className="px-3 py-1 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded border border-indigo-100">
+        <button onClick={onToday} className={styles.todayButton}>
           오늘 (Today)
         </button>
-        <button onClick={onNext} className="p-1.5 hover:bg-gray-100 rounded text-gray-600 flex items-center gap-1 text-xs font-bold">
+        <button onClick={onNext} className={styles.navButton}>
           다음 <ChevronRight className="w-4 h-4" />
         </button>
       </div>
-      <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
+      <div className={styles.buttonGroup}>
         <button
           onClick={() => onViewChange('week')}
-          className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'week' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+          className={`${styles.viewButton} ${viewMode === 'week' ? styles.viewActive : styles.viewInactive}`}
         >
           주간
         </button>
         <button
           onClick={() => onViewChange('day')}
-          className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'day' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+          className={`${styles.viewButton} ${viewMode === 'day' ? styles.viewActive : styles.viewInactive}`}
         >
           일간
         </button>
       </div>
-      <div className="text-xs font-medium text-gray-500 flex items-center gap-2">
-        <div className="flex items-center gap-1">
-          <span className="w-2 h-2 bg-gray-200 rounded-full"></span> 대기
+      <div className={styles.legend}>
+        <div className={styles.legendItem}>
+          <span className={`${styles.legendDot} bg-gray-200`}></span> 대기
         </div>
-        <div className="flex items-center gap-1">
-          <span className="w-2 h-2 bg-blue-500 rounded-full"></span> 진행
+        <div className={styles.legendItem}>
+          <span className={`${styles.legendDot} bg-blue-500`}></span> 진행
         </div>
-        <div className="flex items-center gap-1">
+        <div className={styles.legendItem}>
           <Flag className="w-3 h-3 text-red-500" /> 마일스톤
         </div>
       </div>

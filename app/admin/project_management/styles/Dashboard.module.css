@@ -1,0 +1,125 @@
+@reference "../../../globals.css";
+
+.layout {
+  @apply grid grid-cols-1 lg:grid-cols-12 gap-4 w-full h-full;
+}
+
+.todayCard {
+  @apply lg:col-span-4 bg-white p-5 rounded-2xl shadow-sm border border-orange-100 flex flex-col h-full overflow-hidden;
+}
+
+.todayHeader {
+  @apply text-xs font-bold text-gray-800 mb-3 uppercase tracking-wider flex items-center gap-2 flex-shrink-0;
+}
+
+.todayPulse {
+  @apply w-2 h-2 rounded-full bg-orange-500 animate-pulse;
+}
+
+.todayDate {
+  @apply text-[10px] font-normal text-gray-400 ml-auto;
+}
+
+.todayList {
+  @apply flex-1 overflow-y-auto pr-1 space-y-3;
+}
+
+.emptyState {
+  @apply h-full flex flex-col items-center justify-center text-gray-400 text-xs;
+}
+
+.todayItem {
+  @apply p-3 bg-orange-50/70 rounded-xl border border-orange-100 hover:bg-orange-50 transition-colors space-y-2 shadow-[0_6px_14px_-10px_rgba(0,0,0,0.2)];
+}
+
+.todayItemTop {
+  @apply flex items-center gap-2 justify-between;
+}
+
+.todayTitle {
+  @apply font-bold text-gray-900 text-sm truncate;
+}
+
+.todayBadge {
+  @apply text-[10px] text-orange-700 bg-white px-2 py-0.5 rounded-full border border-orange-200 shadow-sm;
+}
+
+.todayMembers {
+  @apply flex flex-wrap gap-1 text-[11px] text-gray-700;
+}
+
+.todayMemberChip {
+  @apply text-[10px] bg-white px-1.5 py-0.5 rounded border border-orange-100 text-gray-600;
+}
+
+.todayMeta {
+  @apply flex items-center gap-3 text-[11px] text-gray-600;
+}
+
+.todayRange {
+  @apply px-2 py-0.5 rounded-full bg-white border border-orange-100 text-orange-700 shadow-sm;
+}
+
+.allCard {
+  @apply lg:col-span-8 bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex flex-col h-full overflow-hidden;
+}
+
+.allHeader {
+  @apply text-xs font-bold text-gray-600 mb-3 uppercase tracking-wider flex items-center gap-2 flex-shrink-0;
+}
+
+.allHint {
+  @apply text-[10px] font-normal text-gray-400 lowercase;
+}
+
+.allList {
+  @apply flex-1 overflow-y-auto pr-1;
+}
+
+.allGrid {
+  @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3;
+}
+
+.projectCard {
+  @apply cursor-pointer p-3 rounded-xl border border-gray-200 bg-white shadow-[0_6px_16px_-12px_rgba(0,0,0,0.25)] hover:shadow-md transition-all relative overflow-hidden hover:border-indigo-200 hover:-translate-y-0.5 min-h-[80px] flex flex-col justify-between;
+}
+
+.projectActive {
+  @apply ring-2 ring-indigo-100 border-indigo-300;
+}
+
+.projectBar {
+  @apply absolute left-0 top-0 bottom-0 w-1.5;
+}
+
+.projectBody {
+  @apply pl-2;
+}
+
+.projectName {
+  @apply text-xs font-bold text-gray-900 truncate mb-1;
+}
+
+.projectMembers {
+  @apply flex flex-wrap gap-1;
+}
+
+.projectChip {
+  @apply text-[10px] text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200;
+}
+
+.projectMore {
+  @apply text-[10px] text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100;
+}
+
+.editButton {
+  @apply absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100;
+}
+
+.editButtonInner {
+  @apply bg-white p-1 rounded border border-gray-200 text-gray-400 hover:text-indigo-600 shadow-sm;
+}
+
+.emptyProjects {
+  @apply col-span-full text-center text-gray-400 text-sm py-8 border-2 border-dashed border-gray-200 rounded;
+}

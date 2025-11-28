@@ -3,6 +3,7 @@ import { parseDate, formatDate, getDaysDiff } from '../utils/date';
 import { getColorSet } from '../utils/colors';
 import { getPackedProjects } from '../utils/gantt';
 import { Project, Team } from '../types';
+import styles from '../styles/GanttTable.module.css';
 
 export type TimelineBlock = {
   id: number;
@@ -55,18 +56,15 @@ const GanttTable: React.FC<Props> = ({
   });
 
   return (
-    <div
-      className="flex-1 rounded-xl shadow-sm bg-white border border-gray-200 flex flex-col w-full relative mx-auto max-w-[1400px] mb-8 overflow-x-auto"
-      ref={chartContainerRef}
-    >
-      <div className="overflow-auto custom-scrollbar rounded-xl">
-        <table className="w-full border-collapse min-w-[1100px]">
-          <thead className="sticky top-0 z-50 bg-white shadow-sm">
+    <div className={styles.container} ref={chartContainerRef}>
+      <div className={styles.tableWrapper}>
+        <table className={styles.table}>
+          <thead className={styles.header}>
             <tr>
-              <th className="sticky left-0 z-50 bg-gray-50 w-24 min-w-[96px] text-left py-3 pl-4 text-xs font-bold text-gray-500 uppercase border-b border-r border-gray-200">
+              <th className={styles.teamHeader}>
                 Team
               </th>
-              <th className="sticky left-24 z-50 bg-gray-50 w-28 min-w-[112px] text-left py-3 pl-4 text-xs font-bold text-gray-500 uppercase border-b border-r border-gray-200 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)]">
+              <th className={styles.memberHeader}>
                 Member
               </th>
 
@@ -75,15 +73,15 @@ const GanttTable: React.FC<Props> = ({
                   key={w.id}
                   ref={w.isTodayWeek ? todayColumnRef : null}
                   style={{ minWidth: viewMode === 'week' ? 140 : 80 }}
-                  className={`py-2 text-center border-b border-r border-gray-300/70 first:rounded-l-lg last:rounded-r-lg ${
-                    w.isTodayWeek ? 'bg-indigo-50/50' : blockHasEvent[w.id] ? 'bg-amber-50' : 'bg-white'
+                  className={`${styles.timelineHead} ${
+                    w.isTodayWeek ? styles.timelineToday : blockHasEvent[w.id] ? styles.timelineEvent : styles.timelineDefault
                   }`}
                 >
-                  <div className={`text-xs font-bold ${w.isTodayWeek ? 'text-indigo-600' : 'text-gray-700'}`}>
+                  <div className={`${styles.timelineLabel} ${w.isTodayWeek ? styles.timelineLabelToday : styles.timelineLabelDefault}`}>
                     {w.label}{' '}
                     {w.isTodayWeek && <span className="inline-block w-1.5 h-1.5 bg-indigo-500 rounded-full ml-1 align-middle mb-0.5"></span>}
                   </div>
-                  <div className="text-[9px] text-gray-400 font-medium">{w.subLabel}</div>
+                  <div className={styles.timelineSublabel}>{w.subLabel}</div>
                 </th>
               ))}
             </tr>
@@ -115,27 +113,25 @@ const GanttTable: React.FC<Props> = ({
                       ref={(el) => {
                         rowRefs.current[rowKey] = el;
                       }}
-                      className="group hover:bg-gray-50/50 transition-colors"
+                      className={styles.row}
                     >
                       <td
-                        className={`sticky left-0 z-40 bg-white align-top py-3 pl-4 text-xs font-bold text-gray-700 border-r border-gray-200 ${
-                          isLast ? 'border-b border-gray-200' : 'border-b-transparent'
-                        }`}
+                        className={`${styles.teamCell} ${isLast ? styles.teamCellBottom : styles.teamCellSpacer}`}
                       >
                         {isFirst ? team.name : ''}
                       </td>
 
-                      <td className="sticky left-24 z-40 bg-white align-top py-3 pl-4 text-sm font-medium text-black border-r border-gray-200 border-b border-gray-200 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)]">
+                      <td className={styles.memberCell}>
                         <div>{member}</div>
                       </td>
 
-                      <td colSpan={timeline.length} className="relative p-0 align-top border-b border-gray-200" style={{ height: rowHeight }}>
-                        <div className="absolute inset-0 w-full h-full flex pointer-events-none">
+                      <td colSpan={timeline.length} className={styles.rowBody} style={{ height: rowHeight }}>
+                        <div className={styles.gridRow}>
                           {timeline.map((w) => (
                             <div
                               key={w.id}
-                              className={`flex-1 border-r border-gray-300/70 last:border-0 ${
-                                w.isTodayWeek ? 'bg-indigo-50/10' : blockHasEvent[w.id] ? 'bg-amber-50/30' : ''
+                              className={`${styles.gridCell} ${
+                                w.isTodayWeek ? styles.gridToday : blockHasEvent[w.id] ? styles.gridEvent : ''
                               }`}
                             ></div>
                           ))}
@@ -151,7 +147,7 @@ const GanttTable: React.FC<Props> = ({
                           return (
                             <div
                               key={`vac-${rowKey}-${idx}`}
-                              className="absolute h-3 rounded bg-slate-200/70 border border-slate-300/80 z-10"
+                              className={styles.vacation}
                               style={{ left: `${left}%`, width: `${width}%`, top: '2px' }}
                               title={vac.label ? `휴가: ${vac.label}` : '휴가'}
                             />
@@ -219,21 +215,18 @@ const GanttTable: React.FC<Props> = ({
                                     onClick={() => handleProjectClick(proj)}
                                     onMouseEnter={() => setHoveredProjectName(proj.name)}
                                     onMouseLeave={() => setHoveredProjectName(null)}
-                                    className={`
-                                            absolute h-7 rounded shadow-sm cursor-pointer flex items-center px-2 z-20 transition-all duration-200 border group
-                                            ${colorSet.customBg ? '' : `${colorSet.bg} ${colorSet.border}`}
-                                            ${isDimmed ? 'opacity-20 grayscale' : 'opacity-100 hover:shadow-md group-hover:h-9'}
-                                            ${isHighlighted ? 'ring-2 ring-indigo-400 ring-offset-1 scale-[1.01] z-30' : ''}
-                                        `}
+                                    className={`${styles.projectBlock} group ${colorSet.customBg ? '' : `${colorSet.bg} ${colorSet.border}`} ${
+                                      isDimmed ? styles.projectDimmed : styles.projectHover
+                                    } ${isHighlighted ? styles.projectHighlighted : ''}`}
                                     style={{ left: `${left}%`, width: `${width}%`, top, backgroundColor: colorSet.customBg, borderColor: colorSet.customBorder }}
                                     title={barTitle}
                                   >
-                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${colorSet.barClass || ''}`} style={{ backgroundColor: colorSet.barColor }}></div>
-                                    <span className={`text-[11px] font-bold truncate ml-1 ${colorSet.textClass || ''}`} style={{ color: colorSet.customText }}>
+                                    <div className={`${styles.projectBar} ${colorSet.barClass || ''}`} style={{ backgroundColor: colorSet.barColor }}></div>
+                                    <span className={`${styles.projectText} ${colorSet.textClass || ''}`} style={{ color: colorSet.customText }}>
                                       {proj.name}
                                     </span>
                                     {proj.notes && (
-                                      <div className="absolute left-0 right-0 top-full mt-1 px-2 py-1 bg-white/95 text-[10px] text-gray-600 rounded border border-gray-200 shadow opacity-0 group-hover:opacity-100 transition-all">
+                                      <div className={styles.projectNote}>
                                         {proj.notes}
                                       </div>
                                     )}
@@ -250,7 +243,7 @@ const GanttTable: React.FC<Props> = ({
                                 return (
                                   <div
                                     key={m.id}
-                                    className="absolute z-40 hover:scale-110 transition-transform cursor-help rounded-sm shadow-sm"
+                                    className={styles.milestoneMarker}
                                     style={{ left: `${leftPos}%`, width: `${markerWidth}px`, minWidth: `${markerWidth}px`, backgroundColor: m.color || '#ef4444', top: `${proj.row * 30 + 4}px` }}
                                     title={`${m.label} (${m.date})`}
                                   />

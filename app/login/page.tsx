@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock } from 'lucide-react';
 import { setLoginToken } from '@/lib/auth';
+import styles from './styles/Login.module.css';
 
 export default function LoginPage() {
   const [id, setId] = useState('');
@@ -23,36 +24,36 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form onSubmit={handleLogin} className="bg-white p-8 rounded-xl shadow-lg w-96">
-        <div className="flex justify-center mb-6">
-            <div className="bg-indigo-100 p-3 rounded-full">
-                <Lock className="w-6 h-6 text-indigo-600" />
-            </div>
+    <div className={styles.container}>
+      <form onSubmit={handleLogin} className={styles.form}>
+        <div className={styles.iconRow}>
+          <div className={styles.iconCircle}>
+            <Lock className="w-6 h-6 text-indigo-600" />
+          </div>
         </div>
-        <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">Capra Admin</h1>
-        <div className="space-y-4">
+        <h1 className={styles.title}>Capra Admin</h1>
+        <div className={styles.fieldGroup}>
           <div>
-            <label className="block text-sm font-bold text-gray-600 mb-1">ID</label>
+            <label className={styles.label}>ID</label>
             <input 
               type="text" 
               value={id}
               onChange={(e) => setId(e.target.value)}
-              className="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-500 outline-none text-black"
+              className={styles.input}
               placeholder="아이디"
             />
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-600 mb-1">Password</label>
+            <label className={styles.label}>Password</label>
             <input 
               type="password" 
               value={pw}
               onChange={(e) => setPw(e.target.value)}
-              className="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-500 outline-none text-black"
+              className={styles.input}
               placeholder="비밀번호"
             />
           </div>
-          <button className="w-full bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 transition">
+          <button className={styles.submit}>
             로그인
           </button>
         </div>

@@ -1,0 +1,73 @@
+@reference "../../../globals.css";
+
+.overlay {
+  @apply fixed inset-0 z-[90] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4;
+}
+
+.modal {
+  @apply bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[80vh];
+}
+
+.header {
+  @apply flex items-center justify-between px-5 py-3 border-b border-gray-100;
+}
+
+.title {
+  @apply text-lg font-bold text-gray-800;
+}
+
+.iconButton {
+  @apply text-gray-400 hover:text-gray-600;
+}
+
+.body {
+  @apply p-5 overflow-y-auto space-y-3;
+}
+
+.gridHeader {
+  @apply grid grid-cols-12 text-xs font-bold text-gray-500 px-2;
+}
+
+.row {
+  @apply grid grid-cols-12 gap-2 items-center bg-gray-50 p-2 rounded border border-gray-100;
+}
+
+.input {
+  @apply text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500;
+}
+
+.col3 {
+  @apply col-span-3;
+}
+
+.col2 {
+  @apply col-span-2;
+}
+
+.col1 {
+  @apply col-span-1;
+}
+
+.noteInput {
+  @apply flex-1 text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500;
+}
+
+.removeButton {
+  @apply text-gray-400 hover:text-red-500;
+}
+
+.addButton {
+  @apply w-full py-2 border-2 border-dashed border-gray-300 rounded text-sm text-gray-500 hover:border-indigo-300 hover:text-indigo-600;
+}
+
+.footer {
+  @apply p-4 border-t border-gray-100 flex justify-end gap-2;
+}
+
+.cancel {
+  @apply px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 rounded;
+}
+
+.save {
+  @apply px-4 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded shadow-sm;
+}

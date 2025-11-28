@@ -1,0 +1,129 @@
+@reference "../../../globals.css";
+
+.container {
+  @apply bg-white p-5 rounded-xl shadow-sm border border-gray-200 w-full;
+}
+
+.title {
+  @apply text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider;
+}
+
+.grid {
+  @apply grid grid-cols-1 md:grid-cols-12 gap-3 items-end;
+}
+
+.label {
+  @apply block text-xs font-bold text-gray-400 mb-1;
+}
+
+.inputShell {
+  @apply h-10 flex items-center border border-gray-300 rounded px-3 bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all;
+}
+
+.inputShellTight {
+  @apply h-10 flex items-center border border-gray-300 rounded px-2 bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all;
+}
+
+.textInput {
+  @apply w-full bg-transparent outline-none text-sm text-gray-900;
+}
+
+.dateInput {
+  @apply w-full bg-transparent outline-none text-sm text-gray-700;
+}
+
+.assigneeShell {
+  @apply h-10 flex flex-wrap gap-1 items-center px-2 border border-gray-300 rounded bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all overflow-x-auto;
+}
+
+.chip {
+  @apply inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold border border-indigo-100 whitespace-nowrap;
+  animation: chip-zoom-in 0.12s ease-out;
+}
+
+.chipRemove {
+  @apply hover:text-indigo-900 transition-colors ml-1;
+}
+
+.assigneeInput {
+  @apply flex-1 min-w-[100px] bg-transparent outline-none text-sm placeholder-gray-400 text-gray-900;
+}
+
+.suggestions {
+  @apply absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg py-1 min-w-[200px] w-full z-[60];
+}
+
+.suggestionButton {
+  @apply w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex justify-between items-center transition-colors;
+}
+
+.suggestionName {
+  @apply font-bold text-gray-700;
+}
+
+.suggestionTeam {
+  @apply text-gray-400 text-xs;
+}
+
+.suggestionEmpty {
+  @apply px-3 py-2 text-xs text-gray-400 text-center;
+}
+
+.notesInput {
+  @apply w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none;
+}
+
+.milestoneLabel {
+  @apply flex-1 min-w-[140px] border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none;
+}
+
+.milestoneDate {
+  @apply border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none;
+}
+
+.milestoneAdd {
+  @apply px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700;
+}
+
+.milestoneRemove {
+  @apply px-3 py-2 bg-gray-100 text-gray-500 text-xs font-bold rounded hover:bg-gray-200;
+}
+
+.vacationButton {
+  @apply px-3 py-2 bg-gray-100 text-gray-700 text-xs font-bold rounded hover:bg-gray-200 border border-gray-300;
+}
+
+.addButton {
+  @apply h-10 w-10 bg-indigo-600 text-white rounded flex items-center justify-center hover:bg-indigo-700 transition-all shadow-sm flex-shrink-0;
+}
+
+.gridFull {
+  @apply md:col-span-12;
+}
+
+.col3 {
+  @apply md:col-span-3;
+}
+
+.col5 {
+  @apply md:col-span-5;
+}
+
+.col2 {
+  @apply md:col-span-2;
+}
+
+.footerRow {
+  @apply md:col-span-12 mt-2;
+}
+
+@keyframes chip-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
