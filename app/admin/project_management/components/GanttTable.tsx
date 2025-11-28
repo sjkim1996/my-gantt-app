@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { parseDate, formatDate, getDaysDiff } from '../utils/date';
 import { darkenColor, getColorSet } from '../utils/colors';
 import { getPackedProjects } from '../utils/gantt';
@@ -42,6 +42,7 @@ const GanttTable: React.FC<Props> = ({
   handleProjectClick,
   chartTotalDays,
 }) => {
+  const [hoveredBlockKey, setHoveredBlockKey] = useState<string | null>(null);
   const chartStart = timeline.length > 0 ? parseDate(formatDate(timeline[0].start)) : null;
   const chartEnd = timeline.length > 0 ? parseDate(formatDate(timeline[timeline.length - 1].end)) : null;
   const blockHasEvent = timeline.map((block) => {
@@ -173,21 +174,23 @@ const GanttTable: React.FC<Props> = ({
                           const barHeight = 28; // h-7
                           const top = `${barTop}px`;
 
-                          const isDimmed = hoveredProjectName && hoveredProjectName !== proj.name;
+                          const projKey = `${proj.name}__${proj.person}__${proj.team}`;
                           const isHighlighted = hoveredProjectName === proj.name;
-                          const showNote = isHighlighted;
+                          const isDimmed = Boolean(hoveredProjectName && !isHighlighted);
+                          const showNote = hoveredBlockKey === projKey;
                           const colorSet = getColorSet(proj);
                           const barTitle = proj.notes ? `${proj.name} - 메모: ${proj.notes}` : proj.name;
                           const dayWidthPct = (1 / duration) * 100;
                           const milestoneHeight = barHeight; // match project bar height
                           const milestoneTop = barTop; // align with project bar top
+                          const milestoneOpacity = isHighlighted ? 0.95 : hoveredProjectName ? 0.25 : 0.7;
 
                           return (
                             <div key={proj.id}>
                               <div
                                 onClick={() => handleProjectClick(proj)}
-                                onMouseEnter={() => setHoveredProjectName(proj.name)}
-                                onMouseLeave={() => setHoveredProjectName(null)}
+                                onMouseEnter={() => { setHoveredProjectName(proj.name); setHoveredBlockKey(projKey); }}
+                                onMouseLeave={() => { setHoveredProjectName(null); setHoveredBlockKey(null); }}
                                 className={`${styles.projectBlock} group ${colorSet.customBg ? '' : `${colorSet.bg} ${colorSet.border}`} ${
                                   isDimmed ? styles.projectDimmed : styles.projectHover
                                 } ${isHighlighted ? styles.projectHighlighted : ''}`}
@@ -231,7 +234,7 @@ const GanttTable: React.FC<Props> = ({
                                       top: `${milestoneTop}px`,
                                       backgroundColor: milestoneColor,
                                       borderColor: milestoneBorder,
-                                      opacity: isHighlighted ? 0.95 : 0.7,
+                                      opacity: milestoneOpacity,
                                     }}
                                     title={`${m.label} (${m.date})`}
                                   >
