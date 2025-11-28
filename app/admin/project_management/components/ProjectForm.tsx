@@ -174,8 +174,8 @@ const ProjectForm: React.FC<Props> = ({
             className={styles.notesInput}
           />
         </div>
-      <div className={`${styles.gridFull} flex flex-col gap-2`}>
-        <label className={styles.label}>프로젝트 문서 (PDF 첨부)</label>
+        <div className={`${styles.gridFull} flex flex-col gap-2 hidden`}>
+          <label className={styles.label}>프로젝트 문서 (PDF 첨부)</label>
         <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
           <div className="md:col-span-5">
             <div className={styles.inputShell}>
@@ -260,7 +260,7 @@ const ProjectForm: React.FC<Props> = ({
           <button
             type="button"
             onClick={onOpenVacationModal}
-            className={styles.vacationButton}
+            className={`${styles.vacationButton} hidden`}
           >
             구성원 휴가 입력
           </button>

@@ -870,7 +870,7 @@ export default function ResourceGanttChart() {
                         </div>
                         <button onClick={syncDatesToAll} className={pageStyles.syncButton}><RefreshCw className="w-3.5 h-3.5"/> 일정 동기화</button>
                     </div>
-                    <div className={pageStyles.docRow}>
+                    <div className={`${pageStyles.docRow} hidden`}>
                       <div className="md:col-span-5">
                         <label className={pageStyles.inputLabel}>문서 제목</label>
                         <input value={masterDocName} onChange={(e) => setMasterDocName(e.target.value)} placeholder="파일명 또는 제목" className={pageStyles.docInput}/>
@@ -924,7 +924,7 @@ export default function ResourceGanttChart() {
         <div className={pageStyles.cardTight}>
                   <div className={pageStyles.vacationHeader}>
                     <h4 className={pageStyles.subTitle}>구성원 휴가</h4>
-                    <button onClick={() => openVacationModal('edit')} className={pageStyles.vacationButton}>휴가 입력</button>
+                    <button onClick={() => openVacationModal('edit')} className={`${pageStyles.vacationButton} hidden`}>휴가 입력</button>
                   </div>
                   {editingMembers.some(m => m.vacations && m.vacations.length) ? (
                     <div className={pageStyles.vacationList}>
