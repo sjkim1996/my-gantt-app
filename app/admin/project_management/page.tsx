@@ -13,7 +13,7 @@ import Dashboard from './components/Dashboard';
 import ProjectForm from './components/ProjectForm';
 import VacationModal from './components/VacationModal';
 import { Vacation } from './types';
-import styles from './styles/Page.module.css';
+import pageStyles from './styles/Page.module.css';
 
 // Auth Logic (Inlined for single-file stability)
 const hasValidLoginToken = () => {
@@ -99,6 +99,8 @@ export default function ResourceGanttChart() {
   const [projectNotes, setProjectNotes] = useState('');
   const [projectMilestones, setProjectMilestones] = useState<Milestone[]>([{ id: 'init-m1', label: '', date: '', color: getRandomHexColor() }]);
   const [projectVacations, setProjectVacations] = useState<Vacation[]>([{ id: 'init-v1', person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
+  const [vacationSearch, setVacationSearch] = useState('');
+  const [showVacationSuggestions, setShowVacationSuggestions] = useState(false);
   const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([{ name: '김철수', team: '기획팀' }]);
   const [assigneeInput, setAssigneeInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -498,7 +500,7 @@ export default function ResourceGanttChart() {
           };
         });
         setProjects(prev => dedupeProjects([...prev, ...normalized]));
-        setProjectName(''); setSelectedAssignees([]); setProjectDocUrl(''); setProjectDocName(''); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([{ id: `${Date.now()}`, label: '', date: '', color: getRandomHexColor() }]); setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
+        setProjectName(''); setSelectedAssignees([]); setProjectDocUrl(''); setProjectDocName(''); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([{ id: `${Date.now()}`, label: '', date: '', color: getRandomHexColor() }]); setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]); setVacationSearch(''); setShowVacationSuggestions(false);
         showBanner('프로젝트가 추가되었습니다.', 'success');
         setRecentlyAddedProject(targetName);
         setHoveredProjectName(targetName);
@@ -726,153 +728,153 @@ export default function ResourceGanttChart() {
     router.push('/login'); 
   };
 
-  if (!authChecked) return <div className={styles.fullPageMessage}>Access 확인 중...</div>;
-  if (!isAuthorized) return <div className={styles.fullPageMessage}>로그인이 필요합니다. 이동 중...</div>;
-  if (isLoading) return <div className={styles.fullPageMessage}>Loading Projects...</div>;
+  if (!authChecked) return <div className={pageStyles.fullPageMessage}>Access 확인 중...</div>;
+  if (!isAuthorized) return <div className={pageStyles.fullPageMessage}>로그인이 필요합니다. 이동 중...</div>;
+  if (isLoading) return <div className={pageStyles.fullPageMessage}>Loading Projects...</div>;
 
   return (
     <div
-      className={`${styles.page} ${(isModalOpen || isTeamModalOpen) ? styles.pageModalOpen : ''}`}
+      className={`${pageStyles.page} ${(isModalOpen || isTeamModalOpen) ? pageStyles.pageModalOpen : ''}`}
       onClick={() => { setShowSuggestions(false); setModalShowSuggestions(false); }}
     >
       
       {/* --- Modals --- */}
       {ambiguousCandidates.length > 0 && (
-        <div className={`${styles.overlay} ${styles.overlayHigh}`}>
-          <div className={styles.ambiguousCard}>
-              <div className={styles.ambiguousHeader}>
-              <h3 className={styles.ambiguousTitle}><AlertCircle className="w-4 h-4" /> 동명이인 선택</h3>
-              <p className={styles.ambiguousDesc}>&apos;{ambiguousCandidates[0].name}&apos;님이 여러 팀에 존재합니다.</p>
+        <div className={`${pageStyles.overlay} ${pageStyles.overlayHigh}`}>
+          <div className={pageStyles.ambiguousCard}>
+              <div className={pageStyles.ambiguousHeader}>
+              <h3 className={pageStyles.ambiguousTitle}><AlertCircle className="w-4 h-4" /> 동명이인 선택</h3>
+              <p className={pageStyles.ambiguousDesc}>&apos;{ambiguousCandidates[0].name}&apos;님이 여러 팀에 존재합니다.</p>
             </div>
-            <div className={styles.ambiguousList}>
+            <div className={pageStyles.ambiguousList}>
               {ambiguousCandidates.map((c, i) => (
                 <button
                   key={i}
                   onClick={() => { addAssignee(c); setAmbiguousCandidates([]); }}
-                  className={`${styles.ambiguousButton} group`}
+                  className={`${pageStyles.ambiguousButton} group`}
                 >
                   <div><div className="font-bold text-gray-900">{c.name}</div><div className="text-xs text-gray-500 mt-0.5">{c.team}</div></div>
-                  <Check className={styles.ambiguousButtonIcon} />
+                  <Check className={pageStyles.ambiguousButtonIcon} />
                 </button>
               ))}
             </div>
-            <div className={styles.ambiguousFooter}><button onClick={() => { setAmbiguousCandidates([]); setAssigneeInput(''); }} className={styles.ambiguousCancel}>취소</button></div>
+            <div className={pageStyles.ambiguousFooter}><button onClick={() => { setAmbiguousCandidates([]); setAssigneeInput(''); }} className={pageStyles.ambiguousCancel}>취소</button></div>
           </div>
         </div>
       )}
 
       {isTeamModalOpen && (
-        <div className={`${styles.overlay} ${styles.overlayMid}`}>
-           <div className={styles.teamModal}>
-            <div className={styles.teamModalHeader}>
-              <h3 className={styles.teamModalTitle}>팀 & 멤버 관리</h3>
-              <button onClick={() => setIsTeamModalOpen(false)} className={styles.iconButton}><X className="w-5 h-5"/></button>
+        <div className={`${pageStyles.overlay} ${pageStyles.overlayMid}`}>
+           <div className={pageStyles.teamModal}>
+            <div className={pageStyles.teamModalHeader}>
+              <h3 className={pageStyles.teamModalTitle}>팀 & 멤버 관리</h3>
+              <button onClick={() => setIsTeamModalOpen(false)} className={pageStyles.iconButton}><X className="w-5 h-5"/></button>
             </div>
-            <div className={styles.teamModalBody}>
+            <div className={pageStyles.teamModalBody}>
               {editingTeams.map((team, tIdx) => (
-                <div key={team.id} className={styles.teamCard}>
-                  <div className={styles.teamRow}>
-                    <span className={styles.teamLabel}>Team</span>
-                    <input className={styles.teamInput} value={team.name} onChange={(e) => updateTeamName(tIdx, e.target.value)} />
-                    <button onClick={() => addMemberToTeam(tIdx)} className={styles.teamAddMember}>+ 추가</button>
+                <div key={team.id} className={pageStyles.teamCard}>
+                  <div className={pageStyles.teamRow}>
+                    <span className={pageStyles.teamLabel}>Team</span>
+                    <input className={pageStyles.teamInput} value={team.name} onChange={(e) => updateTeamName(tIdx, e.target.value)} />
+                    <button onClick={() => addMemberToTeam(tIdx)} className={pageStyles.teamAddMember}>+ 추가</button>
                   </div>
-                  <div className={styles.memberList}>
-                    {team.members.length === 0 ? <span className={styles.emptyMembers}>구성원 없음</span> :
+                  <div className={pageStyles.memberList}>
+                    {team.members.length === 0 ? <span className={pageStyles.emptyMembers}>구성원 없음</span> :
                       team.members.map((member, mIdx) => (
-                        <div key={mIdx} className={styles.memberChip}>
+                        <div key={mIdx} className={pageStyles.memberChip}>
                           {member}
-                          <button onClick={() => removeMember(tIdx, mIdx)} className={styles.memberRemove}><X className="w-3 h-3"/></button>
+                          <button onClick={() => removeMember(tIdx, mIdx)} className={pageStyles.memberRemove}><X className="w-3 h-3"/></button>
                         </div>
                       ))
                     }
                   </div>
                 </div>
               ))}
-              <button onClick={addTeam} className={styles.addTeamButton}><Plus className="w-4 h-4"/> 새 팀 추가</button>
+              <button onClick={addTeam} className={pageStyles.addTeamButton}><Plus className="w-4 h-4"/> 새 팀 추가</button>
             </div>
-            <div className={styles.teamModalFooter}>
-              <button onClick={() => setIsTeamModalOpen(false)} className={styles.footerCancel}>취소</button>
-              <button onClick={saveTeams} className={styles.footerSave}>저장하기</button>
+            <div className={pageStyles.teamModalFooter}>
+              <button onClick={() => setIsTeamModalOpen(false)} className={pageStyles.footerCancel}>취소</button>
+              <button onClick={saveTeams} className={pageStyles.footerSave}>저장하기</button>
             </div>
           </div>
         </div>
       )}
 
       {isModalOpen && (
-        <div className={`${styles.overlay} ${styles.overlayMax}`}>
-          <div className={styles.editModal}>
-            <div className={styles.editHeader}>
-              <div className={styles.editHeaderMeta}>
-                <div className={styles.editHeaderLabel}>Project Edit</div>
-                <input type="text" value={masterProjectName} onChange={(e) => setMasterProjectName(e.target.value)} className={styles.editTitleInput}/>
+        <div className={`${pageStyles.overlay} ${pageStyles.overlayMax}`}>
+          <div className={pageStyles.editModal}>
+            <div className={pageStyles.editHeader}>
+              <div className={pageStyles.editHeaderMeta}>
+                <div className={pageStyles.editHeaderLabel}>Project Edit</div>
+                <input type="text" value={masterProjectName} onChange={(e) => setMasterProjectName(e.target.value)} className={pageStyles.editTitleInput}/>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className={styles.editClose}><X className="w-6 h-6" /></button>
+              <button onClick={() => setIsModalOpen(false)} className={pageStyles.editClose}><X className="w-6 h-6" /></button>
             </div>
             
-        <div className={styles.editBody}>
+        <div className={pageStyles.editBody}>
                 {/* 1. Global Settings */}
-                <div className={styles.card}>
-                    <h4 className={styles.cardTitle}><Settings className="w-4 h-4 text-gray-500" /> 통합 설정 (Global)</h4>
-                    <div className={styles.settingsRow}>
-                        <div className={styles.settingsCol}>
-                            <label className={styles.inputLabel}>기간 설정</label>
-                            <div className={styles.dateRow}>
-                                <input type="date" value={masterStart} onChange={(e) => setMasterStart(e.target.value)} className={styles.dateInput}/>
+                <div className={pageStyles.card}>
+                    <h4 className={pageStyles.cardTitle}><Settings className="w-4 h-4 text-gray-500" /> 통합 설정 (Global)</h4>
+                    <div className={pageStyles.settingsRow}>
+                        <div className={pageStyles.settingsCol}>
+                            <label className={pageStyles.inputLabel}>기간 설정</label>
+                            <div className={pageStyles.dateRow}>
+                                <input type="date" value={masterStart} onChange={(e) => setMasterStart(e.target.value)} className={pageStyles.dateInput}/>
                                 <span className="text-gray-400">-</span>
-                                <input type="date" value={masterEnd} onChange={(e) => setMasterEnd(e.target.value)} className={styles.dateInput}/>
+                                <input type="date" value={masterEnd} onChange={(e) => setMasterEnd(e.target.value)} className={pageStyles.dateInput}/>
                             </div>
                         </div>
-                        <div className={styles.colorCol}>
-                            <label className={styles.inputLabel}>색상 태그</label>
-                            <div className={styles.colorPickerRow}>
+                        <div className={pageStyles.colorCol}>
+                            <label className={pageStyles.inputLabel}>색상 태그</label>
+                            <div className={pageStyles.colorPickerRow}>
                                 {BAR_COLORS.map((color, idx) => (
-                                    <button key={idx} onClick={() => setMasterColorIdx(idx)} className={`${styles.colorSwatch} ${color.bg} ${color.border} ${masterColorIdx === idx ? styles.colorSwatchActive : ''}`}/>
+                                    <button key={idx} onClick={() => setMasterColorIdx(idx)} className={`${pageStyles.colorSwatch} ${color.bg} ${color.border} ${masterColorIdx === idx ? pageStyles.colorSwatchActive : ''}`}/>
                                 ))}
                             </div>
                         </div>
-                        <button onClick={syncDatesToAll} className={styles.syncButton}><RefreshCw className="w-3.5 h-3.5"/> 일정 동기화</button>
+                        <button onClick={syncDatesToAll} className={pageStyles.syncButton}><RefreshCw className="w-3.5 h-3.5"/> 일정 동기화</button>
                     </div>
                 </div>
 
                 {/* 2. Notes & Milestones */}
-                <div className={styles.cardTight}>
-                  <h4 className={styles.subTitle}>메모</h4>
-                  <textarea value={masterNotes} onChange={(e) => setMasterNotes(e.target.value)} className={styles.textarea} placeholder="프로젝트 메모 수정" />
+                <div className={pageStyles.cardTight}>
+                  <h4 className={pageStyles.subTitle}>메모</h4>
+                  <textarea value={masterNotes} onChange={(e) => setMasterNotes(e.target.value)} className={pageStyles.textarea} placeholder="프로젝트 메모 수정" />
                 </div>
 
-                <div className={styles.cardTight}>
-                  <h4 className={styles.subTitleRow}>중요 일정 (시사일/PPM 등)</h4>
-                  <div className={styles.milestoneRow}>
-                    <input type="text" value={masterMilestoneLabel} onChange={(e) => setMasterMilestoneLabel(e.target.value)} placeholder="이벤트 이름" className={styles.inlineInput} />
-                    <input type="date" value={masterMilestoneDate} onChange={(e) => setMasterMilestoneDate(e.target.value)} className={styles.inlineInput} />
+                <div className={pageStyles.cardTight}>
+                  <h4 className={pageStyles.subTitleRow}>중요 일정 (시사일/PPM 등)</h4>
+                  <div className={pageStyles.milestoneRow}>
+                    <input type="text" value={masterMilestoneLabel} onChange={(e) => setMasterMilestoneLabel(e.target.value)} placeholder="이벤트 이름" className={pageStyles.inlineInput} />
+                    <input type="date" value={masterMilestoneDate} onChange={(e) => setMasterMilestoneDate(e.target.value)} className={pageStyles.inlineInput} />
                     <button type="button" onClick={() => {
                       if (!masterMilestoneLabel || !masterMilestoneDate) return;
                       const m: Milestone = { id: `${Date.now()}`, label: masterMilestoneLabel, date: masterMilestoneDate, color: getRandomHexColor() };
                       setMasterMilestones(prev => [...prev, m]);
                       setMasterMilestoneLabel(''); setMasterMilestoneDate('');
-                    }} className={styles.primarySmall}>추가</button>
+                    }} className={pageStyles.primarySmall}>추가</button>
                   </div>
-                  <div className={styles.tagList}>
+                  <div className={pageStyles.tagList}>
                     {masterMilestones.map(m => (
-                      <span key={m.id} className={styles.tag}>
-                        <span className={styles.inlineDot} style={{ backgroundColor: m.color }}></span>
+                      <span key={m.id} className={pageStyles.tag}>
+                        <span className={pageStyles.inlineDot} style={{ backgroundColor: m.color }}></span>
                         <span className="font-bold text-gray-800">{m.label}</span>
                         <span className="text-gray-500">{m.date}</span>
-                        <button onClick={() => setMasterMilestones(prev => prev.filter(x => x.id !== m.id))} className={styles.tagRemove}>×</button>
+                        <button onClick={() => setMasterMilestones(prev => prev.filter(x => x.id !== m.id))} className={pageStyles.tagRemove}>×</button>
                       </span>
                     ))}
                   </div>
                 </div>
 
-                <div className={styles.cardTight}>
-                  <div className={styles.vacationHeader}>
-                    <h4 className={styles.subTitle}>구성원 휴가</h4>
-                    <button onClick={() => setIsVacationModalOpen(true)} className={styles.vacationButton}>휴가 입력</button>
+                <div className={pageStyles.cardTight}>
+                  <div className={pageStyles.vacationHeader}>
+                    <h4 className={pageStyles.subTitle}>구성원 휴가</h4>
+                    <button onClick={() => setIsVacationModalOpen(true)} className={pageStyles.vacationButton}>휴가 입력</button>
                   </div>
                   {editingMembers.some(m => m.vacations && m.vacations.length) ? (
-                    <div className={styles.vacationList}>
+                    <div className={pageStyles.vacationList}>
                       {editingMembers.flatMap((m, idx) => (m.vacations || []).map((v, i) => (
-                        <div key={`${idx}-${i}`} className={styles.vacationItem}>
+                        <div key={`${idx}-${i}`} className={pageStyles.vacationItem}>
                           <span className="font-bold">{v.person || m.person}</span>
                           <span className="text-gray-500">{v.team || m.team}</span>
                           <span className="text-gray-600">{v.start} ~ {v.end}</span>
@@ -881,32 +883,32 @@ export default function ResourceGanttChart() {
                       )))}
                     </div>
                   ) : (
-                    <div className={styles.vacationEmpty}>등록된 휴가가 없습니다.</div>
+                    <div className={pageStyles.vacationEmpty}>등록된 휴가가 없습니다.</div>
                   )}
                 </div>
 
                 {/* 3. Member List */}
-                <div className={styles.memberSection}>
-                    <h4 className={styles.memberTitle}>참여 멤버</h4>
+                <div className={pageStyles.memberSection}>
+                    <h4 className={pageStyles.memberTitle}>참여 멤버</h4>
                     {Object.entries(editingMembers.filter(m => !m.isDeleted).reduce((acc, member) => { (acc[member.team] = acc[member.team] || []).push(member); return acc; }, {} as Record<string, EditingMember[]>)).map(([teamName, members]) => (
-                        <div key={teamName} className={styles.memberGroup}>
-                            <div className={styles.memberGroupHeader}>
-                                <span className={styles.memberGroupTitle}>{teamName}</span>
+                        <div key={teamName} className={pageStyles.memberGroup}>
+                            <div className={pageStyles.memberGroupHeader}>
+                                <span className={pageStyles.memberGroupTitle}>{teamName}</span>
                             </div>
                             <div className="divide-y divide-gray-100">
                                 {members.map((member) => {
                                     const realIndex = editingMembers.findIndex(m => m === member); 
                                     const isDiffDate = member.start !== masterStart || member.end !== masterEnd;
                                     return (
-                                        <div key={member.id} className={`${styles.memberRow} group`}>
-                                            <div className={styles.memberName}>{member.person}</div>
-                                            <div className={styles.memberDateRow}>
-                                                <input type="date" value={member.start} onChange={(e) => updateMemberDate(realIndex, 'start', e.target.value)} className={`${styles.memberDateInput} ${isDiffDate ? styles.memberDateDiff : styles.memberDateDefault}`}/> 
-                                                <span className={styles.memberDateDivider}>~</span> 
-                                                <input type="date" value={member.end} onChange={(e) => updateMemberDate(realIndex, 'end', e.target.value)} className={`${styles.memberDateInput} ${isDiffDate ? styles.memberDateDiff : styles.memberDateDefault}`}/> 
-                                                {isDiffDate && (<span className={styles.memberDateAlert}><AlertCircle className="w-3 h-3 inline"/></span>)}
+                                        <div key={member.id} className={`${pageStyles.memberRow} group`}>
+                                            <div className={pageStyles.memberName}>{member.person}</div>
+                                            <div className={pageStyles.memberDateRow}>
+                                                <input type="date" value={member.start} onChange={(e) => updateMemberDate(realIndex, 'start', e.target.value)} className={`${pageStyles.memberDateInput} ${isDiffDate ? pageStyles.memberDateDiff : pageStyles.memberDateDefault}`}/> 
+                                                <span className={pageStyles.memberDateDivider}>~</span> 
+                                                <input type="date" value={member.end} onChange={(e) => updateMemberDate(realIndex, 'end', e.target.value)} className={`${pageStyles.memberDateInput} ${isDiffDate ? pageStyles.memberDateDiff : pageStyles.memberDateDefault}`}/> 
+                                                {isDiffDate && (<span className={pageStyles.memberDateAlert}><AlertCircle className="w-3 h-3 inline"/></span>)}
                                             </div>
-                                            <button onClick={() => removeMemberInModal(realIndex)} className={styles.memberRemoveBtn}><Trash2 className="w-4 h-4"/></button>
+                                            <button onClick={() => removeMemberInModal(realIndex)} className={pageStyles.memberRemoveBtn}><Trash2 className="w-4 h-4"/></button>
                                         </div>
                                     );
                                 })}
@@ -916,47 +918,47 @@ export default function ResourceGanttChart() {
                 </div>
                 
                 {/* 4. Add Member Input */}
-                <div className={styles.memberInputWrap}>
-                    <div className={styles.memberSearch}>
+                <div className={pageStyles.memberInputWrap}>
+                    <div className={pageStyles.memberSearch}>
                         <Search className="w-4 h-4 text-gray-400" />
-                        <input ref={modalInputRef} type="text" className={styles.memberSearchInput} placeholder="새로운 멤버 검색 (엔터로 추가)" value={modalAssigneeInput} onChange={(e) => { setModalAssigneeInput(e.target.value); setModalShowSuggestions(true); }} onFocus={() => setModalShowSuggestions(true)} onKeyDown={handleModalInputKeyDown}/>
+                        <input ref={modalInputRef} type="text" className={pageStyles.memberSearchInput} placeholder="새로운 멤버 검색 (엔터로 추가)" value={modalAssigneeInput} onChange={(e) => { setModalAssigneeInput(e.target.value); setModalShowSuggestions(true); }} onFocus={() => setModalShowSuggestions(true)} onKeyDown={handleModalInputKeyDown}/>
                     </div>
                     {modalShowSuggestions && modalAssigneeInput && (
-                         <div className={styles.suggestionList}>
-                            {modalSuggestions.length > 0 ? modalSuggestions.map((s, idx) => (<button key={idx} onClick={() => addMemberInModal(s)} className={styles.suggestionButton}><span className={styles.suggestionName}>{s.name}</span> <span className={styles.suggestionTeam}>{s.team}</span></button>)) : <div className={styles.suggestionEmpty}>엔터로 추가하기</div>}
+                         <div className={pageStyles.suggestionList}>
+                            {modalSuggestions.length > 0 ? modalSuggestions.map((s, idx) => (<button key={idx} onClick={() => addMemberInModal(s)} className={pageStyles.suggestionButton}><span className={pageStyles.suggestionName}>{s.name}</span> <span className={pageStyles.suggestionTeam}>{s.team}</span></button>)) : <div className={pageStyles.suggestionEmpty}>엔터로 추가하기</div>}
                          </div>
                     )}
                 </div>
             </div>
 
             {/* Footer - Fixed */}
-            <div className={styles.editFooter}>
-               {!deleteConfirmMode ? (<button onClick={() => setDeleteConfirmMode(true)} className={styles.deleteLink}><Trash2 className="w-3.5 h-3.5" /> 전체 삭제</button>) : (<div className={styles.deleteConfirm}><span className={styles.deleteConfirmText}>정말 삭제할까요?</span><button onClick={handleDeleteAll} className={styles.deleteYes}>네</button><button onClick={() => setDeleteConfirmMode(false)} className={styles.deleteNo}>아니오</button></div>)}
-               <div className={styles.footerActions}><button onClick={() => setIsModalOpen(false)} className={styles.footerCancel}>취소</button><button onClick={handleSaveMasterProject} className={styles.footerPrimary}>저장 완료</button></div>
+            <div className={pageStyles.editFooter}>
+               {!deleteConfirmMode ? (<button onClick={() => setDeleteConfirmMode(true)} className={pageStyles.deleteLink}><Trash2 className="w-3.5 h-3.5" /> 전체 삭제</button>) : (<div className={pageStyles.deleteConfirm}><span className={pageStyles.deleteConfirmText}>정말 삭제할까요?</span><button onClick={handleDeleteAll} className={pageStyles.deleteYes}>네</button><button onClick={() => setDeleteConfirmMode(false)} className={pageStyles.deleteNo}>아니오</button></div>)}
+               <div className={pageStyles.footerActions}><button onClick={() => setIsModalOpen(false)} className={pageStyles.footerCancel}>취소</button><button onClick={handleSaveMasterProject} className={pageStyles.footerPrimary}>저장 완료</button></div>
             </div>
           </div>
         </div>
       )}
       
       {/* --- Header & Controls Area (Fixed at top) --- */}
-      <div className={styles.headerWrapper}>
-        <div className={styles.headerRow}>
+      <div className={pageStyles.headerWrapper}>
+        <div className={pageStyles.headerRow}>
             <div>
-                <h1 className={styles.title}>
+                <h1 className={pageStyles.title}>
                     <Briefcase className="w-6 h-6 text-indigo-600"/> Resource Gantt
                 </h1>
-                <p className={styles.subtitle}>팀 리소스 및 프로젝트 일정 관리 (2025)</p>
+                <p className={pageStyles.subtitle}>팀 리소스 및 프로젝트 일정 관리 (2025)</p>
             </div>
-            <div className={styles.headerButtons}>
-                <button onClick={openTeamModal} className={styles.teamButton}><Settings className="w-4 h-4" /> 팀 설정</button>
-                <button onClick={handleLogout} className={styles.logoutButton}><LogOut className="w-4 h-4" /></button>
+            <div className={pageStyles.headerButtons}>
+                <button onClick={openTeamModal} className={pageStyles.teamButton}><Settings className="w-4 h-4" /> 팀 설정</button>
+                <button onClick={handleLogout} className={pageStyles.logoutButton}><LogOut className="w-4 h-4" /></button>
             </div>
         </div>
 
         {banner && (
-          <div className={`${styles.banner} ${banner.tone === 'error' ? styles.bannerError : banner.tone === 'info' ? styles.bannerInfo : styles.bannerSuccess}`}>
+          <div className={`${pageStyles.banner} ${banner.tone === 'error' ? pageStyles.bannerError : banner.tone === 'info' ? pageStyles.bannerInfo : pageStyles.bannerSuccess}`}>
             <Check className="w-4 h-4" />
-            <span className={styles.bannerText}>{banner.text}</span>
+            <span className={pageStyles.bannerText}>{banner.text}</span>
           </div>
         )}
         
@@ -996,10 +998,19 @@ export default function ResourceGanttChart() {
           onAdd={addProjectVacation}
           onRemove={removeProjectVacation}
           onSave={() => setIsVacationModalOpen(false)}
+          searchValue={vacationSearch}
+          onSearchChange={(v) => { setVacationSearch(v); setShowVacationSuggestions(true); }}
+          suggestions={showVacationSuggestions && vacationSearch ? mainSuggestions : []}
+          onSelectSuggestion={(a) => {
+            setProjectVacations(prev => [...prev, { id: `${Date.now()}`, person: a.name, team: a.team, label: '', start: '', end: '', color: '#94a3b8' }]);
+            setVacationSearch('');
+            setShowVacationSuggestions(false);
+          }}
+          onSearchFocus={() => setShowVacationSuggestions(true)}
         />
 
         {/* Dashboard Grid */}
-        <div className={styles.dashboardShell}>
+        <div className={pageStyles.dashboardShell}>
           <Dashboard
             todayDate={todayDate}
             activeProjectsToday={activeProjectsToday}

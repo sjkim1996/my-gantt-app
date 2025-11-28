@@ -183,11 +183,16 @@ const ProjectForm: React.FC<Props> = ({
                   onChange={(e) => updateProjectMilestone(m.id, 'date', e.target.value)}
                   className={styles.milestoneDate}
                 />
-                <button type="button" onClick={addProjectMilestone} className={styles.milestoneAdd}>
+                <button type="button" onClick={addProjectMilestone} className={`${styles.milestoneAdd} text-sm`}>
                   +
                 </button>
-                <button type="button" onClick={() => removeProjectMilestone(m.id)} className={styles.milestoneRemove}>
-                  ′
+                <button
+                  type="button"
+                  disabled={projectMilestones.length === 1}
+                  onClick={() => removeProjectMilestone(m.id)}
+                  className={`${styles.milestoneRemove} text-sm ${projectMilestones.length === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  -
                 </button>
               </div>
             ))}
