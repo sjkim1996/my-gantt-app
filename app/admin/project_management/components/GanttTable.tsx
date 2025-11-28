@@ -1,6 +1,6 @@
 import React from 'react';
 import { parseDate, formatDate, getDaysDiff } from '../utils/date';
-import { getColorSet } from '../utils/colors';
+import { darkenColor, getColorSet } from '../utils/colors';
 import { getPackedProjects } from '../utils/gantt';
 import { Project, Team } from '../types';
 import styles from '../styles/GanttTable.module.css';
@@ -169,13 +169,18 @@ const GanttTable: React.FC<Props> = ({
                           const spanDays = Math.max(1, getDaysDiff(effectiveStart, effectiveEnd) + 1);
                           const left = (offsetDays / duration) * 100;
                           const width = (spanDays / duration) * 100;
-                          const top = `${proj.row * laneHeight + 4}px`;
+                          const barTop = proj.row * laneHeight + 4;
+                          const barHeight = 28; // h-7
+                          const top = `${barTop}px`;
 
                           const isDimmed = hoveredProjectName && hoveredProjectName !== proj.name;
                           const isHighlighted = hoveredProjectName === proj.name;
                           const showNote = isHighlighted;
                           const colorSet = getColorSet(proj);
                           const barTitle = proj.notes ? `${proj.name} - 메모: ${proj.notes}` : proj.name;
+                          const dayWidthPct = (1 / duration) * 100;
+                          const milestoneHeight = barHeight; // match project bar height
+                          const milestoneTop = barTop; // align with project bar top
 
                           return (
                             <div key={proj.id}>
@@ -208,14 +213,33 @@ const GanttTable: React.FC<Props> = ({
                                 if (mDate < effectiveStart || mDate > effectiveEnd) return null;
                                 const offset = getDaysDiff(chartStart, mDate);
                                 const leftPos = (offset / duration) * 100;
-                                const markerWidth = viewMode === 'day' ? 10 : 6;
+                                const blockWidth = dayWidthPct;
+                                const baseColor = proj.customColor || colorSet.barHex;
+                                const milestoneColor = baseColor ? darkenColor(baseColor, 0.18) : '#4b5563';
+                                const milestoneBorder = baseColor ? darkenColor(baseColor, 0.32) : '#374151';
                                 return (
                                   <div
                                     key={m.id}
-                                    className={styles.milestoneMarker}
-                                    style={{ left: `${leftPos}%`, width: `${markerWidth}px`, minWidth: `${markerWidth}px`, backgroundColor: m.color || '#ef4444', top: `${proj.row * laneHeight + 4}px` }}
+                                    className={styles.milestoneBlock}
+                                    style={{
+                                      left: `${leftPos}%`,
+                                      width: `${blockWidth}%`,
+                                      minWidth: `${blockWidth}%`,
+                                      minInlineSize: '6px',
+                                      height: `${milestoneHeight}px`,
+                                      minHeight: `${milestoneHeight}px`,
+                                      top: `${milestoneTop}px`,
+                                      backgroundColor: milestoneColor,
+                                      borderColor: milestoneBorder,
+                                      opacity: isHighlighted ? 0.95 : 0.7,
+                                    }}
                                     title={`${m.label} (${m.date})`}
-                                  />
+                                  >
+                                    <span className={styles.milestoneTooltip}>
+                                      <strong>{m.label}</strong>
+                                      <span>{m.date}</span>
+                                    </span>
+                                  </div>
                                 );
                               })}
                             </div>
