@@ -105,7 +105,9 @@ const GanttTable: React.FC<Props> = ({
                     }));
                     return Array.from(map.values());
                   })();
-                  const rowHeight = Math.max(44, totalRows * 32 + 12);
+                  const hasNotes = myProjects.some(p => p.notes && p.notes.trim().length > 0);
+                  const laneHeight = 32;
+                  const rowHeight = Math.max(48, totalRows * laneHeight + (hasNotes ? 38 : 12));
 
                   return (
                     <tr
@@ -162,77 +164,44 @@ const GanttTable: React.FC<Props> = ({
 
                           const effectiveStart = pStart < chartStart ? chartStart : pStart;
                           const effectiveEnd = pEnd > chartEnd ? chartEnd : pEnd;
-                          const duration = Math.max(1, getDaysDiff(chartStart, chartEnd) + 1);
+                          const duration = Math.max(1, chartTotalDays);
+                          const offsetDays = getDaysDiff(chartStart, effectiveStart);
+                          const spanDays = Math.max(1, getDaysDiff(effectiveStart, effectiveEnd) + 1);
+                          const left = (offsetDays / duration) * 100;
+                          const width = (spanDays / duration) * 100;
+                          const top = `${proj.row * laneHeight + 4}px`;
 
                           const isDimmed = hoveredProjectName && hoveredProjectName !== proj.name;
                           const isHighlighted = hoveredProjectName === proj.name;
+                          const showNote = isHighlighted;
                           const colorSet = getColorSet(proj);
                           const barTitle = proj.notes ? `${proj.name} - 메모: ${proj.notes}` : proj.name;
 
-                          const milestonesInRange = (proj.milestones || []).filter(m => {
-                            const d = parseDate(m.date);
-                            return d >= effectiveStart && d <= effectiveEnd;
-                          }).sort((a, b) => parseDate(a.date).getTime() - parseDate(b.date).getTime());
-
-                          const blockSegments: { start: Date; end: Date }[] = [];
-                          timeline.forEach(block => {
-                            const bStart = parseDate(formatDate(block.start));
-                            const bEnd = parseDate(formatDate(block.end));
-                            const segStart = bStart > effectiveStart ? bStart : effectiveStart;
-                            const segEnd = bEnd < effectiveEnd ? bEnd : effectiveEnd;
-                            if (segStart > segEnd) return;
-
-                            let curStart = segStart;
-                            const ms = milestonesInRange.filter(m => {
-                              const d = parseDate(m.date);
-                              return d >= segStart && d <= segEnd;
-                            });
-                            if (ms.length === 0) {
-                              blockSegments.push({ start: segStart, end: segEnd });
-                            } else {
-                              ms.forEach((m) => {
-                                const mDate = parseDate(m.date);
-                                const leftEnd = new Date(mDate);
-                                leftEnd.setDate(leftEnd.getDate() - 1);
-                                if (leftEnd >= curStart) blockSegments.push({ start: curStart, end: leftEnd });
-                                curStart = mDate;
-                              });
-                              if (curStart <= segEnd) blockSegments.push({ start: curStart, end: segEnd });
-                            }
-                          });
-
                           return (
                             <div key={proj.id}>
-                              {blockSegments.map((seg, idx) => {
-                                const segOffset = getDaysDiff(chartStart, seg.start);
-                                const segDuration = Math.max(1, getDaysDiff(seg.start, seg.end) + 1);
-                                const left = (segOffset / duration) * 100;
-                                const width = (segDuration / duration) * 100;
-                                const top = `${proj.row * 30 + 4}px`;
-                                return (
+                              <div
+                                onClick={() => handleProjectClick(proj)}
+                                onMouseEnter={() => setHoveredProjectName(proj.name)}
+                                onMouseLeave={() => setHoveredProjectName(null)}
+                                className={`${styles.projectBlock} group ${colorSet.customBg ? '' : `${colorSet.bg} ${colorSet.border}`} ${
+                                  isDimmed ? styles.projectDimmed : styles.projectHover
+                                } ${isHighlighted ? styles.projectHighlighted : ''}`}
+                                style={{ left: `${left}%`, width: `${width}%`, top, backgroundColor: colorSet.customBg, borderColor: colorSet.customBorder }}
+                                title={barTitle}
+                              >
+                                <div className={`${styles.projectBar} ${colorSet.barClass || ''}`} style={{ backgroundColor: colorSet.barColor }}></div>
+                                <span className={`${styles.projectText} ${colorSet.textClass || ''}`} style={{ color: colorSet.customText }}>
+                                  {proj.name}
+                                </span>
+                                {proj.notes && (
                                   <div
-                                    key={`${proj.id}-seg-${idx}`}
-                                    onClick={() => handleProjectClick(proj)}
-                                    onMouseEnter={() => setHoveredProjectName(proj.name)}
-                                    onMouseLeave={() => setHoveredProjectName(null)}
-                                    className={`${styles.projectBlock} group ${colorSet.customBg ? '' : `${colorSet.bg} ${colorSet.border}`} ${
-                                      isDimmed ? styles.projectDimmed : styles.projectHover
-                                    } ${isHighlighted ? styles.projectHighlighted : ''}`}
-                                    style={{ left: `${left}%`, width: `${width}%`, top, backgroundColor: colorSet.customBg, borderColor: colorSet.customBorder }}
-                                    title={barTitle}
+                                    className={styles.projectNote}
+                                    style={{ opacity: showNote ? 1 : undefined, visibility: showNote ? 'visible' : 'hidden' }}
                                   >
-                                    <div className={`${styles.projectBar} ${colorSet.barClass || ''}`} style={{ backgroundColor: colorSet.barColor }}></div>
-                                    <span className={`${styles.projectText} ${colorSet.textClass || ''}`} style={{ color: colorSet.customText }}>
-                                      {proj.name}
-                                    </span>
-                                    {proj.notes && (
-                                      <div className={styles.projectNote}>
-                                        {proj.notes}
-                                      </div>
-                                    )}
+                                    {proj.notes}
                                   </div>
-                                );
-                              })}
+                                )}
+                              </div>
 
                               {(proj.milestones || []).map((m) => {
                                 const mDate = parseDate(m.date);
@@ -244,7 +213,7 @@ const GanttTable: React.FC<Props> = ({
                                   <div
                                     key={m.id}
                                     className={styles.milestoneMarker}
-                                    style={{ left: `${leftPos}%`, width: `${markerWidth}px`, minWidth: `${markerWidth}px`, backgroundColor: m.color || '#ef4444', top: `${proj.row * 30 + 4}px` }}
+                                    style={{ left: `${leftPos}%`, width: `${markerWidth}px`, minWidth: `${markerWidth}px`, backgroundColor: m.color || '#ef4444', top: `${proj.row * laneHeight + 4}px` }}
                                     title={`${m.label} (${m.date})`}
                                   />
                                 );

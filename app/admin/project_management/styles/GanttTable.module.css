@@ -101,7 +101,7 @@
 }
 
 .projectBlock {
-  @apply absolute h-7 rounded shadow-sm cursor-pointer flex items-center px-2 z-20 transition-all duration-200 border;
+  @apply absolute h-7 rounded shadow-sm cursor-pointer flex items-center px-2 z-20 hover:z-50 focus-within:z-50 transition-all duration-200 border;
 }
 
 .projectDimmed {
@@ -125,7 +125,7 @@
 }
 
 .projectNote {
-  @apply absolute left-0 right-0 top-full mt-1 px-2 py-1 bg-white/95 text-[10px] text-gray-600 rounded border border-gray-200 shadow opacity-0 group-hover:opacity-100 transition-all;
+  @apply absolute left-0 right-0 top-full mt-1 px-2 py-1 bg-white/95 text-[10px] text-gray-600 rounded border border-gray-200 shadow opacity-0 group-hover:opacity-100 transition-all z-60;
 }
 
 .milestoneMarker {
