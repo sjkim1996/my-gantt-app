@@ -16,9 +16,9 @@ export const mergeMilestones = (a: Milestone[] = [], b: Milestone[] = []) => {
 export const mergeVacations = (a: Vacation[] = [], b: Vacation[] = []) => {
   const map = new Map<string, Vacation>();
   [...a, ...b].forEach(v => {
-    const key = `${v.start}-${v.end}-${v.label}`;
+    const key = `${v.person || ''}-${v.start}-${v.end}-${v.label || ''}`;
     if (!map.has(key)) {
-      map.set(key, { ...v, color: v.color || '#94a3b8' });
+      map.set(key, { ...v, person: v.person || '', color: v.color || '#94a3b8' });
     }
   });
   return Array.from(map.values());

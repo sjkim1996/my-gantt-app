@@ -11,6 +11,7 @@ import GanttTable, { TimelineBlock } from './components/GanttTable';
 import ChartControls from './components/ChartControls';
 import Dashboard from './components/Dashboard';
 import ProjectForm from './components/ProjectForm';
+import VacationModal from './components/VacationModal';
 import { Vacation } from './types';
 
 // Auth Logic (Inlined for single-file stability)
@@ -96,7 +97,7 @@ export default function ResourceGanttChart() {
   const [projectCustomColor, setProjectCustomColor] = useState(getRandomHexColor());
   const [projectNotes, setProjectNotes] = useState('');
   const [projectMilestones, setProjectMilestones] = useState<Milestone[]>([{ id: 'init-m1', label: '', date: '', color: getRandomHexColor() }]);
-  const [projectVacations, setProjectVacations] = useState<Vacation[]>([{ id: 'init-v1', label: '', start: '', end: '', color: '#94a3b8' }]);
+  const [projectVacations, setProjectVacations] = useState<Vacation[]>([{ id: 'init-v1', person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
   const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([{ name: '김철수', team: '기획팀' }]);
   const [assigneeInput, setAssigneeInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -105,6 +106,7 @@ export default function ResourceGanttChart() {
   const [editingTeams, setEditingTeams] = useState<Team[]>([]);
   // Tracking hook for future highlighting; only setter used to satisfy references
   const [, setRecentlyAddedProject] = useState<string | null>(null);
+  const [isVacationModalOpen, setIsVacationModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
 
   useEffect(() => {
@@ -126,13 +128,13 @@ export default function ResourceGanttChart() {
   }, [viewMode]);
 
   useEffect(() => {
-    const lockScroll = isModalOpen || isTeamModalOpen;
+    const lockScroll = isModalOpen || isTeamModalOpen || isVacationModalOpen;
     if (lockScroll) {
       const original = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       return () => { document.body.style.overflow = original; };
     }
-  }, [isModalOpen, isTeamModalOpen]);
+  }, [isModalOpen, isTeamModalOpen, isVacationModalOpen]);
 
   // --- Auth & Data Fetch ---
   useEffect(() => {
@@ -166,7 +168,12 @@ export default function ResourceGanttChart() {
             : typeof p.id === 'string'
             ? p.id
             : `local-${idx}`;
-          return { ...p, _id: normalizedId, id: normalizedId };
+          return { 
+            ...p, 
+            vacations: (p.vacations || []).map(v => ({ ...v, person: v.person || p.person || '', team: v.team || p.team || '' })), 
+            _id: normalizedId, 
+            id: normalizedId 
+          };
         });
         setProjects(dedupeProjects(loadedProjects));
       } catch (error) {
@@ -396,9 +403,9 @@ export default function ResourceGanttChart() {
     setProjectMilestones(prev => prev.filter(x => x.id !== id));
   };
   const addProjectVacation = () => {
-    setProjectVacations(prev => [...prev, { id: `${Date.now()}`, label: '', start: '', end: '', color: '#94a3b8' }]);
+    setProjectVacations(prev => [...prev, { id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
   };
-  const updateProjectVacation = (id: string, field: 'label' | 'start' | 'end', value: string) => {
+  const updateProjectVacation = (id: string, field: 'person' | 'team' | 'label' | 'start' | 'end', value: string) => {
     setProjectVacations(prev => prev.map(v => v.id === id ? { ...v, [field]: value } : v));
   };
   const removeProjectVacation = (id: string) => {
@@ -454,7 +461,7 @@ export default function ResourceGanttChart() {
     }
 
     const cleanedMilestones = projectMilestones.filter(m => m.label && m.date).map(m => ({ ...m, color: m.color || getRandomHexColor() }));
-    const cleanedVacations = projectVacations.filter(v => v.label && v.start && v.end).map(v => ({ ...v, color: v.color || '#94a3b8' }));
+    const cleanedVacations = projectVacations.filter(v => v.person && v.start && v.end).map(v => ({ ...v, color: v.color || '#94a3b8' }));
 
     const newEntries: ProjectPayload[] = assigneesToAdd.map((assignee) => ({
       name: targetName,
@@ -482,10 +489,15 @@ export default function ResourceGanttChart() {
             : typeof p.id === 'string'
             ? p.id
             : `${Date.now()}-${idx}`;
-          return { ...p, _id: normalizedId, id: normalizedId };
+          return { 
+            ...p, 
+            vacations: (p.vacations || []).map(v => ({ ...v, person: v.person || p.person || '', team: v.team || p.team || '' })), 
+            _id: normalizedId, 
+            id: normalizedId 
+          };
         });
         setProjects(prev => dedupeProjects([...prev, ...normalized]));
-        setProjectName(''); setSelectedAssignees([]); setProjectDocUrl(''); setProjectDocName(''); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([{ id: `${Date.now()}`, label: '', date: '', color: getRandomHexColor() }]); setProjectVacations([{ id: `${Date.now()}`, label: '', start: '', end: '', color: '#94a3b8' }]);
+        setProjectName(''); setSelectedAssignees([]); setProjectDocUrl(''); setProjectDocName(''); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([{ id: `${Date.now()}`, label: '', date: '', color: getRandomHexColor() }]); setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
         showBanner('프로젝트가 추가되었습니다.', 'success');
         setRecentlyAddedProject(targetName);
         setHoveredProjectName(targetName);
@@ -524,7 +536,7 @@ export default function ResourceGanttChart() {
         customColor: p.customColor,
         notes: p.notes,
         milestones: p.milestones,
-        vacations: p.vacations,
+        vacations: (p.vacations || []).map(v => ({ ...v, person: v.person || p.person, team: v.team || p.team })),
     }));
     setEditingMembers(members); setIsModalOpen(true);
   };
@@ -792,7 +804,7 @@ export default function ResourceGanttChart() {
               <button onClick={() => setIsModalOpen(false)} className="p-1 -mr-2 text-indigo-100 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+        <div className="flex-1 overflow-y-auto p-6 bg-gray-50 space-y-5">
                 {/* 1. Global Settings */}
                 <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm mb-6">
                     <h4 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2"><Settings className="w-4 h-4 text-gray-500" /> 통합 설정 (Global)</h4>
@@ -845,6 +857,27 @@ export default function ResourceGanttChart() {
                       </span>
                     ))}
                   </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-bold text-gray-700">구성원 휴가</h4>
+                    <button onClick={() => setIsVacationModalOpen(true)} className="text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200">휴가 입력</button>
+                  </div>
+                  {editingMembers.some(m => m.vacations && m.vacations.length) ? (
+                    <div className="space-y-2">
+                      {editingMembers.flatMap((m, idx) => (m.vacations || []).map((v, i) => (
+                        <div key={`${idx}-${i}`} className="flex flex-wrap gap-2 text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded px-3 py-2">
+                          <span className="font-bold">{v.person || m.person}</span>
+                          <span className="text-gray-500">{v.team || m.team}</span>
+                          <span className="text-gray-600">{v.start} ~ {v.end}</span>
+                          {v.label && <span className="text-gray-500">({v.label})</span>}
+                        </div>
+                      )))}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-gray-400">등록된 휴가가 없습니다.</div>
+                  )}
                 </div>
 
                 {/* 3. Member List */}
@@ -947,10 +980,17 @@ export default function ResourceGanttChart() {
           addProjectMilestone={addProjectMilestone}
           updateProjectMilestone={updateProjectMilestone}
           removeProjectMilestone={removeProjectMilestone}
+          onOpenVacationModal={() => setIsVacationModalOpen(true)}
+        />
+
+        <VacationModal
+          isOpen={isVacationModalOpen}
+          onClose={() => setIsVacationModalOpen(false)}
           vacations={projectVacations}
-          addVacation={addProjectVacation}
-          updateVacation={updateProjectVacation}
-          removeVacation={removeProjectVacation}
+          onChange={updateProjectVacation}
+          onAdd={addProjectVacation}
+          onRemove={removeProjectVacation}
+          onSave={() => setIsVacationModalOpen(false)}
         />
 
         {/* Dashboard Grid */}

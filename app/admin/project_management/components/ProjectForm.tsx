@@ -1,7 +1,6 @@
 import React from 'react';
 import { Plus, X } from 'lucide-react';
-import { Assignee, Milestone, Vacation } from '../types';
-import VacationRow from './VacationRow';
+import { Assignee, Milestone } from '../types';
 
 type Props = {
   projectName: string;
@@ -27,10 +26,7 @@ type Props = {
   addProjectMilestone: () => void;
   updateProjectMilestone: (id: string, field: 'label' | 'date', value: string) => void;
   removeProjectMilestone: (id: string) => void;
-  vacations: Vacation[];
-  addVacation: () => void;
-  updateVacation: (id: string, field: 'label' | 'start' | 'end', value: string) => void;
-  removeVacation: (id: string) => void;
+  onOpenVacationModal: () => void;
 };
 
 const ProjectForm: React.FC<Props> = ({
@@ -57,10 +53,7 @@ const ProjectForm: React.FC<Props> = ({
   addProjectMilestone,
   updateProjectMilestone,
   removeProjectMilestone,
-  vacations,
-  addVacation,
-  updateVacation,
-  removeVacation,
+  onOpenVacationModal,
 }) => {
   return (
     <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 w-full">
@@ -200,7 +193,15 @@ const ProjectForm: React.FC<Props> = ({
           </div>
         </div>
 
-        <VacationRow vacations={vacations} onAdd={addVacation} onChange={updateVacation} onRemove={removeVacation} />
+        <div className="md:col-span-12">
+          <button
+            type="button"
+            onClick={onOpenVacationModal}
+            className="px-3 py-2 bg-gray-100 text-gray-700 text-xs font-bold rounded hover:bg-gray-200 border border-gray-300"
+          >
+            구성원 휴가 입력
+          </button>
+        </div>
       </div>
     </div>
   );

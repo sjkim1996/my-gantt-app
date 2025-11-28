@@ -20,7 +20,9 @@ const ProjectSchema = new Schema({
   }],
   vacations: [{
     id: { type: String, required: true },
-    label: { type: String, required: true },
+    person: { type: String, required: true },
+    team: { type: String },
+    label: { type: String },
     start: { type: String, required: true },
     end: { type: String, required: true },
     color: { type: String },

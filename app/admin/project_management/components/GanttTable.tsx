@@ -43,6 +43,16 @@ const GanttTable: React.FC<Props> = ({
 }) => {
   const chartStart = timeline.length > 0 ? parseDate(formatDate(timeline[0].start)) : null;
   const chartEnd = timeline.length > 0 ? parseDate(formatDate(timeline[timeline.length - 1].end)) : null;
+  const blockHasEvent = timeline.map((block) => {
+    const bStart = parseDate(formatDate(block.start));
+    const bEnd = parseDate(formatDate(block.end));
+    return projects.some((p) =>
+      (p.milestones || []).some((m) => {
+        const d = parseDate(m.date);
+        return d >= bStart && d <= bEnd;
+      })
+    );
+  });
 
   return (
     <div
@@ -65,7 +75,9 @@ const GanttTable: React.FC<Props> = ({
                   key={w.id}
                   ref={w.isTodayWeek ? todayColumnRef : null}
                   style={{ minWidth: viewMode === 'week' ? 140 : 80 }}
-                  className={`py-2 text-center border-b border-r border-gray-300/70 ${w.isTodayWeek ? 'bg-indigo-50/50' : 'bg-white'}`}
+                  className={`py-2 text-center border-b border-r border-gray-300/70 ${
+                    w.isTodayWeek ? 'bg-indigo-50/50' : blockHasEvent[w.id] ? 'bg-amber-50' : 'bg-white'
+                  }`}
                 >
                   <div className={`text-xs font-bold ${w.isTodayWeek ? 'text-indigo-600' : 'text-gray-700'}`}>
                     {w.label}{' '}
@@ -120,7 +132,12 @@ const GanttTable: React.FC<Props> = ({
                       <td colSpan={timeline.length} className="relative p-0 align-top border-b border-gray-200" style={{ height: rowHeight }}>
                         <div className="absolute inset-0 w-full h-full flex pointer-events-none">
                           {timeline.map((w) => (
-                            <div key={w.id} className={`flex-1 border-r border-gray-300/70 last:border-0 ${w.isTodayWeek ? 'bg-indigo-50/10' : ''}`}></div>
+                            <div
+                              key={w.id}
+                              className={`flex-1 border-r border-gray-300/70 last:border-0 ${
+                                w.isTodayWeek ? 'bg-indigo-50/10' : blockHasEvent[w.id] ? 'bg-amber-50/30' : ''
+                              }`}
+                            ></div>
                           ))}
                         </div>
 
@@ -203,9 +220,9 @@ const GanttTable: React.FC<Props> = ({
                                     onMouseEnter={() => setHoveredProjectName(proj.name)}
                                     onMouseLeave={() => setHoveredProjectName(null)}
                                     className={`
-                                            absolute h-7 rounded shadow-sm cursor-pointer flex items-center px-2 z-20 transition-all duration-200 border group/bar
+                                            absolute h-7 rounded shadow-sm cursor-pointer flex items-center px-2 z-20 transition-all duration-200 border group
                                             ${colorSet.customBg ? '' : `${colorSet.bg} ${colorSet.border}`}
-                                            ${isDimmed ? 'opacity-20 grayscale' : 'opacity-100 hover:shadow-md'}
+                                            ${isDimmed ? 'opacity-20 grayscale' : 'opacity-100 hover:shadow-md group-hover:h-9'}
                                             ${isHighlighted ? 'ring-2 ring-indigo-400 ring-offset-1 scale-[1.01] z-30' : ''}
                                         `}
                                     style={{ left: `${left}%`, width: `${width}%`, top, backgroundColor: colorSet.customBg, borderColor: colorSet.customBorder }}
@@ -216,12 +233,9 @@ const GanttTable: React.FC<Props> = ({
                                       {proj.name}
                                     </span>
                                     {proj.notes && (
-                                      <span
-                                        className="ml-2 text-[10px] text-gray-700 bg-white/70 px-1 rounded border border-gray-200 truncate max-w-[160px]"
-                                        title={proj.notes}
-                                      >
+                                      <div className="absolute left-0 right-0 top-full mt-1 px-2 py-1 bg-white/95 text-[10px] text-gray-600 rounded border border-gray-200 shadow opacity-0 group-hover:opacity-100 transition-all">
                                         {proj.notes}
-                                      </span>
+                                      </div>
                                     )}
                                   </div>
                                 );

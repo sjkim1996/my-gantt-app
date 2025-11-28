@@ -7,7 +7,9 @@ export interface Milestone {
 
 export interface Vacation {
   id: string;
-  label: string;
+  person: string;
+  team?: string;
+  label?: string;
   start: string;
   end: string;
   color: string;
