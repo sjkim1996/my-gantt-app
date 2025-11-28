@@ -102,8 +102,8 @@ const GanttTable: React.FC<Props> = ({
                     myProjects.forEach(p => (p.vacations || []).forEach(v => {
                       const s = parseDate(v.start);
                       const e = parseDate(v.end);
-                      const key = `${v.label}-${v.start}-${v.end}`;
-                      if (!map.has(key)) map.set(key, { label: v.label, start: s, end: e, color: v.color || '#94a3b8' });
+                      const key = `${v.label || ''}-${v.start}-${v.end}`;
+                      if (!map.has(key)) map.set(key, { label: v.label || '', start: s, end: e, color: v.color || '#94a3b8' });
                     }));
                     return Array.from(map.values());
                   })();
