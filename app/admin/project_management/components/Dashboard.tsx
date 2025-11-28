@@ -23,7 +23,7 @@ const Dashboard: React.FC<Props> = ({
   setHoveredProjectName,
 }) => {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 w-full h-[180px]">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 w-full h-full">
       <div className="lg:col-span-4 bg-white p-4 rounded-xl shadow-sm border border-orange-100 flex flex-col h-full overflow-hidden">
         <h2 className="text-xs font-bold text-gray-800 mb-3 uppercase tracking-wider flex items-center gap-2 flex-shrink-0">
           <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span> Today&apos;s Active

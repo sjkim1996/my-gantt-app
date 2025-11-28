@@ -1,4 +1,4 @@
-import { Milestone, Project } from '../types';
+import { Milestone, Project, Vacation } from '../types';
 import { parseDate, formatDate, getDaysDiff } from './date';
 import { getColorSet } from './colors';
 
@@ -8,6 +8,17 @@ export const mergeMilestones = (a: Milestone[] = [], b: Milestone[] = []) => {
     const key = `${m.date}-${m.label}`;
     if (!map.has(key)) {
       map.set(key, { ...m, color: m.color || '#ef4444' });
+    }
+  });
+  return Array.from(map.values());
+};
+
+export const mergeVacations = (a: Vacation[] = [], b: Vacation[] = []) => {
+  const map = new Map<string, Vacation>();
+  [...a, ...b].forEach(v => {
+    const key = `${v.start}-${v.end}-${v.label}`;
+    if (!map.has(key)) {
+      map.set(key, { ...v, color: v.color || '#94a3b8' });
     }
   });
   return Array.from(map.values());
@@ -29,6 +40,7 @@ export const dedupeProjects = (list: Project[]) => {
         customColor: exist.customColor || p.customColor,
         notes: exist.notes || p.notes,
         milestones: mergeMilestones(exist.milestones, p.milestones),
+        vacations: mergeVacations(exist.vacations, p.vacations),
       });
     }
   });

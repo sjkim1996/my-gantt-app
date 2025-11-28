@@ -6,11 +6,12 @@ import { Plus, Trash2, RefreshCw, Search, AlertCircle, Settings, X, Check, Brief
 import { Project, Team, Assignee, GroupedProject, EditingMember, ApiProjectsResponse, Milestone } from './types';
 import { parseDate, formatDate, getDaysDiff, getStartOfWeek, generateWeeks, generateDays } from './utils/date';
 import { BAR_COLORS, getRandomHexColor } from './utils/colors';
-import { mergeMilestones, dedupeProjects } from './utils/gantt';
+import { mergeMilestones, mergeVacations, dedupeProjects } from './utils/gantt';
 import GanttTable, { TimelineBlock } from './components/GanttTable';
 import ChartControls from './components/ChartControls';
 import Dashboard from './components/Dashboard';
 import ProjectForm from './components/ProjectForm';
+import { Vacation } from './types';
 
 // Auth Logic (Inlined for single-file stability)
 const hasValidLoginToken = () => {
@@ -94,9 +95,8 @@ export default function ResourceGanttChart() {
   const [projectTentative, setProjectTentative] = useState(false);
   const [projectCustomColor, setProjectCustomColor] = useState(getRandomHexColor());
   const [projectNotes, setProjectNotes] = useState('');
-  const [projectMilestones, setProjectMilestones] = useState<Milestone[]>([]);
-  const [projectMilestoneLabel, setProjectMilestoneLabel] = useState('');
-  const [projectMilestoneDate, setProjectMilestoneDate] = useState('');
+  const [projectMilestones, setProjectMilestones] = useState<Milestone[]>([{ id: 'init-m1', label: '', date: '', color: getRandomHexColor() }]);
+  const [projectVacations, setProjectVacations] = useState<Vacation[]>([{ id: 'init-v1', label: '', start: '', end: '', color: '#94a3b8' }]);
   const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([{ name: '김철수', team: '기획팀' }]);
   const [assigneeInput, setAssigneeInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -221,13 +221,14 @@ export default function ResourceGanttChart() {
       const e = parseDate(p.end).getTime();
       if (todayTime >= s && todayTime <= e) {
         if (!map.has(p.name)) {
-          map.set(p.name, { ...p, members: [], start: p.start, end: p.end, milestones: p.milestones ? mergeMilestones(p.milestones, []) : [] });
+          map.set(p.name, { ...p, members: [], start: p.start, end: p.end, milestones: p.milestones ? mergeMilestones(p.milestones, []) : [], vacations: p.vacations ? mergeVacations(p.vacations, []) : [] });
         }
         const group = map.get(p.name)!;
         if (!group.members.find(m => m.person === p.person && m.team === p.team)) group.members.push({ person: p.person, team: p.team });
         if (parseDate(p.start) < parseDate(group.start)) group.start = p.start;
         if (parseDate(p.end) > parseDate(group.end)) group.end = p.end;
         group.milestones = mergeMilestones(group.milestones, p.milestones);
+        group.vacations = mergeVacations(group.vacations, p.vacations);
       }
     });
     return Array.from(map.values());
@@ -355,13 +356,14 @@ export default function ResourceGanttChart() {
     const map = new Map<string, GroupedProject>();
     projects.forEach(p => {
       if (!map.has(p.name)) {
-        map.set(p.name, { ...p, members: [], start: p.start, end: p.end, milestones: p.milestones ? mergeMilestones(p.milestones, []) : [] });
+        map.set(p.name, { ...p, members: [], start: p.start, end: p.end, milestones: p.milestones ? mergeMilestones(p.milestones, []) : [], vacations: p.vacations ? mergeVacations(p.vacations, []) : [] });
       }
       const group = map.get(p.name)!;
       if (!group.docUrl && p.docUrl) group.docUrl = p.docUrl;
       if (p.isTentative) group.isTentative = true;
       if (!group.customColor && p.customColor) group.customColor = p.customColor;
       group.milestones = mergeMilestones(group.milestones, p.milestones);
+      group.vacations = mergeVacations(group.vacations, p.vacations);
       if (!group.notes && p.notes) group.notes = p.notes;
       if (!group.members.find(m => m.person === p.person && m.team === p.team)) group.members.push({ person: p.person, team: p.team });
       if (parseDate(p.start) < parseDate(group.start)) group.start = p.start;
@@ -385,14 +387,22 @@ export default function ResourceGanttChart() {
   };
   
   const addProjectMilestone = () => {
-    if (!projectMilestoneLabel || !projectMilestoneDate) return;
-    const m: Milestone = { id: `${Date.now()}`, label: projectMilestoneLabel, date: projectMilestoneDate, color: getRandomHexColor() };
-    setProjectMilestones(prev => [...prev, m]);
-    setProjectMilestoneLabel('');
-    setProjectMilestoneDate('');
+    setProjectMilestones(prev => [...prev, { id: `${Date.now()}`, label: '', date: '', color: getRandomHexColor() }]);
+  };
+  const updateProjectMilestone = (id: string, field: 'label' | 'date', value: string) => {
+    setProjectMilestones(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
   };
   const removeProjectMilestone = (id: string) => {
-    setProjectMilestones(prev => prev.filter((x) => x.id !== id));
+    setProjectMilestones(prev => prev.filter(x => x.id !== id));
+  };
+  const addProjectVacation = () => {
+    setProjectVacations(prev => [...prev, { id: `${Date.now()}`, label: '', start: '', end: '', color: '#94a3b8' }]);
+  };
+  const updateProjectVacation = (id: string, field: 'label' | 'start' | 'end', value: string) => {
+    setProjectVacations(prev => prev.map(v => v.id === id ? { ...v, [field]: value } : v));
+  };
+  const removeProjectVacation = (id: string) => {
+    setProjectVacations(prev => prev.filter(v => v.id !== id));
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -443,6 +453,9 @@ export default function ResourceGanttChart() {
       }
     }
 
+    const cleanedMilestones = projectMilestones.filter(m => m.label && m.date).map(m => ({ ...m, color: m.color || getRandomHexColor() }));
+    const cleanedVacations = projectVacations.filter(v => v.label && v.start && v.end).map(v => ({ ...v, color: v.color || '#94a3b8' }));
+
     const newEntries: ProjectPayload[] = assigneesToAdd.map((assignee) => ({
       name: targetName,
       person: assignee.name,
@@ -455,7 +468,8 @@ export default function ResourceGanttChart() {
       isTentative: finalTentative,
       customColor: finalCustomColor || undefined,
       notes: projectNotes || undefined,
-      milestones: projectMilestones,
+      milestones: cleanedMilestones,
+      vacations: cleanedVacations,
     }));
     
     const res = await apiCreateProject(newEntries);
@@ -471,7 +485,7 @@ export default function ResourceGanttChart() {
           return { ...p, _id: normalizedId, id: normalizedId };
         });
         setProjects(prev => dedupeProjects([...prev, ...normalized]));
-        setProjectName(''); setSelectedAssignees([]); setProjectDocUrl(''); setProjectDocName(''); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([]); setProjectMilestoneLabel(''); setProjectMilestoneDate('');
+        setProjectName(''); setSelectedAssignees([]); setProjectDocUrl(''); setProjectDocName(''); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([{ id: `${Date.now()}`, label: '', date: '', color: getRandomHexColor() }]); setProjectVacations([{ id: `${Date.now()}`, label: '', start: '', end: '', color: '#94a3b8' }]);
         showBanner('프로젝트가 추가되었습니다.', 'success');
         setRecentlyAddedProject(targetName);
         setHoveredProjectName(targetName);
@@ -494,7 +508,7 @@ export default function ResourceGanttChart() {
     setMasterDocName(project.docName || '');
     setMasterTentative(Boolean(project.isTentative));
     setMasterNotes(project.notes || '');
-    setMasterMilestones(project.milestones ? mergeMilestones(project.milestones, []) : []);
+          setMasterMilestones(project.milestones ? mergeMilestones(project.milestones, []) : []);
     setMasterMilestoneLabel('');
     setMasterMilestoneDate('');
     const members: EditingMember[] = relatedProjects.map(p => ({ 
@@ -510,13 +524,14 @@ export default function ResourceGanttChart() {
         customColor: p.customColor,
         notes: p.notes,
         milestones: p.milestones,
+        vacations: p.vacations,
     }));
     setEditingMembers(members); setIsModalOpen(true);
   };
 
   const addMemberInModal = (assignee: Assignee) => {
     if (editingMembers.some(m => m.person === assignee.name && m.team === assignee.team && !m.isDeleted)) { setModalAssigneeInput(''); return; }
-    const newMember: EditingMember = { id: Date.now(), person: assignee.name, team: assignee.team, start: masterStart, end: masterEnd, isNew: true, docUrl: masterDocUrl, docName: masterDocName, isTentative: masterTentative, customColor: masterCustomColor, notes: masterNotes, milestones: [...masterMilestones] };
+    const newMember: EditingMember = { id: Date.now(), person: assignee.name, team: assignee.team, start: masterStart, end: masterEnd, isNew: true, docUrl: masterDocUrl, docName: masterDocName, isTentative: masterTentative, customColor: masterCustomColor, notes: masterNotes, milestones: [...masterMilestones], vacations: [] };
     setEditingMembers([...editingMembers, newMember]); setModalAssigneeInput(''); setModalShowSuggestions(false); modalInputRef.current?.focus();
   };
   const removeMemberInModal = (index: number) => { const updated = [...editingMembers]; updated[index].isDeleted = true; setEditingMembers(updated); };
@@ -541,14 +556,14 @@ export default function ResourceGanttChart() {
     const newMembers = editingMembers.filter(m => (m.isNew || !m._id) && !m.isDeleted);
     if (newMembers.length > 0) {
         await apiCreateProject(newMembers.map(m => ({
-            name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: masterDocUrl, docName: masterDocName, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: masterMilestones
+            name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: masterDocUrl, docName: masterDocName, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: masterMilestones, vacations: m.vacations
         })));
     }
 
     const updatedMembers = editingMembers.filter(m => !m.isNew && !m.isDeleted && m._id);
     for (const m of updatedMembers) {
         await apiUpdateProject({
-            _id: m._id, name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: masterDocUrl, docName: masterDocName, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: masterMilestones
+            _id: m._id, name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: masterDocUrl, docName: masterDocName, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: masterMilestones, vacations: m.vacations
         });
     }
 
@@ -929,24 +944,27 @@ export default function ResourceGanttChart() {
           projectNotes={projectNotes}
           setProjectNotes={setProjectNotes}
           projectMilestones={projectMilestones}
-          projectMilestoneLabel={projectMilestoneLabel}
-          projectMilestoneDate={projectMilestoneDate}
-          setProjectMilestoneLabel={setProjectMilestoneLabel}
-          setProjectMilestoneDate={setProjectMilestoneDate}
           addProjectMilestone={addProjectMilestone}
+          updateProjectMilestone={updateProjectMilestone}
           removeProjectMilestone={removeProjectMilestone}
+          vacations={projectVacations}
+          addVacation={addProjectVacation}
+          updateVacation={updateProjectVacation}
+          removeVacation={removeProjectVacation}
         />
 
         {/* Dashboard Grid */}
-        <Dashboard
-          todayDate={todayDate}
-          activeProjectsToday={activeProjectsToday}
-          groupedProjects={groupedProjects}
-          hoveredProjectName={hoveredProjectName}
-          onShortcutClick={handleShortcutClick}
-          onProjectClick={handleProjectClick}
-          setHoveredProjectName={setHoveredProjectName}
-        />
+        <div className="w-full h-[240px]">
+          <Dashboard
+            todayDate={todayDate}
+            activeProjectsToday={activeProjectsToday}
+            groupedProjects={groupedProjects}
+            hoveredProjectName={hoveredProjectName}
+            onShortcutClick={handleShortcutClick}
+            onProjectClick={handleProjectClick}
+            setHoveredProjectName={setHoveredProjectName}
+          />
+        </div>
 
         {/* Chart Controls */}
         <ChartControls

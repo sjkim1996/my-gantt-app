@@ -1,6 +1,7 @@
 import React from 'react';
 import { Plus, X } from 'lucide-react';
-import { Assignee, Milestone } from '../types';
+import { Assignee, Milestone, Vacation } from '../types';
+import VacationRow from './VacationRow';
 
 type Props = {
   projectName: string;
@@ -23,12 +24,13 @@ type Props = {
   projectNotes: string;
   setProjectNotes: (v: string) => void;
   projectMilestones: Milestone[];
-  projectMilestoneLabel: string;
-  projectMilestoneDate: string;
-  setProjectMilestoneLabel: (v: string) => void;
-  setProjectMilestoneDate: (v: string) => void;
   addProjectMilestone: () => void;
+  updateProjectMilestone: (id: string, field: 'label' | 'date', value: string) => void;
   removeProjectMilestone: (id: string) => void;
+  vacations: Vacation[];
+  addVacation: () => void;
+  updateVacation: (id: string, field: 'label' | 'start' | 'end', value: string) => void;
+  removeVacation: (id: string) => void;
 };
 
 const ProjectForm: React.FC<Props> = ({
@@ -52,12 +54,13 @@ const ProjectForm: React.FC<Props> = ({
   projectNotes,
   setProjectNotes,
   projectMilestones,
-  projectMilestoneLabel,
-  projectMilestoneDate,
-  setProjectMilestoneLabel,
-  setProjectMilestoneDate,
   addProjectMilestone,
+  updateProjectMilestone,
   removeProjectMilestone,
+  vacations,
+  addVacation,
+  updateVacation,
+  removeVacation,
 }) => {
   return (
     <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 w-full">
@@ -169,38 +172,35 @@ const ProjectForm: React.FC<Props> = ({
           />
         </div>
         <div className="md:col-span-12 space-y-2">
-          <label className="block text-xs font-bold text-gray-400">중요 일정 (시사일/PPM 등)</label>
-          <div className="flex flex-wrap gap-2 items-center">
-            <input
-              type="text"
-              value={projectMilestoneLabel}
-              onChange={(e) => setProjectMilestoneLabel(e.target.value)}
-              placeholder="이벤트 이름"
-              className="flex-1 min-w-[140px] border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
-            />
-            <input
-              type="date"
-              value={projectMilestoneDate}
-              onChange={(e) => setProjectMilestoneDate(e.target.value)}
-              className="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
-            />
-            <button type="button" onClick={addProjectMilestone} className="px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700">
-              추가
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {projectMilestones.map((m) => (
-              <span key={m.id} className="px-2 py-1 rounded border border-gray-200 bg-gray-50 text-xs flex items-center gap-2">
-                <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: m.color }}></span>
-                <span className="font-bold text-gray-800">{m.label}</span>
-                <span className="text-gray-500">{m.date}</span>
-                <button onClick={() => removeProjectMilestone(m.id)} className="text-gray-400 hover:text-red-500">
-                  ×
+          <label className="block text-xs font-bold text-gray-400">특이 스케줄 (시사일/PPM 등)</label>
+          <div className="flex flex-col gap-2">
+            {projectMilestones.map((m, idx) => (
+              <div key={m.id} className="flex flex-wrap gap-2 items-center">
+                <input
+                  type="text"
+                  value={m.label}
+                  onChange={(e) => updateProjectMilestone(m.id, 'label', e.target.value)}
+                  placeholder={`특이 스케줄 ${idx + 1} 입력`}
+                  className="flex-1 min-w-[140px] border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+                <input
+                  type="date"
+                  value={m.date}
+                  onChange={(e) => updateProjectMilestone(m.id, 'date', e.target.value)}
+                  className="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none"
+                />
+                <button type="button" onClick={addProjectMilestone} className="px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700">
+                  +
                 </button>
-              </span>
+                <button type="button" onClick={() => removeProjectMilestone(m.id)} className="px-3 py-2 bg-gray-100 text-gray-500 text-xs font-bold rounded hover:bg-gray-200">
+                  ′
+                </button>
+              </div>
             ))}
           </div>
         </div>
+
+        <VacationRow vacations={vacations} onAdd={addVacation} onChange={updateVacation} onRemove={removeVacation} />
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import React from 'react';
-import { parseDate, getDaysDiff } from '../utils/date';
+import { parseDate, formatDate, getDaysDiff } from '../utils/date';
 import { getColorSet } from '../utils/colors';
-import { getPackedProjects, getProjectStyle } from '../utils/gantt';
+import { getPackedProjects } from '../utils/gantt';
 import { Project, Team } from '../types';
 
 export type TimelineBlock = {
@@ -41,6 +41,9 @@ const GanttTable: React.FC<Props> = ({
   handleProjectClick,
   chartTotalDays,
 }) => {
+  const chartStart = timeline.length > 0 ? parseDate(formatDate(timeline[0].start)) : null;
+  const chartEnd = timeline.length > 0 ? parseDate(formatDate(timeline[timeline.length - 1].end)) : null;
+
   return (
     <div
       className="flex-1 rounded-xl shadow-sm bg-white border border-gray-200 flex flex-col w-full relative mx-auto max-w-[1400px] mb-8 overflow-x-auto"
@@ -82,6 +85,16 @@ const GanttTable: React.FC<Props> = ({
                   const rowKey = `${team.name}-${member}`;
                   const myProjects = projects.filter((p) => p.person === member && p.team === team.name);
                   const { packed, totalRows } = getPackedProjects(myProjects);
+                  const memberVacations = (() => {
+                    const map = new Map<string, { label: string; start: Date; end: Date; color: string }>();
+                    myProjects.forEach(p => (p.vacations || []).forEach(v => {
+                      const s = parseDate(v.start);
+                      const e = parseDate(v.end);
+                      const key = `${v.label}-${v.start}-${v.end}`;
+                      if (!map.has(key)) map.set(key, { label: v.label, start: s, end: e, color: v.color || '#94a3b8' });
+                    }));
+                    return Array.from(map.values());
+                  })();
                   const rowHeight = Math.max(44, totalRows * 32 + 12);
 
                   return (
@@ -111,49 +124,78 @@ const GanttTable: React.FC<Props> = ({
                           ))}
                         </div>
 
+                        {chartStart && chartEnd && memberVacations.map((vac, idx) => {
+                          if (vac.end < chartStart || vac.start > chartEnd) return null;
+                          const effectiveStart = vac.start < chartStart ? chartStart : vac.start;
+                          const effectiveEnd = vac.end > chartEnd ? chartEnd : vac.end;
+                          const duration = Math.max(1, getDaysDiff(chartStart, chartEnd) + 1);
+                          const left = (getDaysDiff(chartStart, effectiveStart) / duration) * 100;
+                          const width = (getDaysDiff(effectiveStart, effectiveEnd) + 1) / duration * 100;
+                          return (
+                            <div
+                              key={`vac-${rowKey}-${idx}`}
+                              className="absolute h-3 rounded bg-slate-200/70 border border-slate-300/80 z-10"
+                              style={{ left: `${left}%`, width: `${width}%`, top: '2px' }}
+                              title={vac.label ? `휴가: ${vac.label}` : '휴가'}
+                            />
+                          );
+                        })}
+
                         {packed.map((proj) => {
-                          const projPlacement = getProjectStyle(proj, timeline, chartTotalDays);
-                          if (!projPlacement) return null;
-                          const { style, displayStart, displayEnd } = projPlacement;
+                          if (!chartStart || !chartEnd || chartTotalDays <= 0) return null;
+                          const pStart = parseDate(proj.start);
+                          const pEnd = parseDate(proj.end);
+                          if (pEnd < chartStart || pStart > chartEnd) return null;
+
+                          const effectiveStart = pStart < chartStart ? chartStart : pStart;
+                          const effectiveEnd = pEnd > chartEnd ? chartEnd : pEnd;
+                          const duration = Math.max(1, getDaysDiff(chartStart, chartEnd) + 1);
+
                           const isDimmed = hoveredProjectName && hoveredProjectName !== proj.name;
                           const isHighlighted = hoveredProjectName === proj.name;
                           const colorSet = getColorSet(proj);
-                          const projStart = parseDate(proj.start);
-                          const projEnd = parseDate(proj.end);
-                          const effectiveStart = displayStart || projStart;
-                          const effectiveEnd = displayEnd || projEnd;
-                          const duration = Math.max(1, getDaysDiff(effectiveStart, effectiveEnd) + 1);
                           const barTitle = proj.notes ? `${proj.name} - 메모: ${proj.notes}` : proj.name;
 
-                          const milestonesInRange = (proj.milestones || [])
-                            .filter((m) => {
-                              const d = parseDate(m.date);
-                              return d >= effectiveStart && d <= effectiveEnd;
-                            })
-                            .sort((a, b) => parseDate(a.date).getTime() - parseDate(b.date).getTime());
+                          const milestonesInRange = (proj.milestones || []).filter(m => {
+                            const d = parseDate(m.date);
+                            return d >= effectiveStart && d <= effectiveEnd;
+                          }).sort((a, b) => parseDate(a.date).getTime() - parseDate(b.date).getTime());
 
-                          const segments: { start: Date; end: Date }[] = [];
-                          if (milestonesInRange.length === 0) {
-                            segments.push({ start: effectiveStart, end: effectiveEnd });
-                          } else {
-                            let curStart = effectiveStart;
-                            milestonesInRange.forEach((m) => {
-                              const mDate = parseDate(m.date);
-                              const leftEnd = new Date(mDate);
-                              leftEnd.setDate(leftEnd.getDate() - 1);
-                              if (leftEnd >= curStart) segments.push({ start: curStart, end: leftEnd });
-                              curStart = mDate;
+                          const blockSegments: { start: Date; end: Date }[] = [];
+                          timeline.forEach(block => {
+                            const bStart = parseDate(formatDate(block.start));
+                            const bEnd = parseDate(formatDate(block.end));
+                            const segStart = bStart > effectiveStart ? bStart : effectiveStart;
+                            const segEnd = bEnd < effectiveEnd ? bEnd : effectiveEnd;
+                            if (segStart > segEnd) return;
+
+                            let curStart = segStart;
+                            const ms = milestonesInRange.filter(m => {
+                              const d = parseDate(m.date);
+                              return d >= segStart && d <= segEnd;
                             });
-                            if (curStart <= effectiveEnd) segments.push({ start: curStart, end: effectiveEnd });
-                          }
+                            if (ms.length === 0) {
+                              blockSegments.push({ start: segStart, end: segEnd });
+                            } else {
+                              ms.forEach((m) => {
+                                const mDate = parseDate(m.date);
+                                const leftEnd = new Date(mDate);
+                                leftEnd.setDate(leftEnd.getDate() - 1);
+                                if (leftEnd >= curStart) blockSegments.push({ start: curStart, end: leftEnd });
+                                curStart = mDate;
+                              });
+                              if (curStart <= segEnd) blockSegments.push({ start: curStart, end: segEnd });
+                            }
+                          });
 
                           return (
                             <div key={proj.id}>
-                              {segments.map((seg, idx) => {
-                                const segOffset = getDaysDiff(effectiveStart, seg.start);
+                              {blockSegments.map((seg, idx) => {
+                                const segOffset = getDaysDiff(chartStart, seg.start);
                                 const segDuration = Math.max(1, getDaysDiff(seg.start, seg.end) + 1);
                                 const left = (segOffset / duration) * 100;
                                 const width = (segDuration / duration) * 100;
+                                const top = `${proj.row * 30 + 4}px`;
                                 return (
                                   <div
                                     key={`${proj.id}-seg-${idx}`}
@@ -166,7 +208,7 @@ const GanttTable: React.FC<Props> = ({
                                             ${isDimmed ? 'opacity-20 grayscale' : 'opacity-100 hover:shadow-md'}
                                             ${isHighlighted ? 'ring-2 ring-indigo-400 ring-offset-1 scale-[1.01] z-30' : ''}
                                         `}
-                                    style={{ left: `${left}%`, width: `${width}%`, top: style.top, backgroundColor: colorSet.customBg, borderColor: colorSet.customBorder }}
+                                    style={{ left: `${left}%`, width: `${width}%`, top, backgroundColor: colorSet.customBg, borderColor: colorSet.customBorder }}
                                     title={barTitle}
                                   >
                                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${colorSet.barClass || ''}`} style={{ backgroundColor: colorSet.barColor }}></div>
@@ -188,14 +230,14 @@ const GanttTable: React.FC<Props> = ({
                               {(proj.milestones || []).map((m) => {
                                 const mDate = parseDate(m.date);
                                 if (mDate < effectiveStart || mDate > effectiveEnd) return null;
-                                const offset = getDaysDiff(effectiveStart, mDate);
+                                const offset = getDaysDiff(chartStart, mDate);
                                 const leftPos = (offset / duration) * 100;
                                 const markerWidth = viewMode === 'day' ? 10 : 6;
                                 return (
                                   <div
                                     key={m.id}
                                     className="absolute z-40 hover:scale-110 transition-transform cursor-help rounded-sm shadow-sm"
-                                    style={{ left: `${leftPos}%`, width: `${markerWidth}px`, minWidth: `${markerWidth}px`, backgroundColor: m.color || '#ef4444', top: style.top }}
+                                    style={{ left: `${leftPos}%`, width: `${markerWidth}px`, minWidth: `${markerWidth}px`, backgroundColor: m.color || '#ef4444', top: `${proj.row * 30 + 4}px` }}
                                     title={`${m.label} (${m.date})`}
                                   />
                                 );

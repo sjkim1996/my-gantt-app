@@ -5,6 +5,14 @@ export interface Milestone {
   color: string;
 }
 
+export interface Vacation {
+  id: string;
+  label: string;
+  start: string;
+  end: string;
+  color: string;
+}
+
 export interface Project {
   _id?: string; 
   id: string | number;   
@@ -20,6 +28,7 @@ export interface Project {
   customColor?: string;
   notes?: string;
   milestones?: Milestone[];
+  vacations?: Vacation[];
 }
 
 export interface Team {
@@ -52,6 +61,7 @@ export interface EditingMember {
   customColor?: string;
   notes?: string;
   milestones?: Milestone[];
+  vacations?: Vacation[];
   isNew?: boolean;
   isDeleted?: boolean;
 }
