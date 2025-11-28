@@ -59,7 +59,7 @@ const GanttTable: React.FC<Props> = ({
       className="flex-1 rounded-xl shadow-sm bg-white border border-gray-200 flex flex-col w-full relative mx-auto max-w-[1400px] mb-8 overflow-x-auto"
       ref={chartContainerRef}
     >
-      <div className="overflow-auto custom-scrollbar">
+      <div className="overflow-auto custom-scrollbar rounded-xl">
         <table className="w-full border-collapse min-w-[1100px]">
           <thead className="sticky top-0 z-50 bg-white shadow-sm">
             <tr>
@@ -75,7 +75,7 @@ const GanttTable: React.FC<Props> = ({
                   key={w.id}
                   ref={w.isTodayWeek ? todayColumnRef : null}
                   style={{ minWidth: viewMode === 'week' ? 140 : 80 }}
-                  className={`py-2 text-center border-b border-r border-gray-300/70 ${
+                  className={`py-2 text-center border-b border-r border-gray-300/70 first:rounded-l-lg last:rounded-r-lg ${
                     w.isTodayWeek ? 'bg-indigo-50/50' : blockHasEvent[w.id] ? 'bg-amber-50' : 'bg-white'
                   }`}
                 >
