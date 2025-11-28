@@ -18,7 +18,7 @@
 }
 
 .overlayHigh {
-  @apply z-[70];
+  @apply z-[120];
 }
 
 .overlayMid {

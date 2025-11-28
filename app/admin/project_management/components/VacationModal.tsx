@@ -91,7 +91,13 @@ const VacationModal: React.FC<Props> = ({
                   value={v.end}
                   onChange={(e) => onChange(v.id, 'end', e.target.value)}
                 />
-                <button onClick={() => onRemove(v.id)} className="col-span-1 text-sm text-gray-400 hover:text-red-500">-</button>
+                <button
+                  onClick={() => onRemove(v.id)}
+                  className="col-span-1 text-sm font-bold text-red-500 hover:text-red-600 border border-red-200 rounded px-2 py-1 transition"
+                  aria-label="휴가 삭제"
+                >
+                  -
+                </button>
               </div>
               <div className="grid grid-cols-12 gap-2 items-center">
                 <div className="col-span-12">

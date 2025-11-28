@@ -124,11 +124,15 @@ export default function ResourceGanttChart() {
     setBanner({ text, tone });
   };
 
+  const lastViewMode = useRef<'week' | 'day'>(viewMode);
   useEffect(() => {
-    if (viewMode === 'week') {
-      setChartStartDate(prev => formatDate(getStartOfWeek(new Date(prev))));
-    } else {
-      setChartStartDate(formatDate(todayDate));
+    if (viewMode !== lastViewMode.current) {
+      if (viewMode === 'week') {
+        setChartStartDate(prev => formatDate(getStartOfWeek(new Date(prev))));
+      } else {
+        setChartStartDate(formatDate(todayDate));
+      }
+      lastViewMode.current = viewMode;
     }
   }, [viewMode, todayDate]);
 

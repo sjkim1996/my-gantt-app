@@ -1,7 +1,7 @@
 @reference "../../../globals.css";
 
 .overlay {
-  @apply fixed inset-0 z-[90] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4;
+  @apply fixed inset-0 z-[110] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4;
 }
 
 .modal {
