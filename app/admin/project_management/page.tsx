@@ -127,8 +127,10 @@ export default function ResourceGanttChart() {
   useEffect(() => {
     if (viewMode === 'week') {
       setChartStartDate(prev => formatDate(getStartOfWeek(new Date(prev))));
+    } else {
+      setChartStartDate(formatDate(todayDate));
     }
-  }, [viewMode]);
+  }, [viewMode, todayDate]);
 
   useEffect(() => {
     const lockScroll = isModalOpen || isTeamModalOpen || isVacationModalOpen;
