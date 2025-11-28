@@ -69,6 +69,7 @@ const VacationModal: React.FC<Props> = ({
               </div>
             )}
           </div>
+          <p className="text-xs text-gray-500 mb-2">검색에서 선택하면 새 휴가 행이 추가되며, 직접 입력도 가능합니다.</p>
 
           <div className={styles.gridHeader}>
             <div className={styles.col3}>구성원명</div>

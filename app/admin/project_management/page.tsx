@@ -102,7 +102,7 @@ export default function ResourceGanttChart() {
   const [projectVacations, setProjectVacations] = useState<Vacation[]>([{ id: 'init-v1', person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
   const [vacationSearch, setVacationSearch] = useState('');
   const [showVacationSuggestions, setShowVacationSuggestions] = useState(false);
-  const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([{ name: '김철수', team: '기획팀' }]);
+  const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([]);
   const [assigneeInput, setAssigneeInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -432,7 +432,9 @@ export default function ResourceGanttChart() {
   };
 
   const handleAddProject = async () => {
-    if (!projectName || selectedAssignees.length === 0) return;
+    if (!projectName.trim()) { showBanner('프로젝트명을 입력하세요.', 'error'); return; }
+    if (selectedAssignees.length === 0) { showBanner('담당자를 최소 1명 선택하세요.', 'error'); return; }
+    if (!projectStart || !projectEnd) { showBanner('시작일과 종료일을 입력하세요.', 'error'); return; }
 
     const existingGroup = groupedProjects.find((g) => g.name === projectName);
     const existingPairs = new Set(projects.filter(p => p.name === projectName).map(p => `${p.person}__${p.team}`));
@@ -1057,19 +1059,21 @@ export default function ResourceGanttChart() {
       </div>
 
       {/* --- Main Gantt Table (Scrollable) --- */}
-      <GanttTable
-        timeline={timeline}
-        teams={teams}
-        projects={projects}
-        viewMode={viewMode}
-        chartContainerRef={chartContainerRef}
-        todayColumnRef={todayColumnRef}
-        rowRefs={rowRefs}
-        hoveredProjectName={hoveredProjectName}
-        setHoveredProjectName={setHoveredProjectName}
-        handleProjectClick={handleProjectClick}
-        chartTotalDays={chartTotalDays}
-      />
+      <div className={pageStyles.ganttShell}>
+        <GanttTable
+          timeline={timeline}
+          teams={teams}
+          projects={projects}
+          viewMode={viewMode}
+          chartContainerRef={chartContainerRef}
+          todayColumnRef={todayColumnRef}
+          rowRefs={rowRefs}
+          hoveredProjectName={hoveredProjectName}
+          setHoveredProjectName={setHoveredProjectName}
+          handleProjectClick={handleProjectClick}
+          chartTotalDays={chartTotalDays}
+        />
+      </div>
     </div>
   );
 }

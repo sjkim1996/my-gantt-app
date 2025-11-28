@@ -174,47 +174,54 @@ const ProjectForm: React.FC<Props> = ({
             className={styles.notesInput}
           />
         </div>
-        <div className={`${styles.gridFull} flex flex-col gap-2`}>
-          <label className={styles.label}>프로젝트 문서 (PDF 첨부)</label>
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
-            <div className="md:col-span-5">
-              <div className={styles.inputShell}>
-                <input
-                  type="text"
-                  value={projectDocName}
-                  onChange={(e) => setProjectDocName(e.target.value)}
-                  placeholder="파일명 또는 제목"
-                  className={styles.textInput}
-                />
-              </div>
-            </div>
-            <div className="md:col-span-5">
-              <div className={styles.inputShell}>
-                <input
-                  type="text"
-                  value={projectDocUrl}
-                  onChange={(e) => setProjectDocUrl(e.target.value)}
-                  placeholder="문서 URL (선택)"
-                  className={styles.textInput}
-                />
-              </div>
-            </div>
-            <div className="md:col-span-2 flex items-center gap-2">
-              <label className="px-3 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-bold cursor-pointer hover:bg-indigo-100 w-full text-center">
-                PDF 업로드
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  className="hidden"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (file) await handlePdfUpload(file, setProjectDocUrl, setProjectDocName);
-                  }}
-                />
-              </label>
+      <div className={`${styles.gridFull} flex flex-col gap-2`}>
+        <label className={styles.label}>프로젝트 문서 (PDF 첨부)</label>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
+          <div className="md:col-span-5">
+            <div className={styles.inputShell}>
+              <input
+                type="text"
+                value={projectDocName}
+                onChange={(e) => setProjectDocName(e.target.value)}
+                placeholder="파일명 또는 제목"
+                className={styles.textInput}
+              />
             </div>
           </div>
+          <div className="md:col-span-5">
+            <div className={styles.inputShell}>
+              <input
+                type="text"
+                value={projectDocUrl}
+                onChange={(e) => setProjectDocUrl(e.target.value)}
+                placeholder="문서 URL (선택)"
+                className={styles.textInput}
+              />
+            </div>
+          </div>
+          <div className="md:col-span-2 flex items-center gap-2">
+            <label className="px-3 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-bold cursor-pointer hover:bg-indigo-100 w-full text-center">
+              PDF 업로드
+              <input
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (file) await handlePdfUpload(file, setProjectDocUrl, setProjectDocName);
+                }}
+              />
+            </label>
+          </div>
+          {(projectDocName || projectDocUrl) && (
+            <div className="md:col-span-12 text-xs text-gray-600 flex items-center gap-2">
+              <span className="font-semibold">첨부:</span>
+              <span className="truncate">{projectDocName || '파일명 없음'}</span>
+              {projectDocUrl && <span className="text-indigo-600 truncate">{projectDocUrl}</span>}
+            </div>
+          )}
         </div>
+      </div>
         <div className={styles.gridFull + ' space-y-2'}>
           <label className={styles.label}>특이 스케줄 (시사일/PPM 등)</label>
           <div className="flex flex-col gap-2">
