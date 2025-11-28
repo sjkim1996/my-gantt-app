@@ -100,7 +100,7 @@ export default function ResourceGanttChart() {
   const [projectNotes, setProjectNotes] = useState('');
   const [projectMilestones, setProjectMilestones] = useState<Milestone[]>([{ id: 'init-m1', label: '', date: '', color: getRandomHexColor() }]);
   const [projectVacations, setProjectVacations] = useState<Vacation[]>([{ id: 'init-v1', person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
-  const [vacationFromEdit, setVacationFromEdit] = useState(false);
+  const [vacationContext, setVacationContext] = useState<'create' | 'edit'>('create');
   const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([]);
   const [assigneeInput, setAssigneeInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -421,6 +421,26 @@ export default function ResourceGanttChart() {
       const matched = vacs.filter(v => (v.person || '').toLowerCase() === m.person.toLowerCase() && (v.team || '').toLowerCase() === m.team.toLowerCase());
       return { ...m, vacations: matched.length ? matched : m.vacations || [] };
     }));
+  };
+
+  const openVacationModal = (mode: 'create' | 'edit') => {
+    if (mode === 'edit') {
+      const combined = editingMembers.flatMap(m => (m.vacations || []).map(v => ({ ...v, person: v.person || m.person, team: v.team || m.team })));
+      setProjectVacations(combined.length ? combined : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
+    } else {
+      setProjectVacations(prev => prev.length ? prev : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
+    }
+    setVacationContext(mode);
+    setIsVacationModalOpen(true);
+  };
+
+  const handleVacationSave = (vacs: Vacation[]) => {
+    const valid = vacs.filter(v => v.person && v.start && v.end && !isNaN(Date.parse(v.start)) && !isNaN(Date.parse(v.end)) && new Date(v.start) <= new Date(v.end))
+      .map(v => ({ ...v, team: v.team || '미배정', color: v.color || '#94a3b8' }));
+    setProjectVacations(valid.length ? valid : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
+    if (vacationContext === 'edit') distributeVacationsToMembers(valid);
+    showBanner('휴가가 적용되었습니다.', 'info');
+    setIsVacationModalOpen(false);
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -900,12 +920,7 @@ export default function ResourceGanttChart() {
         <div className={pageStyles.cardTight}>
                   <div className={pageStyles.vacationHeader}>
                     <h4 className={pageStyles.subTitle}>구성원 휴가</h4>
-                    <button onClick={() => {
-                      const combined = editingMembers.flatMap(m => (m.vacations || []).map(v => ({ ...v, person: v.person || m.person, team: v.team || m.team })));
-                      setProjectVacations(combined.length ? combined : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
-                      setVacationFromEdit(true);
-                      setIsVacationModalOpen(true);
-                    }} className={pageStyles.vacationButton}>휴가 입력</button>
+                    <button onClick={() => openVacationModal('edit')} className={pageStyles.vacationButton}>휴가 입력</button>
                   </div>
                   {editingMembers.some(m => m.vacations && m.vacations.length) ? (
                     <div className={pageStyles.vacationList}>
@@ -1027,7 +1042,7 @@ export default function ResourceGanttChart() {
           addProjectMilestone={addProjectMilestone}
           updateProjectMilestone={updateProjectMilestone}
           removeProjectMilestone={removeProjectMilestone}
-          onOpenVacationModal={() => setIsVacationModalOpen(true)}
+          onOpenVacationModal={() => openVacationModal('create')}
         />
 
         <VacationModal
@@ -1037,11 +1052,7 @@ export default function ResourceGanttChart() {
           onChange={updateProjectVacation}
           onAdd={addProjectVacation}
           onRemove={removeProjectVacation}
-          onSave={(vacs) => {
-            setProjectVacations(vacs);
-            if (vacationFromEdit) distributeVacationsToMembers(vacs);
-            setIsVacationModalOpen(false);
-          }}
+          onSave={handleVacationSave}
           allAssignees={allMembers}
         />
 

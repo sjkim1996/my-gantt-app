@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { useState } from 'react';
 import { Vacation, Assignee } from '../types';
 import styles from '../styles/VacationModal.module.css';
 
