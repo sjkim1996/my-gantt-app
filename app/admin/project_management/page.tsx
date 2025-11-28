@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation'; 
-import { Plus, Trash2, RefreshCw, Search, AlertCircle, Settings, X, Check, Target, Edit3, Clock, Briefcase, ChevronLeft, ChevronRight, LogOut, Paperclip, StickyNote, ChevronDown, ChevronUp, Flag } from 'lucide-react';
+import { Plus, Trash2, RefreshCw, Search, AlertCircle, Settings, X, Check, Target, Edit3, Clock, Briefcase, ChevronLeft, ChevronRight, LogOut, Flag } from 'lucide-react';
 
 
 
@@ -16,15 +16,6 @@ const clearLoginToken = () => {
   if (typeof window === 'undefined') return;
   sessionStorage.removeItem('isLoggedIn');
 };
-
-// PDF Logic (Inlined)
-const readPdfAsDataUrl = (file: File): Promise<string> => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
-  reader.onerror = reject;
-  reader.readAsDataURL(file);
-});
-// -----------------------------------------------------------
 
 // --- 1. 타입 정의 ---
 interface Milestone {
@@ -266,15 +257,6 @@ const MOCK_PROJECTS_2025: Project[] = [
   { id: 7, name: '관리자 페이지 고도화', person: '손흥민', team: '개발팀', start: '2025-03-01', end: '2025-04-15', colorIdx: 5 }, 
 ];
 
-const stringToColorClass = (str: string) => {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const colors = ['text-red-600', 'text-orange-600', 'text-amber-600', 'text-green-600', 'text-emerald-600', 'text-teal-600', 'text-cyan-600', 'text-sky-600', 'text-blue-600', 'text-indigo-600', 'text-violet-600', 'text-purple-600', 'text-pink-600', 'text-rose-600'];
-  return colors[Math.abs(hash) % colors.length];
-};
-
 // --- 4. 메인 컴포넌트 ---
 export default function ResourceGanttChart() {
   const router = useRouter();
@@ -286,7 +268,6 @@ export default function ResourceGanttChart() {
   const rowRefs = useRef<{ [key: string]: HTMLTableRowElement | null }>({});
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const todayColumnRef = useRef<HTMLTableHeaderCellElement | null>(null); 
-  const initialScrolledRef = useRef(false);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
@@ -339,11 +320,8 @@ export default function ResourceGanttChart() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const [banner, setBanner] = useState<{ text: string; tone?: 'success' | 'error' | 'info' } | null>(null);
-  const [recentlyAddedProject, setRecentlyAddedProject] = useState<string | null>(null);
-
   const [editingTeams, setEditingTeams] = useState<Team[]>([]);
   const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
-  const [highlightDate, setHighlightDate] = useState('');
 
   useEffect(() => {
     if (banner) {
@@ -434,19 +412,15 @@ export default function ResourceGanttChart() {
     fetchTeams();
   }, [router]);
 
-  const highlightDateObj = useMemo(() => highlightDate ? parseDate(highlightDate) : null, [highlightDate]);
-
   const timeline = useMemo(() => {
     const blocks = viewMode === 'week'
       ? generateWeeks(chartStartDate, 60, todayDate)
       : generateDays(chartStartDate, 120, todayDate);
-    const hTime = highlightDateObj ? highlightDateObj.getTime() : null;
     return blocks.map(b => ({
       ...b,
-      isHighlight: hTime !== null ? (b.start.getTime() <= hTime && hTime <= b.end.getTime()) : false,
       isToday: b.isTodayWeek || (formatDate(b.start) === formatDate(todayDate))
     }));
-  }, [chartStartDate, todayDate, viewMode, highlightDateObj]);
+  }, [chartStartDate, todayDate, viewMode]);
 
   const chartTotalDays = useMemo(() => {
     if (timeline.length === 0) return 0;
@@ -454,6 +428,26 @@ export default function ResourceGanttChart() {
     const end = parseDate(formatDate(timeline[timeline.length - 1].end));
     return getDaysDiff(start, end) + 1;
   }, [timeline]);
+
+  const activeProjectsToday = useMemo(() => {
+    const todayTime = parseDate(formatDate(todayDate)).getTime();
+    const map = new Map<string, GroupedProject>();
+    projects.forEach(p => {
+      const s = parseDate(p.start).getTime();
+      const e = parseDate(p.end).getTime();
+      if (todayTime >= s && todayTime <= e) {
+        if (!map.has(p.name)) {
+          map.set(p.name, { ...p, members: [], start: p.start, end: p.end, milestones: p.milestones ? mergeMilestones(p.milestones, []) : [] });
+        }
+        const group = map.get(p.name)!;
+        if (!group.members.find(m => m.person === p.person && m.team === p.team)) group.members.push({ person: p.person, team: p.team });
+        if (parseDate(p.start) < parseDate(group.start)) group.start = p.start;
+        if (parseDate(p.end) > parseDate(group.end)) group.end = p.end;
+        group.milestones = mergeMilestones(group.milestones, p.milestones);
+      }
+    });
+    return Array.from(map.values());
+  }, [projects, todayDate]);
 
   const allMembers = useMemo(() => {
     const list: Assignee[] = [];
@@ -638,15 +632,6 @@ export default function ResourceGanttChart() {
     return Array.from(map.values());
   }, [projects]);
 
-  const activeProjectGroups = useMemo(() => {
-    const todayTime = parseDate(formatDate(todayDate)).getTime();
-    return groupedProjects.filter(g => {
-      const s = parseDate(g.start).getTime();
-      const e = parseDate(g.end).getTime();
-      return todayTime >= s && todayTime <= e;
-    });
-  }, [groupedProjects, todayDate]);
-
   const isEventComposing = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const native = e.nativeEvent as unknown as { isComposing?: boolean };
     return Boolean(native?.isComposing);
@@ -681,24 +666,6 @@ export default function ResourceGanttChart() {
       let newName = assigneeInput.trim(); let newTeam = '미배정';
       if (newName.includes('-')) { const parts = newName.split('-'); newTeam = parts[0].trim(); newName = parts[1].trim(); }
       addAssignee({ name: newName, team: newTeam, isNew: true });
-    }
-  };
-
-  const handlePdfUpload = async (file: File, setUrl: (v: string) => void, setName: (v: string) => void) => {
-    if (!file || file.type !== 'application/pdf') {
-      alert('PDF 파일만 업로드 가능합니다.');
-      return;
-    }
-    if (file.size > 8 * 1024 * 1024) {
-      alert('PDF는 8MB 이하로 업로드해주세요.');
-      return;
-    }
-    try {
-      const dataUrl = await readPdfAsDataUrl(file);
-      setUrl(dataUrl);
-      setName(file.name);
-    } catch {
-      alert('파일을 읽는 중 오류가 발생했습니다.');
     }
   };
 
@@ -1178,7 +1145,7 @@ export default function ResourceGanttChart() {
       )}
       
       {/* --- Header & Controls Area (Fixed at top) --- */}
-      <div className="flex-none space-y-6 mb-4 px-3 md:px-6 lg:px-8 pt-4 w-full max-w-[1600px] mx-auto">
+      <div className="flex-none space-y-6 mb-4 px-3 md:px-6 lg:px-8 pt-4 w-full max-w-[1400px] mx-auto">
         <div className="flex justify-between items-end">
             <div>
                 <h1 className="text-2xl font-bold text-gray-900 tracking-tight mb-1 flex items-center gap-2">
@@ -1245,6 +1212,24 @@ export default function ResourceGanttChart() {
                  <label className="block text-xs font-bold text-gray-400 mb-1">간단 메모</label>
                  <input type="text" value={projectNotes} onChange={(e) => setProjectNotes(e.target.value)} placeholder="메모를 남겨보세요 (선택사항)" className="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none"/>
             </div>
+            <div className="md:col-span-12 space-y-2">
+              <label className="block text-xs font-bold text-gray-400">중요 일정 (시사일/PPM 등)</label>
+              <div className="flex flex-wrap gap-2 items-center">
+                <input type="text" value={projectMilestoneLabel} onChange={(e) => setProjectMilestoneLabel(e.target.value)} placeholder="이벤트 이름" className="flex-1 min-w-[140px] border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none" />
+                <input type="date" value={projectMilestoneDate} onChange={(e) => setProjectMilestoneDate(e.target.value)} className="border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none" />
+                <button type="button" onClick={addProjectMilestone} className="px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700">추가</button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {projectMilestones.map(m => (
+                  <span key={m.id} className="px-2 py-1 rounded border border-gray-200 bg-gray-50 text-xs flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: m.color }}></span>
+                    <span className="font-bold text-gray-800">{m.label}</span>
+                    <span className="text-gray-500">{m.date}</span>
+                    <button onClick={() => setProjectMilestones(prev => prev.filter(x => x.id !== m.id))} className="text-gray-400 hover:text-red-500">×</button>
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1305,11 +1290,15 @@ export default function ResourceGanttChart() {
         </div>
 
         {/* Chart Controls */}
-        <div className="flex items-center justify-between px-1 pb-2">
+        <div className="flex items-center justify-between px-1 pb-2 gap-3">
             <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
-                <button onClick={handlePrevMonth} className="p-1.5 hover:bg-gray-100 rounded text-gray-600 flex items-center gap-1 text-xs font-bold"><ChevronLeft className="w-4 h-4"/> 이전 달</button>
+                <button onClick={handlePrevMonth} className="p-1.5 hover:bg-gray-100 rounded text-gray-600 flex items-center gap-1 text-xs font-bold"><ChevronLeft className="w-4 h-4"/> 이전</button>
                 <button onClick={handleJumpToToday} className="px-3 py-1 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded border border-indigo-100">오늘 (Today)</button>
-                <button onClick={handleNextMonth} className="p-1.5 hover:bg-gray-100 rounded text-gray-600 flex items-center gap-1 text-xs font-bold">다음 달 <ChevronRight className="w-4 h-4"/></button>
+                <button onClick={handleNextMonth} className="p-1.5 hover:bg-gray-100 rounded text-gray-600 flex items-center gap-1 text-xs font-bold">다음 <ChevronRight className="w-4 h-4"/></button>
+            </div>
+            <div className="flex items-center gap-2 bg-white p-1 rounded-lg border border-gray-200 shadow-sm">
+              <button onClick={() => setViewMode('week')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'week' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>주간</button>
+              <button onClick={() => setViewMode('day')} className={`px-3 py-1 text-xs font-bold rounded ${viewMode === 'day' ? 'bg-indigo-600 text-white' : 'text-gray-700 hover:bg-gray-100'}`}>일간</button>
             </div>
             <div className="text-xs font-medium text-gray-500 flex items-center gap-2">
                 <div className="flex items-center gap-1"><span className="w-2 h-2 bg-gray-200 rounded-full"></span> 대기</div>
@@ -1320,19 +1309,20 @@ export default function ResourceGanttChart() {
       </div>
 
       {/* --- Main Gantt Table (Scrollable) --- */}
-      <div className="flex-1 overflow-hidden rounded-xl shadow-sm bg-white border border-gray-200 flex flex-col w-full relative mx-auto max-w-[1600px] mb-6" ref={chartContainerRef}>
-        <div className="overflow-auto flex-1 custom-scrollbar">
-          <table className="w-full border-collapse min-w-[4000px]"> 
+      <div className="flex-1 rounded-xl shadow-sm bg-white border border-gray-200 flex flex-col w-full relative mx-auto max-w-[1400px] mb-8 overflow-x-auto" ref={chartContainerRef}>
+        <div className="overflow-auto custom-scrollbar">
+          <table className="w-full border-collapse min-w-[1100px]"> 
             <thead className="sticky top-0 z-50 bg-white shadow-sm">
               <tr>
                 <th className="sticky left-0 z-50 bg-gray-50 w-24 min-w-[96px] text-left py-3 pl-4 text-xs font-bold text-gray-500 uppercase border-b border-r border-gray-200">Team</th>
                 <th className="sticky left-24 z-50 bg-gray-50 w-28 min-w-[112px] text-left py-3 pl-4 text-xs font-bold text-gray-500 uppercase border-b border-r border-gray-200 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)]">Member</th>
                 
-                {weeks.map(w => (
+                {timeline.map(w => (
                     <th 
                         key={w.id} 
                         ref={w.isTodayWeek ? todayColumnRef : null}
-                        className={`min-w-[140px] py-2 text-center border-b border-r border-gray-300/70 ${w.isTodayWeek ? 'bg-indigo-50/50' : 'bg-white'}`}
+                        style={{ minWidth: viewMode === 'week' ? 140 : 80 }}
+                        className={`py-2 text-center border-b border-r border-gray-300/70 ${w.isTodayWeek ? 'bg-indigo-50/50' : 'bg-white'}`}
                     >
                         <div className={`text-xs font-bold ${w.isTodayWeek ? 'text-indigo-600' : 'text-gray-700'}`}>
                             {w.label} {w.isTodayWeek && <span className="inline-block w-1.5 h-1.5 bg-indigo-500 rounded-full ml-1 align-middle mb-0.5"></span>}
@@ -1365,58 +1355,88 @@ export default function ResourceGanttChart() {
                                         <div>{member}</div>
                                     </td>
                                     
-                                    {/* Chart Area */}
-                                    <td colSpan={weeks.length} className="relative p-0 align-top border-b border-gray-200" style={{ height: rowHeight }}>
+                                    <td colSpan={timeline.length} className="relative p-0 align-top border-b border-gray-200" style={{ height: rowHeight }}>
                                         <div className="absolute inset-0 w-full h-full flex pointer-events-none">
-                                            {/* 그리드 라인 (가로 축 구분선 진하게 변경: border-gray-300/70) */}
-                                            {weeks.map(w => <div key={w.id} className={`flex-1 border-r border-gray-300/70 last:border-0 ${w.isTodayWeek ? 'bg-indigo-50/10' : ''}`}></div>)} 
+                                            {timeline.map(w => <div key={w.id} className={`flex-1 border-r border-gray-300/70 last:border-0 ${w.isTodayWeek ? 'bg-indigo-50/10' : ''}`}></div>)} 
                                         </div>
                                         
                                         {packed.map(proj => {
-                                            if(!getProjectStyle(proj)) return null;
-                                            const { style, displayStart, displayEnd } = getProjectStyle(proj)!;
+                                            const projPlacement = getProjectStyle(proj);
+                                            if(!projPlacement) return null;
+                                            const { style, displayStart, displayEnd } = projPlacement;
                                             const isDimmed = hoveredProjectName && hoveredProjectName !== proj.name;
                                             const isHighlighted = hoveredProjectName === proj.name;
-                                            const colorSet = BAR_COLORS[proj.colorIdx % BAR_COLORS.length];
-                                            
-                                            const duration = getDaysDiff(displayStart, displayEnd) + 1;
+                                            const colorSet = getColorSet(proj);
+                                            const projStart = parseDate(proj.start);
+                                            const projEnd = parseDate(proj.end);
+                                            const effectiveStart = displayStart || projStart;
+                                            const effectiveEnd = displayEnd || projEnd;
+                                            const duration = Math.max(1, getDaysDiff(effectiveStart, effectiveEnd) + 1);
+                                            const barTitle = proj.notes ? `${proj.name} - 메모: ${proj.notes}` : proj.name;
 
-                                            // Calculate visible milestones within this bar segment
-                                            const visibleMilestones = (proj.milestones || []).filter(m => {
-                                                const mDate = parseDate(m.date);
-                                                return mDate >= displayStart && mDate <= displayEnd;
-                                            });
+                                            const milestonesInRange = (proj.milestones || []).filter(m => {
+                                                const d = parseDate(m.date);
+                                                return d >= effectiveStart && d <= effectiveEnd;
+                                            }).sort((a, b) => parseDate(a.date).getTime() - parseDate(b.date).getTime());
+
+                                            const segments: { start: Date; end: Date }[] = [];
+                                            if (milestonesInRange.length === 0) {
+                                                segments.push({ start: effectiveStart, end: effectiveEnd });
+                                            } else {
+                                                let curStart = effectiveStart;
+                                                milestonesInRange.forEach(m => {
+                                                    const mDate = parseDate(m.date);
+                                                    const leftEnd = new Date(mDate);
+                                                    leftEnd.setDate(leftEnd.getDate() - 1);
+                                                    if (leftEnd >= curStart) segments.push({ start: curStart, end: leftEnd });
+                                                    curStart = mDate;
+                                                });
+                                                if (curStart <= effectiveEnd) segments.push({ start: curStart, end: effectiveEnd });
+                                            }
 
                                             return (
-                                                <div 
-                                                    key={proj.id}
-                                                    onClick={() => handleProjectClick(proj)}
-                                                    onMouseEnter={() => setHoveredProjectName(proj.name)}
-                                                    onMouseLeave={() => setHoveredProjectName(null)}
-                                                    style={style}
-                                                    className={`
-                                                        absolute h-7 rounded shadow-sm cursor-pointer flex items-center px-2 z-20 transition-all duration-200 border group/bar
-                                                        ${colorSet.bg} ${colorSet.border}
-                                                        ${isDimmed ? 'opacity-20 grayscale' : 'opacity-100 hover:shadow-md'}
-                                                        ${isHighlighted ? 'ring-2 ring-indigo-400 ring-offset-1 scale-[1.01] z-30' : ''}
-                                                    `}
-                                                >
-                                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${colorSet.bar}`}></div>
-                                                    <span className={`text-[11px] font-bold truncate ml-1 ${colorSet.text}`}>{proj.name}</span>
+                                                <div key={proj.id}>
+                                                  {segments.map((seg, idx) => {
+                                                    const segOffset = getDaysDiff(effectiveStart, seg.start);
+                                                    const segDuration = Math.max(1, getDaysDiff(seg.start, seg.end) + 1);
+                                                    const left = (segOffset / duration) * 100;
+                                                    const width = (segDuration / duration) * 100;
+                                                    return (
+                                                      <div 
+                                                        key={`${proj.id}-seg-${idx}`}
+                                                        onClick={() => handleProjectClick(proj)}
+                                                        onMouseEnter={() => setHoveredProjectName(proj.name)}
+                                                        onMouseLeave={() => setHoveredProjectName(null)}
+                                                        className={`
+                                                            absolute h-7 rounded shadow-sm cursor-pointer flex items-center px-2 z-20 transition-all duration-200 border group/bar
+                                                            ${colorSet.customBg ? '' : `${colorSet.bg} ${colorSet.border}`}
+                                                            ${isDimmed ? 'opacity-20 grayscale' : 'opacity-100 hover:shadow-md'}
+                                                            ${isHighlighted ? 'ring-2 ring-indigo-400 ring-offset-1 scale-[1.01] z-30' : ''}
+                                                        `}
+                                                        style={{ left: `${left}%`, width: `${width}%`, top: style.top, backgroundColor: colorSet.customBg, borderColor: colorSet.customBorder }}
+                                                        title={barTitle}
+                                                      >
+                                                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${colorSet.barClass || ''}`} style={{ backgroundColor: colorSet.barColor }}></div>
+                                                        <span className={`text-[11px] font-bold truncate ml-1 ${colorSet.textClass || ''}`} style={{ color: colorSet.customText }}>{proj.name}</span>
+                                                        {proj.notes && <span className="ml-2 text-[10px] text-gray-700 bg-white/70 px-1 rounded border border-gray-200 truncate max-w-[160px]" title={proj.notes}>{proj.notes}</span>}
+                                                      </div>
+                                                    );
+                                                  })}
 
-                                                    {/* Milestone Markers on Bar */}
-                                                    {visibleMilestones.map(m => {
-                                                        const mDate = parseDate(m.date);
-                                                        const offset = getDaysDiff(displayStart, mDate);
-                                                        const leftPos = (offset / duration) * 100;
-                                                        return (
-                                                            <div key={m.id} 
-                                                                 className="absolute top-1 bottom-1 w-1.5 rounded-sm z-40 hover:scale-125 transition-transform cursor-help border border-white shadow-sm"
-                                                                 style={{ left: `${leftPos}%`, backgroundColor: m.color || '#ef4444' }}
-                                                                 title={`${m.label} (${m.date})`}
-                                                            />
-                                                        )
-                                                    })}
+                                                  {(proj.milestones || []).map(m => {
+                                                    const mDate = parseDate(m.date);
+                                                    if (mDate < effectiveStart || mDate > effectiveEnd) return null;
+                                                    const offset = getDaysDiff(effectiveStart, mDate);
+                                                    const leftPos = (offset / duration) * 100;
+                                                    const markerWidth = viewMode === 'day' ? 10 : 6;
+                                                    return (
+                                                        <div key={m.id} 
+                                                             className="absolute z-40 hover:scale-110 transition-transform cursor-help rounded-sm shadow-sm"
+                                                             style={{ left: `${leftPos}%`, width: `${markerWidth}px`, minWidth: `${markerWidth}px`, backgroundColor: m.color || '#ef4444', top: style.top }}
+                                                             title={`${m.label} (${m.date})`}
+                                                        />
+                                                    )
+                                                  })}
                                                 </div>
                                             )
                                         })}
