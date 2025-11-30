@@ -26,8 +26,8 @@ type Props = {
   attachments: (Attachment & { id: string })[];
   addAttachment: () => void;
   removeAttachment: (id: string) => void;
-  updateAttachmentName: (id: string, name: string) => void;
   uploadAttachment: (id: string, files: FileList | null) => void;
+  clearAttachment: (id: string) => void;
   onOpenAttachment: (att: Attachment) => void;
   projectMilestones: Milestone[];
   addProjectMilestone: () => void;
@@ -59,8 +59,8 @@ const ProjectForm: React.FC<Props> = ({
   attachments,
   addAttachment,
   removeAttachment,
-  updateAttachmentName,
   uploadAttachment,
+  clearAttachment,
   onOpenAttachment,
   projectMilestones,
   addProjectMilestone,
@@ -180,19 +180,19 @@ const ProjectForm: React.FC<Props> = ({
         <div className={`${styles.gridFull} flex flex-col gap-2`}>
           <label className={styles.label}>프로젝트 문서 (첨부 파일)</label>
           <div className="space-y-2">
-            {attachments.map((att, idx) => (
+            {attachments.map((att) => (
               <div key={att.id} className="flex flex-wrap items-center gap-2">
-                <div className="flex-1 min-w-[180px]">
+                <div className="flex-1 min-w-[200px]">
                   <input
                     type="text"
                     value={att.name}
-                    onChange={(e) => updateAttachmentName(att.id, e.target.value)}
-                    placeholder={`파일 ${idx + 1} 이름`}
-                    className={styles.textInput}
+                    readOnly
+                    placeholder="파일을 업로드하면 이름이 표시됩니다"
+                    className={`${styles.textInput} bg-gray-50 cursor-not-allowed`}
                   />
                 </div>
                 <label className="px-3 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-bold cursor-pointer hover:bg-indigo-100">
-                  파일 선택
+                  파일 선택/교체
                   <input
                     type="file"
                     accept="*/*"
@@ -211,6 +211,13 @@ const ProjectForm: React.FC<Props> = ({
                   disabled={!att.key && !att.url}
                 >
                   열기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => clearAttachment(att.id)}
+                  className="px-2 py-1 bg-white text-gray-500 border border-gray-200 rounded hover:bg-gray-50 text-xs font-bold"
+                >
+                  초기화
                 </button>
                 <button
                   type="button"

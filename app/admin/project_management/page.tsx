@@ -48,8 +48,8 @@ export default function ResourceGanttChart() {
   const router = useRouter();
   const [chartStartDate, setChartStartDate] = useState('2025-01-01');
   type AttachmentItem = Attachment & { id: string };
-  const makeAttachment = (data?: Partial<Attachment>): AttachmentItem => ({
-    id: `att-${Math.random().toString(36).slice(2, 7)}-${Date.now()}`,
+  const makeAttachment = (data?: Partial<AttachmentItem>): AttachmentItem => ({
+    id: data?.id || `att-${Math.random().toString(36).slice(2, 7)}-${Date.now()}`,
     name: data?.name || '',
     url: data?.url || '',
     key: data?.key || '',
@@ -455,7 +455,7 @@ export default function ResourceGanttChart() {
         let next = [...prev];
         uploaded.forEach((res, idx) => {
           if (idx === 0) {
-            next = next.map((att) => att.id === targetId ? { ...att, name: att.name || res.name, key: res.key, url: res.url } : att);
+            next = next.map((att) => att.id === targetId ? { ...att, name: res.name, key: res.key, url: res.url } : att);
           } else {
             next.push(makeAttachment({ name: res.name, key: res.key, url: res.url }));
           }
@@ -473,13 +473,13 @@ export default function ResourceGanttChart() {
 
   const addProjectAttachment = () => setProjectAttachments((prev) => [...prev, makeAttachment()]);
   const removeProjectAttachment = (id: string) => setProjectAttachments((prev) => (prev.length === 1 ? prev : prev.filter((a) => a.id !== id)));
-  const updateProjectAttachmentName = (id: string, name: string) => setProjectAttachments((prev) => prev.map((a) => a.id === id ? { ...a, name } : a));
   const uploadProjectAttachment = (id: string, files: FileList | null) => uploadAttachmentsToState(id, files, setProjectAttachments);
+  const clearProjectAttachment = (id: string) => setProjectAttachments((prev) => prev.map((a) => a.id === id ? makeAttachment({ id }) : a));
 
   const addMasterAttachment = () => setMasterAttachments((prev) => [...prev, makeAttachment()]);
   const removeMasterAttachment = (id: string) => setMasterAttachments((prev) => (prev.length === 1 ? prev : prev.filter((a) => a.id !== id)));
-  const updateMasterAttachmentName = (id: string, name: string) => setMasterAttachments((prev) => prev.map((a) => a.id === id ? { ...a, name } : a));
   const uploadMasterAttachment = (id: string, files: FileList | null) => uploadAttachmentsToState(id, files, setMasterAttachments);
+  const clearMasterAttachment = (id: string) => setMasterAttachments((prev) => prev.map((a) => a.id === id ? makeAttachment({ id }) : a));
 
   const removeAssignee = (idx: number) => {
     const newArr = [...selectedAssignees]; newArr.splice(idx, 1); setSelectedAssignees(newArr);
@@ -642,7 +642,6 @@ export default function ResourceGanttChart() {
     const targetName = project.name;
     const relatedProjects = dedupeProjects(projects.filter(p => p.name === targetName));
     const normalizedAttachments = normalizeProjectAttachments(project);
-    const primaryAttachment = normalizedAttachments[0];
     setMasterProjectName(targetName); 
     setMasterColorIdx(project.colorIdx); 
     setMasterCustomColor(project.customColor || '');
@@ -1021,16 +1020,23 @@ export default function ResourceGanttChart() {
                               <button
                                 type="button"
                                 onClick={() => openAttachment(att)}
-                                className="px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded hover:bg-indigo-100 font-semibold text-xs disabled:opacity-50"
-                                disabled={!att.key && !att.url}
-                              >
-                                열기
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => removeMasterAttachment(att.id)}
-                                className={`${pageStyles.milestoneRemove} text-sm ${masterAttachments.length === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                disabled={masterAttachments.length === 1}
+                          className="px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded hover:bg-indigo-100 font-semibold text-xs disabled:opacity-50"
+                          disabled={!att.key && !att.url}
+                        >
+                          열기
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => clearMasterAttachment(att.id)}
+                          className="px-2 py-1 bg-white text-gray-500 border border-gray-200 rounded hover:bg-gray-50 text-xs font-bold"
+                        >
+                          초기화
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeMasterAttachment(att.id)}
+                          className={`${pageStyles.milestoneRemove} text-sm ${masterAttachments.length === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          disabled={masterAttachments.length === 1}
                               >
                                 -
                               </button>
@@ -1198,8 +1204,8 @@ export default function ResourceGanttChart() {
           attachments={projectAttachments}
           addAttachment={addProjectAttachment}
           removeAttachment={removeProjectAttachment}
-          updateAttachmentName={updateProjectAttachmentName}
           uploadAttachment={uploadProjectAttachment}
+          clearAttachment={clearProjectAttachment}
           onOpenAttachment={openAttachment}
           projectMilestones={projectMilestones}
           addProjectMilestone={addProjectMilestone}
