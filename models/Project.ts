@@ -9,6 +9,7 @@ const ProjectSchema = new Schema({
   colorIdx: { type: Number, default: 0 },
   docUrl: { type: String },
   docName: { type: String },
+  docKey: { type: String },
   isTentative: { type: Boolean, default: false },
   customColor: { type: String },
   notes: { type: String },

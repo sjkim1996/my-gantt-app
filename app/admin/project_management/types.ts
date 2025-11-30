@@ -26,6 +26,7 @@ export interface Project {
   colorIdx: number;
   docUrl?: string;
   docName?: string;
+  docKey?: string;
   isTentative?: boolean;
   customColor?: string;
   notes?: string;
@@ -59,6 +60,7 @@ export interface EditingMember {
   end: string;
   docUrl?: string;
   docName?: string;
+  docKey?: string;
   isTentative?: boolean;
   customColor?: string;
   notes?: string;

@@ -14,7 +14,7 @@ import ProjectForm from './components/ProjectForm';
 import VacationModal from './components/VacationModal';
 import { Vacation } from './types';
 import pageStyles from './styles/Page.module.css';
-import { handlePdfUpload } from '@/lib/pdfUpload';
+import { handlePdfUpload, getPresignedViewUrl } from '@/lib/pdfUpload';
 
 // Auth Logic (Inlined for single-file stability)
 const hasValidLoginToken = () => {
@@ -67,6 +67,7 @@ export default function ResourceGanttChart() {
   const [masterEnd, setMasterEnd] = useState('');
   const [masterDocUrl, setMasterDocUrl] = useState('');
   const [masterDocName, setMasterDocName] = useState('');
+  const [masterDocKey, setMasterDocKey] = useState('');
   const [masterTentative, setMasterTentative] = useState(false);
   const [masterCustomColor, setMasterCustomColor] = useState('');
   const [masterNotes, setMasterNotes] = useState('');
@@ -95,6 +96,7 @@ export default function ResourceGanttChart() {
   const [projectEnd, setProjectEnd] = useState(formatDate(new Date(todayDate.getTime() + 86400000 * 30)));
   const [projectDocUrl, setProjectDocUrl] = useState('');
   const [projectDocName, setProjectDocName] = useState('');
+  const [projectDocKey, setProjectDocKey] = useState('');
   const [projectTentative, setProjectTentative] = useState(false);
   const [projectCustomColor, setProjectCustomColor] = useState(getRandomHexColor());
   const [projectNotes, setProjectNotes] = useState('');
@@ -398,6 +400,25 @@ export default function ResourceGanttChart() {
     if (!exists) setSelectedAssignees([...selectedAssignees, assignee]);
     setAssigneeInput(''); setShowSuggestions(false); inputRef.current?.focus();
   };
+
+  const openDoc = async (docKey?: string, docUrl?: string) => {
+    if (docKey) {
+      try {
+        const url = await getPresignedViewUrl(docKey);
+        window.open(url, '_blank');
+        return;
+      } catch (err) {
+        console.error('[DOC OPEN]', err);
+        showBanner('문서 열기에 실패했습니다.', 'error');
+        return;
+      }
+    }
+    if (docUrl) {
+      window.open(docUrl, '_blank');
+    } else {
+      showBanner('첨부된 문서가 없습니다.', 'info');
+    }
+  };
   const removeAssignee = (idx: number) => {
     const newArr = [...selectedAssignees]; newArr.splice(idx, 1); setSelectedAssignees(newArr);
   };
@@ -475,6 +496,7 @@ export default function ResourceGanttChart() {
     const colorIdx = existingGroup ? existingGroup.colorIdx : Math.floor(Math.random() * BAR_COLORS.length);
     const finalDocUrl = projectDocUrl || existingGroup?.docUrl || '';
     const finalDocName = projectDocName || existingGroup?.docName || '';
+    const finalDocKey = projectDocKey || existingGroup?.docKey || '';
     const finalTentative = projectTentative || Boolean(existingGroup?.isTentative);
     const finalCustomColor = projectCustomColor || existingGroup?.customColor || '';
 
@@ -508,6 +530,7 @@ export default function ResourceGanttChart() {
       end: projectEnd,
       colorIdx,
       docUrl: finalDocUrl || undefined,
+      docKey: finalDocKey || undefined,
       docName: finalDocName || undefined,
       isTentative: finalTentative,
       customColor: finalCustomColor || undefined,
@@ -534,7 +557,7 @@ export default function ResourceGanttChart() {
           };
         });
         setProjects(prev => dedupeProjects([...prev, ...normalized]));
-        setProjectName(''); setSelectedAssignees([]); setProjectDocUrl(''); setProjectDocName(''); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([{ id: `${Date.now()}`, label: '', date: '', color: getRandomHexColor() }]); setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
+        setProjectName(''); setSelectedAssignees([]); setProjectDocUrl(''); setProjectDocName(''); setProjectDocKey(''); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([{ id: `${Date.now()}`, label: '', date: '', color: getRandomHexColor() }]); setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
         showBanner('프로젝트가 추가되었습니다.', 'success');
         setRecentlyAddedProject(targetName);
         setHoveredProjectName(targetName);
@@ -555,6 +578,7 @@ export default function ResourceGanttChart() {
     setMasterEnd(project.end);
     setMasterDocUrl(project.docUrl || '');
     setMasterDocName(project.docName || '');
+    setMasterDocKey(project.docKey || '');
     setMasterTentative(Boolean(project.isTentative));
     setMasterNotes(project.notes || '');
           setMasterMilestones(project.milestones ? mergeMilestones(project.milestones, []) : []);
@@ -569,6 +593,7 @@ export default function ResourceGanttChart() {
         end: p.end,
         docUrl: p.docUrl,
         docName: p.docName,
+        docKey: p.docKey,
         isTentative: p.isTentative,
         customColor: p.customColor,
         notes: p.notes,
@@ -580,7 +605,7 @@ export default function ResourceGanttChart() {
 
   const addMemberInModal = (assignee: Assignee) => {
     if (editingMembers.some(m => m.person === assignee.name && m.team === assignee.team && !m.isDeleted)) { setModalAssigneeInput(''); return; }
-    const newMember: EditingMember = { id: Date.now(), person: assignee.name, team: assignee.team, start: masterStart, end: masterEnd, isNew: true, docUrl: masterDocUrl, docName: masterDocName, isTentative: masterTentative, customColor: masterCustomColor, notes: masterNotes, milestones: [...masterMilestones], vacations: [] };
+    const newMember: EditingMember = { id: Date.now(), person: assignee.name, team: assignee.team, start: masterStart, end: masterEnd, isNew: true, docUrl: masterDocUrl, docName: masterDocName, docKey: masterDocKey, isTentative: masterTentative, customColor: masterCustomColor, notes: masterNotes, milestones: [...masterMilestones], vacations: [] };
     setEditingMembers([...editingMembers, newMember]); setModalAssigneeInput(''); setModalShowSuggestions(false); modalInputRef.current?.focus();
   };
   const removeMemberInModal = (index: number) => { const updated = [...editingMembers]; updated[index].isDeleted = true; setEditingMembers(updated); };
@@ -605,14 +630,14 @@ export default function ResourceGanttChart() {
     const newMembers = editingMembers.filter(m => (m.isNew || !m._id) && !m.isDeleted);
     if (newMembers.length > 0) {
         await apiCreateProject(newMembers.map(m => ({
-            name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: masterDocUrl, docName: masterDocName, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: masterMilestones, vacations: m.vacations
+            name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: masterDocUrl, docKey: masterDocKey, docName: masterDocName, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: masterMilestones, vacations: m.vacations
         })));
     }
 
     const updatedMembers = editingMembers.filter(m => !m.isNew && !m.isDeleted && m._id);
     for (const m of updatedMembers) {
         await apiUpdateProject({
-            _id: m._id, name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: masterDocUrl, docName: masterDocName, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: masterMilestones, vacations: m.vacations
+            _id: m._id, name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: masterDocUrl, docKey: masterDocKey, docName: masterDocName, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: masterMilestones, vacations: m.vacations
         });
     }
 
@@ -870,7 +895,7 @@ export default function ResourceGanttChart() {
                         </div>
                         <button onClick={syncDatesToAll} className={pageStyles.syncButton}><RefreshCw className="w-3.5 h-3.5"/> 일정 동기화</button>
                     </div>
-                    <div className={`${pageStyles.docRow} hidden`}>
+                    <div className={pageStyles.docRow}>
                       <div className="md:col-span-5">
                         <label className={pageStyles.inputLabel}>문서 제목</label>
                         <input value={masterDocName} onChange={(e) => setMasterDocName(e.target.value)} placeholder="파일명 또는 제목" className={pageStyles.docInput}/>
@@ -884,10 +909,24 @@ export default function ResourceGanttChart() {
                           PDF 업로드
                           <input type="file" accept="application/pdf" className="hidden" onChange={async (e) => {
                             const file = e.target.files?.[0];
-                            if (file) await handlePdfUpload(file, setMasterDocUrl, setMasterDocName);
+                            if (file) await handlePdfUpload(file, setMasterDocUrl, setMasterDocName, setMasterDocKey);
                           }}/>
                         </label>
                       </div>
+                      {(masterDocName || masterDocUrl || masterDocKey) && (
+                        <div className="md:col-span-12 flex items-center gap-2 text-xs text-gray-600">
+                          <span className="font-semibold">첨부:</span>
+                          <span className="truncate">{masterDocName || '파일명 없음'}</span>
+                          {masterDocKey && <span className="text-gray-500 truncate">{masterDocKey}</span>}
+                          <button
+                            type="button"
+                            onClick={() => openDoc(masterDocKey || undefined, masterDocUrl || undefined)}
+                            className="px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded hover:bg-indigo-100 font-semibold"
+                          >
+                            열기
+                          </button>
+                        </div>
+                      )}
                     </div>
                 </div>
 
@@ -1042,6 +1081,9 @@ export default function ResourceGanttChart() {
           setProjectDocUrl={setProjectDocUrl}
           projectDocName={projectDocName}
           setProjectDocName={setProjectDocName}
+          projectDocKey={projectDocKey}
+          setProjectDocKey={setProjectDocKey}
+          onOpenDoc={(key, url) => openDoc(key, url)}
           projectMilestones={projectMilestones}
           addProjectMilestone={addProjectMilestone}
           updateProjectMilestone={updateProjectMilestone}

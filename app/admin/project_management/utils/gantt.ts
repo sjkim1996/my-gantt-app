@@ -36,6 +36,7 @@ export const dedupeProjects = (list: Project[]) => {
         ...exist,
         docUrl: exist.docUrl || p.docUrl,
         docName: exist.docName || p.docName,
+        docKey: exist.docKey || p.docKey,
         isTentative: exist.isTentative || p.isTentative,
         customColor: exist.customColor || p.customColor,
         notes: exist.notes || p.notes,

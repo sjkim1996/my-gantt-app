@@ -28,6 +28,9 @@ type Props = {
   setProjectDocUrl: (v: string) => void;
   projectDocName: string;
   setProjectDocName: (v: string) => void;
+  projectDocKey: string;
+  setProjectDocKey: (v: string) => void;
+  onOpenDoc: (key?: string, url?: string) => void;
   projectMilestones: Milestone[];
   addProjectMilestone: () => void;
   updateProjectMilestone: (id: string, field: 'label' | 'date', value: string) => void;
@@ -59,6 +62,9 @@ const ProjectForm: React.FC<Props> = ({
   setProjectDocUrl,
   projectDocName,
   setProjectDocName,
+  projectDocKey,
+  setProjectDocKey,
+  onOpenDoc,
   projectMilestones,
   addProjectMilestone,
   updateProjectMilestone,
@@ -174,7 +180,7 @@ const ProjectForm: React.FC<Props> = ({
             className={styles.notesInput}
           />
         </div>
-        <div className={`${styles.gridFull} flex flex-col gap-2 hidden`}>
+        <div className={`${styles.gridFull} flex flex-col gap-2`}>
           <label className={styles.label}>프로젝트 문서 (PDF 첨부)</label>
         <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
           <div className="md:col-span-5">
@@ -208,7 +214,7 @@ const ProjectForm: React.FC<Props> = ({
                 className="hidden"
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
-                  if (file) await handlePdfUpload(file, setProjectDocUrl, setProjectDocName);
+                  if (file) await handlePdfUpload(file, setProjectDocUrl, setProjectDocName, setProjectDocKey);
                 }}
               />
             </label>
@@ -217,7 +223,14 @@ const ProjectForm: React.FC<Props> = ({
             <div className="md:col-span-12 text-xs text-gray-600 flex items-center gap-2">
               <span className="font-semibold">첨부:</span>
               <span className="truncate">{projectDocName || '파일명 없음'}</span>
-              {projectDocUrl && <span className="text-indigo-600 truncate">{projectDocUrl}</span>}
+              {projectDocKey && <span className="text-gray-500 truncate">{projectDocKey}</span>}
+              <button
+                type="button"
+                onClick={() => onOpenDoc(projectDocKey || undefined, projectDocUrl || undefined)}
+                className="px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded hover:bg-indigo-100 font-semibold"
+              >
+                열기
+              </button>
             </div>
           )}
         </div>

@@ -31,6 +31,7 @@ type IncomingProject = {
   colorIdx?: number;
   docUrl?: string;
   docName?: string;
+  docKey?: string;
   isTentative?: boolean;
   customColor?: string;
   notes?: string;
