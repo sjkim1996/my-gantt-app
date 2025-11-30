@@ -1000,9 +1000,9 @@ export default function ResourceGanttChart() {
                               <label className={pageStyles.inputLabel}>파일 {idx + 1}</label>
                               <input
                                 value={att.name}
-                                onChange={(e) => updateMasterAttachmentName(att.id, e.target.value)}
-                                placeholder="파일명 또는 제목"
-                                className={pageStyles.docInput}
+                                readOnly
+                                placeholder="파일을 업로드하면 이름이 표시됩니다"
+                                className={`${pageStyles.docInput} bg-gray-50 cursor-not-allowed`}
                               />
                             </div>
                             <div className="flex items-end gap-2">
