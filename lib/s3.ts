@@ -51,6 +51,7 @@ export const createPresignedUpload = async (key: string, contentType: string) =>
 export const createPresignedRead = async (key: string) => {
   const bucket = getEnv('S3_BUCKET_NAME');
   const command = new GetObjectCommand({ Bucket: bucket, Key: key });
-  const url = await getSignedUrl(client(), command, { expiresIn: 60 * 5 });
+  // 24시간 유효한 다운로드 URL
+  const url = await getSignedUrl(client(), command, { expiresIn: 60 * 60 * 24 });
   return { downloadUrl: url, key };
 };
