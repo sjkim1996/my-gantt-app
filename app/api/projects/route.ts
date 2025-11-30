@@ -37,6 +37,7 @@ type IncomingProject = {
   notes?: string;
   milestones?: { id: string; label: string; date: string; color?: string }[];
   vacations?: { id: string; person: string; team?: string; label?: string; start: string; end: string; color?: string }[];
+  attachments?: { name?: string; url?: string; key?: string }[];
 };
 
 const sanitizeProject = (p?: IncomingProject | null) => {
@@ -52,7 +53,16 @@ const sanitizeProject = (p?: IncomingProject | null) => {
         .filter((v) => v && v.person && isValidDate(v.start) && isValidDate(v.end) && new Date(v.start) <= new Date(v.end))
         .map((v) => ({ ...v, team: v.team || '미배정', color: v.color || '#94a3b8' }))
     : [];
-  return { ...p, milestones: cleanMilestones, vacations: cleanVacations };
+  const cleanAttachments = Array.isArray(p.attachments)
+    ? p.attachments
+        .filter((a) => a && (a.name || a.key || a.url))
+        .map((a) => ({
+          name: a.name || a.key || a.url || '첨부',
+          url: a.url || undefined,
+          key: a.key || undefined,
+        }))
+    : [];
+  return { ...p, milestones: cleanMilestones, vacations: cleanVacations, attachments: cleanAttachments };
 };
 
 // [POST] 프로젝트 추가하기

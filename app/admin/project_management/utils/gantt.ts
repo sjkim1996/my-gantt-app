@@ -1,4 +1,4 @@
-import { Milestone, Project, Vacation } from '../types';
+import { Attachment, Milestone, Project, Vacation } from '../types';
 import { parseDate, formatDate, getDaysDiff } from './date';
 import { getColorSet } from './colors';
 
@@ -24,6 +24,17 @@ export const mergeVacations = (a: Vacation[] = [], b: Vacation[] = []) => {
   return Array.from(map.values());
 };
 
+export const mergeAttachments = (a: Attachment[] = [], b: Attachment[] = []) => {
+  const map = new Map<string, Attachment>();
+  [...a, ...b].forEach(att => {
+    const key = att.key || att.url || att.name;
+    if (!map.has(key)) {
+      map.set(key, att);
+    }
+  });
+  return Array.from(map.values());
+};
+
 export const dedupeProjects = (list: Project[]) => {
   const map = new Map<string, Project>();
   list.forEach((p) => {
@@ -40,6 +51,7 @@ export const dedupeProjects = (list: Project[]) => {
         isTentative: exist.isTentative || p.isTentative,
         customColor: exist.customColor || p.customColor,
         notes: exist.notes || p.notes,
+        attachments: mergeAttachments(exist.attachments, p.attachments),
         milestones: mergeMilestones(exist.milestones, p.milestones),
         vacations: mergeVacations(exist.vacations, p.vacations),
       });

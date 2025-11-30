@@ -1,7 +1,6 @@
 import React from 'react';
 import { Plus, X } from 'lucide-react';
-import { Assignee, Milestone } from '../types';
-import { handlePdfUpload } from '@/lib/pdfUpload';
+import { Assignee, Attachment, Milestone } from '../types';
 import styles from '../styles/ProjectForm.module.css';
 
 type Props = {
@@ -24,13 +23,12 @@ type Props = {
   handleAddProject: () => void;
   projectNotes: string;
   setProjectNotes: (v: string) => void;
-  projectDocUrl: string;
-  setProjectDocUrl: (v: string) => void;
-  projectDocName: string;
-  setProjectDocName: (v: string) => void;
-  projectDocKey: string;
-  setProjectDocKey: (v: string) => void;
-  onOpenDoc: (key?: string, url?: string) => void;
+  attachments: (Attachment & { id: string })[];
+  addAttachment: () => void;
+  removeAttachment: (id: string) => void;
+  updateAttachmentName: (id: string, name: string) => void;
+  uploadAttachment: (id: string, files: FileList | null) => void;
+  onOpenAttachment: (att: Attachment) => void;
   projectMilestones: Milestone[];
   addProjectMilestone: () => void;
   updateProjectMilestone: (id: string, field: 'label' | 'date', value: string) => void;
@@ -58,13 +56,12 @@ const ProjectForm: React.FC<Props> = ({
   handleAddProject,
   projectNotes,
   setProjectNotes,
-  projectDocUrl,
-  setProjectDocUrl,
-  projectDocName,
-  setProjectDocName,
-  projectDocKey,
-  setProjectDocKey,
-  onOpenDoc,
+  attachments,
+  addAttachment,
+  removeAttachment,
+  updateAttachmentName,
+  uploadAttachment,
+  onOpenAttachment,
   projectMilestones,
   addProjectMilestone,
   updateProjectMilestone,
@@ -181,60 +178,59 @@ const ProjectForm: React.FC<Props> = ({
           />
         </div>
         <div className={`${styles.gridFull} flex flex-col gap-2`}>
-          <label className={styles.label}>프로젝트 문서 (PDF 첨부)</label>
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
-          <div className="md:col-span-5">
-            <div className={styles.inputShell}>
-              <input
-                type="text"
-                value={projectDocName}
-                onChange={(e) => setProjectDocName(e.target.value)}
-                placeholder="파일명 또는 제목"
-                className={styles.textInput}
-              />
-            </div>
+          <label className={styles.label}>프로젝트 문서 (첨부 파일)</label>
+          <div className="space-y-2">
+            {attachments.map((att, idx) => (
+              <div key={att.id} className="flex flex-wrap items-center gap-2">
+                <div className="flex-1 min-w-[180px]">
+                  <input
+                    type="text"
+                    value={att.name}
+                    onChange={(e) => updateAttachmentName(att.id, e.target.value)}
+                    placeholder={`파일 ${idx + 1} 이름`}
+                    className={styles.textInput}
+                  />
+                </div>
+                <label className="px-3 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-bold cursor-pointer hover:bg-indigo-100">
+                  파일 선택
+                  <input
+                    type="file"
+                    accept="*/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => uploadAttachment(att.id, e.target.files)}
+                  />
+                </label>
+                {(att.key || att.url) && (
+                  <span className="text-xs text-gray-600 truncate max-w-[180px]">{att.key || att.url}</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onOpenAttachment(att)}
+                  className="px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded hover:bg-indigo-100 text-xs font-bold disabled:opacity-50"
+                  disabled={!att.key && !att.url}
+                >
+                  열기
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeAttachment(att.id)}
+                  className={`${styles.milestoneRemove} text-sm ${attachments.length === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={attachments.length === 1}
+                >
+                  -
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={addAttachment}
+              className="px-3 py-2 bg-white border border-dashed border-gray-300 rounded text-sm text-gray-600 hover:border-gray-400 hover:text-gray-800"
+            >
+              + 파일 추가
+            </button>
           </div>
-          <div className="md:col-span-5">
-            <div className={styles.inputShell}>
-              <input
-                type="text"
-                value={projectDocUrl}
-                onChange={(e) => setProjectDocUrl(e.target.value)}
-                placeholder="문서 URL (선택)"
-                className={styles.textInput}
-              />
-            </div>
-          </div>
-          <div className="md:col-span-2 flex items-center gap-2">
-            <label className="px-3 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-bold cursor-pointer hover:bg-indigo-100 w-full text-center">
-              PDF 업로드
-              <input
-                type="file"
-                accept="application/pdf"
-                className="hidden"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (file) await handlePdfUpload(file, setProjectDocUrl, setProjectDocName, setProjectDocKey);
-                }}
-              />
-            </label>
-          </div>
-          {(projectDocName || projectDocUrl) && (
-            <div className="md:col-span-12 text-xs text-gray-600 flex items-center gap-2">
-              <span className="font-semibold">첨부:</span>
-              <span className="truncate">{projectDocName || '파일명 없음'}</span>
-              {projectDocKey && <span className="text-gray-500 truncate">{projectDocKey}</span>}
-              <button
-                type="button"
-                onClick={() => onOpenDoc(projectDocKey || undefined, projectDocUrl || undefined)}
-                className="px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded hover:bg-indigo-100 font-semibold"
-              >
-                열기
-              </button>
-            </div>
-          )}
         </div>
-      </div>
         <div className={styles.gridFull + ' space-y-2'}>
           <label className={styles.label}>특이 스케줄 (시사일/PPM 등)</label>
           <div className="flex flex-col gap-2">

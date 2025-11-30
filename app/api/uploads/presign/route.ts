@@ -10,10 +10,10 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Body;
     const fileName = body.fileName?.trim();
-    const fileType = body.fileType?.trim();
+    const fileType = body.fileType?.trim() || 'application/octet-stream';
 
-    if (!fileName || !fileType) {
-      return NextResponse.json({ success: false, error: 'fileName과 fileType이 필요합니다.' }, { status: 400 });
+    if (!fileName) {
+      return NextResponse.json({ success: false, error: 'fileName이 필요합니다.' }, { status: 400 });
     }
 
     const key = buildObjectKey(fileName);

@@ -1,24 +1,18 @@
 'use client';
 
-export const handlePdfUpload = async (
-  file: File,
-  setUrl: (v: string) => void,
-  setName: (v: string) => void,
-  setKey: (v: string) => void
-) => {
-  if (!file || file.type !== 'application/pdf') {
-    alert('PDF 파일만 업로드 가능합니다.');
-    return;
+export type UploadResult = { name: string; url: string; key: string };
+
+export const uploadPdf = async (file: File): Promise<UploadResult> => {
+  if (!file) {
+    throw new Error('파일을 선택해주세요.');
   }
-  if (file.size > 12 * 1024 * 1024) {
-    alert('PDF는 12MB 이하로 업로드해주세요.');
-    return;
-  }
+  // 단일 PUT 업로드 최대 5GB까지 가능. 업종 특성상 대용량 허용.
   try {
+    const contentType = file.type || 'application/octet-stream';
     const presignRes = await fetch('/api/uploads/presign', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fileName: file.name, fileType: file.type }),
+      body: JSON.stringify({ fileName: file.name, fileType: contentType }),
     });
     const presignData = await presignRes.json();
     if (!presignRes.ok || !presignData?.success || !presignData.uploadUrl) {
@@ -27,18 +21,29 @@ export const handlePdfUpload = async (
 
     const uploadRes = await fetch(presignData.uploadUrl as string, {
       method: 'PUT',
-      headers: { 'Content-Type': file.type },
+      headers: { 'Content-Type': contentType },
       body: file,
     });
     if (!uploadRes.ok) throw new Error('S3 업로드 실패');
 
-    setKey(presignData.key as string);
-    setUrl(presignData.publicUrl as string);
-    setName(file.name);
+    return { name: file.name, url: presignData.publicUrl as string, key: presignData.key as string };
   } catch (err) {
     console.error('[PDF UPLOAD]', err);
-    alert('파일 업로드에 실패했습니다. 잠시 후 다시 시도하세요.');
+    const message = err instanceof Error ? err.message : '파일 업로드 실패';
+    throw new Error(message);
   }
+};
+
+export const handlePdfUpload = async (
+  file: File,
+  setUrl: (v: string) => void,
+  setName: (v: string) => void,
+  setKey: (v: string) => void
+) => {
+  const res = await uploadPdf(file);
+  setKey(res.key);
+  setUrl(res.url);
+  setName(res.name);
 };
 
 export const getPresignedViewUrl = async (key: string) => {

@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation'; 
 import { Plus, Trash2, RefreshCw, Search, AlertCircle, Settings, X, Check, Briefcase, LogOut } from 'lucide-react';
-import { Project, Team, Assignee, GroupedProject, EditingMember, ApiProjectsResponse, Milestone } from './types';
+import { Project, Team, Assignee, GroupedProject, EditingMember, ApiProjectsResponse, Milestone, Attachment } from './types';
 import { parseDate, formatDate, getDaysDiff, getStartOfWeek, generateWeeks, generateDays } from './utils/date';
 import { BAR_COLORS, getRandomHexColor } from './utils/colors';
 import { mergeMilestones, mergeVacations, dedupeProjects } from './utils/gantt';
@@ -14,7 +14,7 @@ import ProjectForm from './components/ProjectForm';
 import VacationModal from './components/VacationModal';
 import { Vacation } from './types';
 import pageStyles from './styles/Page.module.css';
-import { handlePdfUpload, getPresignedViewUrl } from '@/lib/pdfUpload';
+import { uploadPdf, getPresignedViewUrl } from '@/lib/pdfUpload';
 
 // Auth Logic (Inlined for single-file stability)
 const hasValidLoginToken = () => {
@@ -47,6 +47,13 @@ const MOCK_PROJECTS_2025: Project[] = [
 export default function ResourceGanttChart() {
   const router = useRouter();
   const [chartStartDate, setChartStartDate] = useState('2025-01-01');
+  type AttachmentItem = Attachment & { id: string };
+  const makeAttachment = (data?: Partial<Attachment>): AttachmentItem => ({
+    id: `att-${Math.random().toString(36).slice(2, 7)}-${Date.now()}`,
+    name: data?.name || '',
+    url: data?.url || '',
+    key: data?.key || '',
+  });
   
   // 실제 오늘 날짜
   const todayDate = useMemo(() => new Date(), []); 
@@ -65,9 +72,7 @@ export default function ResourceGanttChart() {
   const [masterColorIdx, setMasterColorIdx] = useState(0);
   const [masterStart, setMasterStart] = useState('');
   const [masterEnd, setMasterEnd] = useState('');
-  const [masterDocUrl, setMasterDocUrl] = useState('');
-  const [masterDocName, setMasterDocName] = useState('');
-  const [masterDocKey, setMasterDocKey] = useState('');
+  const [masterAttachments, setMasterAttachments] = useState<AttachmentItem[]>([makeAttachment()]);
   const [masterTentative, setMasterTentative] = useState(false);
   const [masterCustomColor, setMasterCustomColor] = useState('');
   const [masterNotes, setMasterNotes] = useState('');
@@ -94,9 +99,7 @@ export default function ResourceGanttChart() {
   const [projectName, setProjectName] = useState('');
   const [projectStart, setProjectStart] = useState(formatDate(todayDate));
   const [projectEnd, setProjectEnd] = useState(formatDate(new Date(todayDate.getTime() + 86400000 * 30)));
-  const [projectDocUrl, setProjectDocUrl] = useState('');
-  const [projectDocName, setProjectDocName] = useState('');
-  const [projectDocKey, setProjectDocKey] = useState('');
+  const [projectAttachments, setProjectAttachments] = useState<AttachmentItem[]>([makeAttachment()]);
   const [projectTentative, setProjectTentative] = useState(false);
   const [projectCustomColor, setProjectCustomColor] = useState(getRandomHexColor());
   const [projectNotes, setProjectNotes] = useState('');
@@ -401,10 +404,30 @@ export default function ResourceGanttChart() {
     setAssigneeInput(''); setShowSuggestions(false); inputRef.current?.focus();
   };
 
-  const openDoc = async (docKey?: string, docUrl?: string) => {
-    if (docKey) {
+  const toAttachmentPayload = (items: AttachmentItem[]): Attachment[] =>
+    items
+      .filter((a) => a.name || a.key || a.url)
+      .map((a) => ({
+        name: a.name || a.key || a.url || '첨부',
+        key: a.key || undefined,
+        url: a.url || undefined,
+      }));
+
+  const normalizeProjectAttachments = (p: Project): AttachmentItem[] => {
+    if (Array.isArray(p.attachments) && p.attachments.length) {
+      return p.attachments.map((att) => makeAttachment(att));
+    }
+    if (p.docKey || p.docUrl || p.docName) {
+      return [makeAttachment({ name: p.docName || '첨부', key: p.docKey, url: p.docUrl })];
+    }
+    return [];
+  };
+
+  const openAttachment = async (att?: Attachment) => {
+    if (!att) { showBanner('첨부된 문서가 없습니다.', 'info'); return; }
+    if (att.key) {
       try {
-        const url = await getPresignedViewUrl(docKey);
+        const url = await getPresignedViewUrl(att.key);
         window.open(url, '_blank');
         return;
       } catch (err) {
@@ -413,12 +436,51 @@ export default function ResourceGanttChart() {
         return;
       }
     }
-    if (docUrl) {
-      window.open(docUrl, '_blank');
+    if (att.url) {
+      window.open(att.url, '_blank');
     } else {
       showBanner('첨부된 문서가 없습니다.', 'info');
     }
   };
+
+  const uploadAttachmentsToState = async (targetId: string, files: FileList | null, setState: React.Dispatch<React.SetStateAction<AttachmentItem[]>>) => {
+    if (!files || files.length === 0) return;
+    const fileArr = Array.from(files);
+    try {
+      const uploaded: { name: string; key: string; url: string }[] = [];
+      for (const f of fileArr) {
+        uploaded.push(await uploadPdf(f));
+      }
+      setState((prev) => {
+        let next = [...prev];
+        uploaded.forEach((res, idx) => {
+          if (idx === 0) {
+            next = next.map((att) => att.id === targetId ? { ...att, name: att.name || res.name, key: res.key, url: res.url } : att);
+          } else {
+            next.push(makeAttachment({ name: res.name, key: res.key, url: res.url }));
+          }
+        });
+        if (!next.length) next.push(makeAttachment());
+        return next;
+      });
+      showBanner('파일이 업로드되었습니다.', 'success');
+    } catch (err) {
+      console.error('[ATTACH UPLOAD]', err);
+      const message = err instanceof Error ? err.message : '파일 업로드에 실패했습니다.';
+      showBanner(message, 'error');
+    }
+  };
+
+  const addProjectAttachment = () => setProjectAttachments((prev) => [...prev, makeAttachment()]);
+  const removeProjectAttachment = (id: string) => setProjectAttachments((prev) => (prev.length === 1 ? prev : prev.filter((a) => a.id !== id)));
+  const updateProjectAttachmentName = (id: string, name: string) => setProjectAttachments((prev) => prev.map((a) => a.id === id ? { ...a, name } : a));
+  const uploadProjectAttachment = (id: string, files: FileList | null) => uploadAttachmentsToState(id, files, setProjectAttachments);
+
+  const addMasterAttachment = () => setMasterAttachments((prev) => [...prev, makeAttachment()]);
+  const removeMasterAttachment = (id: string) => setMasterAttachments((prev) => (prev.length === 1 ? prev : prev.filter((a) => a.id !== id)));
+  const updateMasterAttachmentName = (id: string, name: string) => setMasterAttachments((prev) => prev.map((a) => a.id === id ? { ...a, name } : a));
+  const uploadMasterAttachment = (id: string, files: FileList | null) => uploadAttachmentsToState(id, files, setMasterAttachments);
+
   const removeAssignee = (idx: number) => {
     const newArr = [...selectedAssignees]; newArr.splice(idx, 1); setSelectedAssignees(newArr);
   };
@@ -494,9 +556,16 @@ export default function ResourceGanttChart() {
     let targetName = projectName;
     let assigneesToAdd = [...selectedAssignees];
     const colorIdx = existingGroup ? existingGroup.colorIdx : Math.floor(Math.random() * BAR_COLORS.length);
-    const finalDocUrl = projectDocUrl || existingGroup?.docUrl || '';
-    const finalDocName = projectDocName || existingGroup?.docName || '';
-    const finalDocKey = projectDocKey || existingGroup?.docKey || '';
+    const cleanedAttachments = toAttachmentPayload(projectAttachments);
+    const finalAttachments = cleanedAttachments.length
+      ? cleanedAttachments
+      : (existingGroup?.attachments && existingGroup.attachments.length
+        ? existingGroup.attachments
+        : (existingGroup ? toAttachmentPayload(normalizeProjectAttachments(existingGroup)) : []));
+    const primaryAttachment = finalAttachments[0];
+    const finalDocUrl = primaryAttachment?.url || existingGroup?.docUrl || '';
+    const finalDocName = primaryAttachment?.name || existingGroup?.docName || '';
+    const finalDocKey = primaryAttachment?.key || existingGroup?.docKey || '';
     const finalTentative = projectTentative || Boolean(existingGroup?.isTentative);
     const finalCustomColor = projectCustomColor || existingGroup?.customColor || '';
 
@@ -532,6 +601,7 @@ export default function ResourceGanttChart() {
       docUrl: finalDocUrl || undefined,
       docKey: finalDocKey || undefined,
       docName: finalDocName || undefined,
+      attachments: finalAttachments,
       isTentative: finalTentative,
       customColor: finalCustomColor || undefined,
       notes: projectNotes || undefined,
@@ -557,7 +627,7 @@ export default function ResourceGanttChart() {
           };
         });
         setProjects(prev => dedupeProjects([...prev, ...normalized]));
-        setProjectName(''); setSelectedAssignees([]); setProjectDocUrl(''); setProjectDocName(''); setProjectDocKey(''); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([{ id: `${Date.now()}`, label: '', date: '', color: getRandomHexColor() }]); setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
+        setProjectName(''); setSelectedAssignees([]); setProjectAttachments([makeAttachment()]); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([{ id: `${Date.now()}`, label: '', date: '', color: getRandomHexColor() }]); setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
         showBanner('프로젝트가 추가되었습니다.', 'success');
         setRecentlyAddedProject(targetName);
         setHoveredProjectName(targetName);
@@ -571,20 +641,24 @@ export default function ResourceGanttChart() {
   const handleProjectClick = (project: Project) => {
     const targetName = project.name;
     const relatedProjects = dedupeProjects(projects.filter(p => p.name === targetName));
+    const normalizedAttachments = normalizeProjectAttachments(project);
+    const primaryAttachment = normalizedAttachments[0];
     setMasterProjectName(targetName); 
     setMasterColorIdx(project.colorIdx); 
     setMasterCustomColor(project.customColor || '');
     setMasterStart(project.start); 
     setMasterEnd(project.end);
-    setMasterDocUrl(project.docUrl || '');
-    setMasterDocName(project.docName || '');
-    setMasterDocKey(project.docKey || '');
+    setMasterAttachments(normalizedAttachments.length ? normalizedAttachments : [makeAttachment()]);
     setMasterTentative(Boolean(project.isTentative));
     setMasterNotes(project.notes || '');
           setMasterMilestones(project.milestones ? mergeMilestones(project.milestones, []) : []);
     setMasterMilestoneLabel('');
     setMasterMilestoneDate('');
-    const members: EditingMember[] = relatedProjects.map(p => ({ 
+    const members: EditingMember[] = relatedProjects.map(p => { 
+      const memberAttachments = (p.attachments && p.attachments.length)
+        ? p.attachments
+        : toAttachmentPayload(normalizeProjectAttachments(p));
+      return { 
         id: p.id,
         _id: typeof p._id === 'string' ? p._id : undefined,
         person: p.person,
@@ -594,18 +668,37 @@ export default function ResourceGanttChart() {
         docUrl: p.docUrl,
         docName: p.docName,
         docKey: p.docKey,
+        attachments: memberAttachments,
         isTentative: p.isTentative,
         customColor: p.customColor,
         notes: p.notes,
         milestones: p.milestones,
         vacations: (p.vacations || []).map(v => ({ ...v, person: v.person || p.person, team: v.team || p.team })),
-    }));
+    }; });
     setEditingMembers(members); setIsModalOpen(true);
   };
 
   const addMemberInModal = (assignee: Assignee) => {
     if (editingMembers.some(m => m.person === assignee.name && m.team === assignee.team && !m.isDeleted)) { setModalAssigneeInput(''); return; }
-    const newMember: EditingMember = { id: Date.now(), person: assignee.name, team: assignee.team, start: masterStart, end: masterEnd, isNew: true, docUrl: masterDocUrl, docName: masterDocName, docKey: masterDocKey, isTentative: masterTentative, customColor: masterCustomColor, notes: masterNotes, milestones: [...masterMilestones], vacations: [] };
+    const attachmentPayload = toAttachmentPayload(masterAttachments);
+    const primaryAttachment = attachmentPayload[0];
+    const newMember: EditingMember = {
+      id: Date.now(),
+      person: assignee.name,
+      team: assignee.team,
+      start: masterStart,
+      end: masterEnd,
+      isNew: true,
+      docUrl: primaryAttachment?.url,
+      docName: primaryAttachment?.name,
+      docKey: primaryAttachment?.key,
+      attachments: attachmentPayload,
+      isTentative: masterTentative,
+      customColor: masterCustomColor,
+      notes: masterNotes,
+      milestones: [...masterMilestones],
+      vacations: [],
+    };
     setEditingMembers([...editingMembers, newMember]); setModalAssigneeInput(''); setModalShowSuggestions(false); modalInputRef.current?.focus();
   };
   const removeMemberInModal = (index: number) => { const updated = [...editingMembers]; updated[index].isDeleted = true; setEditingMembers(updated); };
@@ -613,6 +706,11 @@ export default function ResourceGanttChart() {
   const syncDatesToAll = () => { const updated = editingMembers.map(m => ({ ...m, start: masterStart, end: masterEnd })); setEditingMembers(updated); };
   
   const handleSaveMasterProject = async () => {
+    const masterAttachmentPayload = toAttachmentPayload(masterAttachments);
+    const primaryAttachment = masterAttachmentPayload[0];
+    const resolvedDocUrl = primaryAttachment?.url || '';
+    const resolvedDocKey = primaryAttachment?.key || '';
+    const resolvedDocName = primaryAttachment?.name || '';
     const deletedMembers = editingMembers.filter(m => m.isDeleted && !m.isNew);
     let deleteFailed = false;
     for (const m of deletedMembers) { 
@@ -630,14 +728,14 @@ export default function ResourceGanttChart() {
     const newMembers = editingMembers.filter(m => (m.isNew || !m._id) && !m.isDeleted);
     if (newMembers.length > 0) {
         await apiCreateProject(newMembers.map(m => ({
-            name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: masterDocUrl, docKey: masterDocKey, docName: masterDocName, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: masterMilestones, vacations: m.vacations
+            name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: resolvedDocUrl, docKey: resolvedDocKey, docName: resolvedDocName, attachments: masterAttachmentPayload, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: masterMilestones, vacations: m.vacations
         })));
     }
 
     const updatedMembers = editingMembers.filter(m => !m.isNew && !m.isDeleted && m._id);
     for (const m of updatedMembers) {
         await apiUpdateProject({
-            _id: m._id, name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: masterDocUrl, docKey: masterDocKey, docName: masterDocName, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: masterMilestones, vacations: m.vacations
+            _id: m._id, name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: resolvedDocUrl, docKey: resolvedDocKey, docName: resolvedDocName, attachments: masterAttachmentPayload, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: masterMilestones, vacations: m.vacations
         });
     }
 
@@ -896,37 +994,57 @@ export default function ResourceGanttChart() {
                         <button onClick={syncDatesToAll} className={pageStyles.syncButton}><RefreshCw className="w-3.5 h-3.5"/> 일정 동기화</button>
                     </div>
                     <div className={pageStyles.docRow}>
-                      <div className="md:col-span-5">
-                        <label className={pageStyles.inputLabel}>문서 제목</label>
-                        <input value={masterDocName} onChange={(e) => setMasterDocName(e.target.value)} placeholder="파일명 또는 제목" className={pageStyles.docInput}/>
+                      <div className="md:col-span-12 flex flex-col gap-2">
+                        {masterAttachments.map((att, idx) => (
+                          <div key={att.id} className="flex flex-wrap items-center gap-2">
+                            <div className="flex-1 min-w-[180px]">
+                              <label className={pageStyles.inputLabel}>파일 {idx + 1}</label>
+                              <input
+                                value={att.name}
+                                onChange={(e) => updateMasterAttachmentName(att.id, e.target.value)}
+                                placeholder="파일명 또는 제목"
+                                className={pageStyles.docInput}
+                              />
+                            </div>
+                            <div className="flex items-end gap-2">
+                              <label className={pageStyles.docUpload}>
+                                파일 선택
+                                <input
+                                  type="file"
+                                  accept="*/*"
+                                  multiple
+                                  className="hidden"
+                                  onChange={(e) => uploadMasterAttachment(att.id, e.target.files)}
+                                />
+                              </label>
+                              {(att.key || att.url) && <span className="text-xs text-gray-600 truncate max-w-[180px]">{att.key || att.url}</span>}
+                              <button
+                                type="button"
+                                onClick={() => openAttachment(att)}
+                                className="px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded hover:bg-indigo-100 font-semibold text-xs disabled:opacity-50"
+                                disabled={!att.key && !att.url}
+                              >
+                                열기
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeMasterAttachment(att.id)}
+                                className={`${pageStyles.milestoneRemove} text-sm ${masterAttachments.length === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                disabled={masterAttachments.length === 1}
+                              >
+                                -
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={addMasterAttachment}
+                          className="px-3 py-2 bg-white border border-dashed border-gray-300 rounded text-sm text-gray-600 hover:border-gray-400 hover:text-gray-800"
+                        >
+                          + 파일 추가
+                        </button>
                       </div>
-                      <div className="md:col-span-5">
-                        <label className={pageStyles.inputLabel}>문서 URL</label>
-                        <input value={masterDocUrl} onChange={(e) => setMasterDocUrl(e.target.value)} placeholder="URL 입력 (선택)" className={pageStyles.docInput}/>
-                      </div>
-                      <div className="md:col-span-2 flex items-end">
-                        <label className={pageStyles.docUpload}>
-                          PDF 업로드
-                          <input type="file" accept="application/pdf" className="hidden" onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) await handlePdfUpload(file, setMasterDocUrl, setMasterDocName, setMasterDocKey);
-                          }}/>
-                        </label>
-                      </div>
-                      {(masterDocName || masterDocUrl || masterDocKey) && (
-                        <div className="md:col-span-12 flex items-center gap-2 text-xs text-gray-600">
-                          <span className="font-semibold">첨부:</span>
-                          <span className="truncate">{masterDocName || '파일명 없음'}</span>
-                          {masterDocKey && <span className="text-gray-500 truncate">{masterDocKey}</span>}
-                          <button
-                            type="button"
-                            onClick={() => openDoc(masterDocKey || undefined, masterDocUrl || undefined)}
-                            className="px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded hover:bg-indigo-100 font-semibold"
-                          >
-                            열기
-                          </button>
-                        </div>
-                      )}
                     </div>
                 </div>
 
@@ -1077,13 +1195,12 @@ export default function ResourceGanttChart() {
           handleAddProject={handleAddProject}
           projectNotes={projectNotes}
           setProjectNotes={setProjectNotes}
-          projectDocUrl={projectDocUrl}
-          setProjectDocUrl={setProjectDocUrl}
-          projectDocName={projectDocName}
-          setProjectDocName={setProjectDocName}
-          projectDocKey={projectDocKey}
-          setProjectDocKey={setProjectDocKey}
-          onOpenDoc={(key, url) => openDoc(key, url)}
+          attachments={projectAttachments}
+          addAttachment={addProjectAttachment}
+          removeAttachment={removeProjectAttachment}
+          updateAttachmentName={updateProjectAttachmentName}
+          uploadAttachment={uploadProjectAttachment}
+          onOpenAttachment={openAttachment}
           projectMilestones={projectMilestones}
           addProjectMilestone={addProjectMilestone}
           updateProjectMilestone={updateProjectMilestone}

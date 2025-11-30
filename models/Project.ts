@@ -10,6 +10,14 @@ const ProjectSchema = new Schema({
   docUrl: { type: String },
   docName: { type: String },
   docKey: { type: String },
+  attachments: {
+    type: [{
+      name: { type: String, required: true },
+      url: { type: String },
+      key: { type: String },
+    }],
+    default: [],
+  },
   isTentative: { type: Boolean, default: false },
   customColor: { type: String },
   notes: { type: String },

@@ -32,6 +32,7 @@ export interface Project {
   notes?: string;
   milestones?: Milestone[];
   vacations?: Vacation[];
+  attachments?: Attachment[];
 }
 
 export interface Team {
@@ -61,6 +62,7 @@ export interface EditingMember {
   docUrl?: string;
   docName?: string;
   docKey?: string;
+  attachments?: Attachment[];
   isTentative?: boolean;
   customColor?: string;
   notes?: string;
@@ -75,3 +77,9 @@ export type ApiProjectsResponse = {
   data?: Array<Project & { _id?: string }>;
   error?: string;
 };
+
+export interface Attachment {
+  name: string;
+  url?: string;
+  key?: string;
+}
