@@ -129,7 +129,7 @@ export default function ResourceGanttChart() {
 
   const guardEdit = () => {
     if (canEdit) return true;
-    showBanner('조회 전용 계정입니다. 팀장에게 권한을 요청하세요.', 'error');
+    showBanner('조회 전용 계정입니다. 수정이나 신규 등록이 필요하면 팀장에게 요청하세요.', 'error');
     return false;
   };
 
@@ -1133,13 +1133,7 @@ export default function ResourceGanttChart() {
                             </div>
                           </div>
                         ))}
-                        <button
-                          type="button"
-                          onClick={addMasterAttachment}
-                          className="px-3 py-2 bg-white border border-dashed border-gray-300 rounded text-sm text-gray-600 hover:border-gray-400 hover:text-gray-800"
-                        >
-                          + 파일 추가
-                        </button>
+                    
                       </div>
                     </div>
                 </div>
@@ -1273,22 +1267,23 @@ export default function ResourceGanttChart() {
                 )}
             </div>
             <div className={pageStyles.headerButtons}>
-                <button
-                  onClick={() => openVacationModal('create', 'global')}
-                  className={`${pageStyles.teamButton} ${pageStyles.vacationAccent}`}
-                  disabled={!canEdit}
-                  title={!canEdit ? '팀원 계정은 휴가 입력이 제한됩니다.' : '휴가 일정을 추가합니다.'}
-                >
-                  휴가 입력
-                </button>
-                <button
-                  onClick={openTeamModal}
-                  className={`${pageStyles.teamButton} ${pageStyles.teamAccent} ${!canEdit ? pageStyles.disabledButton : ''}`}
-                  disabled={!canEdit}
-                  title={!canEdit ? '팀원 계정은 팀 설정을 변경할 수 없습니다.' : undefined}
-                >
-                  <Settings className="w-4 h-4" /> 팀 설정
-                </button>
+                {canEdit && (
+                  <>
+                    <button
+                      onClick={() => openVacationModal('create', 'global')}
+                      className={`${pageStyles.teamButton} ${pageStyles.vacationAccent}`}
+                      title="휴가 일정을 추가합니다."
+                    >
+                      휴가 입력
+                    </button>
+                    <button
+                      onClick={openTeamModal}
+                      className={`${pageStyles.teamButton} ${pageStyles.teamAccent}`}
+                    >
+                      <Settings className="w-4 h-4" /> 팀 설정
+                    </button>
+                  </>
+                )}
                 <button onClick={handleLogout} className={pageStyles.logoutButton}><LogOut className="w-4 h-4" /></button>
             </div>
         </div>
@@ -1336,7 +1331,7 @@ export default function ResourceGanttChart() {
           <div className={pageStyles.readOnlyCard}>
             <p className={pageStyles.readOnlyTitle}>조회 전용 모드</p>
             <p className={pageStyles.readOnlyBody}>
-              팀원 계정은 본인에게 배정된 프로젝트 일정만 확인할 수 있습니다. 수정이나 신규 등록이 필요하면 팀장에게 요청하세요.
+              조회 전용 계정입니다. 수정이나 신규 등록이 필요하면 팀장에게 요청하세요.
             </p>
           </div>
         )}
