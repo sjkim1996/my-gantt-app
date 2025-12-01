@@ -1217,6 +1217,14 @@ export default function ResourceGanttChart() {
             </div>
             <div className={pageStyles.headerButtons}>
                 <button
+                  onClick={() => openVacationModal('create')}
+                  className={`${pageStyles.teamButton}`}
+                  disabled={!canEdit}
+                  title={!canEdit ? '팀원 계정은 휴가 입력이 제한됩니다.' : '휴가 일정을 추가합니다.'}
+                >
+                  휴가 입력
+                </button>
+                <button
                   onClick={openTeamModal}
                   className={`${pageStyles.teamButton} ${!canEdit ? pageStyles.disabledButton : ''}`}
                   disabled={!canEdit}

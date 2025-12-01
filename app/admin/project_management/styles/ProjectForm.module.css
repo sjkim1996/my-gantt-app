@@ -101,6 +101,14 @@
   @apply md:col-span-12;
 }
 
+.actionsRow {
+  @apply md:col-span-12 flex justify-end mt-2;
+}
+
+.submitButton {
+  @apply px-5 py-3 bg-indigo-600 text-white font-bold rounded shadow-sm hover:bg-indigo-700 transition-all text-sm;
+}
+
 .col3 {
   @apply md:col-span-3;
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Assignee, Attachment, Milestone } from '../types';
 import styles from '../styles/ProjectForm.module.css';
 
@@ -153,19 +153,11 @@ const ProjectForm: React.FC<Props> = ({
             <input type="date" value={projectStart} onChange={(e) => setProjectStart(e.target.value)} className={styles.dateInput} />
           </div>
         </div>
-        <div className={`${styles.col2} flex items-end gap-2`}>
-          <div className="flex-1">
-            <label className={styles.label}>종료일</label>
-            <div className={styles.inputShellTight}>
-              <input type="date" value={projectEnd} onChange={(e) => setProjectEnd(e.target.value)} className={styles.dateInput} />
-            </div>
+        <div className={styles.col2}>
+          <label className={styles.label}>종료일</label>
+          <div className={styles.inputShellTight}>
+            <input type="date" value={projectEnd} onChange={(e) => setProjectEnd(e.target.value)} className={styles.dateInput} />
           </div>
-          <button
-            onClick={handleAddProject}
-            className={styles.addButton}
-          >
-            <Plus className="w-5 h-5" />
-          </button>
         </div>
         <div className={styles.footerRow}>
           <label className={styles.label}>간단 메모</label>
@@ -279,6 +271,15 @@ const ProjectForm: React.FC<Props> = ({
             className={styles.vacationButton}
           >
             구성원 휴가 입력
+          </button>
+        </div>
+        <div className={styles.actionsRow}>
+          <button
+            type="button"
+            onClick={handleAddProject}
+            className={styles.submitButton}
+          >
+            프로젝트 추가
           </button>
         </div>
       </div>
