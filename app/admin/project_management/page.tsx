@@ -244,6 +244,8 @@ export default function ResourceGanttChart() {
             const loadedVac = vacJson.data.map((v: Vacation, idx: number) => ({ ...v, id: v._id || `vac-${idx}` }));
             setVacations(loadedVac);
           }
+        } else if (vacationsRes.status === 403 || vacationsRes.status === 401) {
+          setVacations([]);
         }
       } catch (error) {
         console.error('[AUTH] bootstrap failed', error);
@@ -368,7 +370,7 @@ export default function ResourceGanttChart() {
   const handlePrevMonth = () => {
     const d = new Date(chartStartDate);
     if (viewMode === 'week') {
-      d.setMonth(d.getMonth() - 1);
+      d.setDate(d.getDate() - 7);
       setChartStartDate(formatDate(getStartOfWeek(d)));
     } else {
       d.setDate(d.getDate() - 14);
@@ -378,7 +380,7 @@ export default function ResourceGanttChart() {
   const handleNextMonth = () => {
     const d = new Date(chartStartDate);
     if (viewMode === 'week') {
-      d.setMonth(d.getMonth() + 1);
+      d.setDate(d.getDate() + 7);
       setChartStartDate(formatDate(getStartOfWeek(d)));
     } else {
       d.setDate(d.getDate() + 14);

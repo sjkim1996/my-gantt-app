@@ -101,7 +101,7 @@ const GanttTable: React.FC<Props> = ({
                   const memberVacations = (() => {
                     const map = new Map<string, { label: string; start: Date; end: Date; color: string }>();
                     vacations
-                      .filter(v => (v.person || '').toLowerCase() === member.toLowerCase() && (v.team || '').toLowerCase() === team.name.toLowerCase())
+                      .filter(v => (v.person || '').toLowerCase() === member.toLowerCase())
                       .forEach(v => {
                         const s = parseDate(v.start);
                         const e = parseDate(v.end);
