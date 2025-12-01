@@ -157,12 +157,12 @@ const GanttTable: React.FC<Props> = ({
                           const duration = Math.max(1, getDaysDiff(chartStart, chartEnd) + 1);
                           const left = (getDaysDiff(chartStart, effectiveStart) / duration) * 100;
                           const width = (getDaysDiff(effectiveStart, effectiveEnd) + 1) / duration * 100;
-                          const vacHeight = Math.max(28, rowHeight - 12);
+                          const vacHeight = rowHeight;
                           return (
                             <div
                               key={`vac-${rowKey}-${idx}`}
                               className={styles.vacation}
-                              style={{ left: `${left}%`, width: `${width}%`, top: '2px', height: `${vacHeight}px` }}
+                              style={{ left: `${left}%`, width: `${width}%`, top: '0px', height: `${vacHeight}px` }}
                               title={vac.label ? `휴가: ${vac.label}` : '휴가'}
                               onClick={() => onVacationClick(vac.raw)}
                             >
