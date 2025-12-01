@@ -243,9 +243,6 @@ const ProjectForm: React.FC<Props> = ({
                 </div>
               </div>
             ))}
-            <button type="button" className={styles.attachmentAdd} onClick={addAttachment}>
-              + 파일 추가
-            </button>
           </div>
         </div>
         <div className={styles.gridFull + ' space-y-2'}>
