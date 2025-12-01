@@ -99,7 +99,6 @@ export default function ResourceGanttChart() {
   const [projectNotes, setProjectNotes] = useState('');
   const [projectMilestones, setProjectMilestones] = useState<Milestone[]>([{ id: 'init-m1', label: '', date: '', color: getRandomHexColor() }]);
   const [projectVacations, setProjectVacations] = useState<Vacation[]>([{ id: 'init-v1', person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
-  const [vacationContext, setVacationContext] = useState<'create' | 'edit'>('create');
   const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([]);
   const [assigneeInput, setAssigneeInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -109,7 +108,6 @@ export default function ResourceGanttChart() {
   // Tracking hook for future highlighting; only setter used to satisfy references
   const [, setRecentlyAddedProject] = useState<string | null>(null);
   const [isVacationModalOpen, setIsVacationModalOpen] = useState(false);
-  const [vacationModalMode, setVacationModalMode] = useState<'project' | 'global'>('project');
   const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
   const [vacations, setVacations] = useState<Vacation[]>([]);
   const effectiveSession = sessionUser || sessionRef.current;
@@ -145,17 +143,8 @@ export default function ResourceGanttChart() {
 
   const combinedVacations = useMemo(() => {
     if (role === 'member') return [];
-    const fromProjects: Vacation[] = projects.flatMap((p) =>
-      (p.vacations || []).map((v, idx) => ({
-        ...v,
-        id: v.id || `${p.id}-vac-${idx}`,
-        team: v.team || p.team,
-        person: v.person || p.person,
-        color: v.color || '#0f172a',
-      }))
-    );
-    return [...vacations, ...fromProjects];
-  }, [projects, vacations, role]);
+    return vacations;
+  }, [vacations, role]);
 
   useEffect(() => {
     const base = viewMode === 'week' ? getStartOfWeek(anchorDate) : anchorDate;
@@ -554,28 +543,15 @@ export default function ResourceGanttChart() {
   const updateProjectVacation = (id: string, field: 'person' | 'team' | 'label' | 'start' | 'end', value: string) => {
     setProjectVacations(prev => prev.map(v => v.id === id ? { ...v, [field]: value } : v));
   };
-  const distributeVacationsToMembers = (vacs: Vacation[]) => {
-    setEditingMembers(prev => prev.map(m => {
-      const matched = vacs.filter(v => (v.person || '').toLowerCase() === m.person.toLowerCase() && (v.team || '').toLowerCase() === m.team.toLowerCase());
-      return { ...m, vacations: matched.length ? matched : m.vacations || [] };
-    }));
-  };
 
-  const openVacationModal = (mode: 'create' | 'edit', target: 'project' | 'global' = 'project') => {
+  const vacationSnapshotRef = useRef<Vacation[]>([]);
+
+  const openVacationModal = () => {
     if (!guardEdit()) return;
-    setVacationModalMode(target);
-    if (target === 'project') {
-      if (mode === 'edit') {
-        const combined = editingMembers.flatMap(m => (m.vacations || []).map(v => ({ ...v, person: v.person || m.person, team: v.team || m.team })));
-        setProjectVacations(combined.length ? combined : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#0f172a' }]);
-      } else {
-        setProjectVacations(prev => prev.length ? prev : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#0f172a' }]);
-      }
-      setVacationContext(mode);
-    } else {
-      setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#0f172a' }]);
-      setVacationContext('create');
-    }
+    setVacationModalMode('global');
+    vacationSnapshotRef.current = vacations;
+    const seed = vacations.length ? vacations.map(v => ({ ...v, id: v.id || v._id || `${v.person}-${v.start}` })) : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#0f172a' }];
+    setProjectVacations(seed);
     setIsVacationModalOpen(true);
   };
 
@@ -587,47 +563,61 @@ export default function ResourceGanttChart() {
         const matchedTeam = v.team || allMembers.find(m => m.name === v.person)?.team || '';
         return { ...v, team: matchedTeam || '미배정', color: v.color || '#0f172a' };
       });
-    if (vacationModalMode === 'project') {
-      setProjectVacations(valid.length ? valid : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#0f172a' }]);
-      if (vacationContext === 'edit') distributeVacationsToMembers(valid);
-      showBanner('휴가가 적용되었습니다.', 'info');
-    } else {
-      try {
-        const res = await fetch('/api/vacations', {
+
+    try {
+      const initialIds = new Set(vacationSnapshotRef.current.map(v => String(v._id || v.id)));
+      const currentIds = new Set(valid.filter(v => v._id || v.id).map(v => String(v._id || v.id)));
+
+      // Deletes
+      const toDelete = vacationSnapshotRef.current.filter(v => !currentIds.has(String(v._id || v.id)));
+      for (const del of toDelete) {
+        const deleteId = del._id || del.id;
+        if (deleteId) {
+          await fetch(`/api/vacations?id=${encodeURIComponent(String(deleteId))}`, { method: 'DELETE' });
+        }
+      }
+
+      // Updates
+      const toUpdate = valid.filter(v => v._id || initialIds.has(String(v.id)));
+      for (const u of toUpdate) {
+        const targetId = u._id || u.id;
+        if (!targetId) continue;
+        await fetch('/api/vacations', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...u, _id: targetId }),
+        });
+      }
+
+      // Creates
+      const toCreate = valid.filter(v => !v._id && !initialIds.has(String(v.id)));
+      if (toCreate.length) {
+        await fetch('/api/vacations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(valid),
+          body: JSON.stringify(toCreate),
         });
-        const data = await res.json();
-        if (!res.ok || !data?.success) throw new Error(data?.error || `Status ${res.status}`);
-        const created = (data.data as Vacation[]).map((v, idx) => ({ ...v, id: v._id || `${Date.now()}-${idx}` }));
-        setVacations(prev => [...prev, ...created]);
-        showBanner('휴가가 등록되었습니다.', 'success');
-      } catch (error) {
-        console.error('[VACATION] create failed', error);
-        showBanner('휴가 등록에 실패했습니다.', 'error');
       }
+
+      // Refresh
+      const vacRes = await fetch('/api/vacations', { cache: 'no-store' });
+      const vacJson = await vacRes.json();
+      if (vacRes.ok && vacJson?.success) {
+        const loadedVac = (vacJson.data as Vacation[]).map((v, idx) => ({ ...v, id: v._id || `vac-${idx}` }));
+        setVacations(loadedVac);
+        showBanner('휴가가 저장되었습니다.', 'success');
+      } else {
+        showBanner('휴가를 새로고침하는 데 실패했습니다.', 'error');
+      }
+    } catch (error) {
+      console.error('[VACATION] save failed', error);
+      showBanner('휴가 저장에 실패했습니다.', 'error');
     }
-    setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#0f172a' }]);
+
     setIsVacationModalOpen(false);
   };
 
   const handleVacationRemove = async (id: string) => {
-    if (vacationModalMode === 'global') {
-      const target = projectVacations.find(v => v.id === id);
-      const deleteId = target?._id || (typeof target?.id === 'string' ? target.id : undefined);
-      if (deleteId) {
-        try {
-          const res = await fetch(`/api/vacations?id=${encodeURIComponent(deleteId)}`, { method: 'DELETE' });
-          if (!res.ok) throw new Error(`Status ${res.status}`);
-          setVacations(prev => prev.filter(v => (v._id || v.id) !== deleteId));
-          showBanner('휴가가 삭제되었습니다.', 'success');
-        } catch (error) {
-          console.error('[VACATION] delete failed', error);
-          showBanner('휴가 삭제에 실패했습니다.', 'error');
-        }
-      }
-    }
     setProjectVacations(prev => prev.filter(v => v.id !== id));
   };
 
@@ -1191,7 +1181,7 @@ export default function ResourceGanttChart() {
         <div className={pageStyles.cardTight}>
                   <div className={pageStyles.vacationHeader}>
                     <h4 className={pageStyles.subTitle}>구성원 휴가</h4>
-                    <button onClick={() => openVacationModal('create', 'global')} className={pageStyles.vacationButton}>휴가 관리</button>
+                    <button onClick={() => openVacationModal()} className={pageStyles.vacationButton}>휴가 관리</button>
                   </div>
                   {editingMembers.some(m => m.vacations && m.vacations.length) || vacations.length ? (
                     <div className={pageStyles.vacationList}>
