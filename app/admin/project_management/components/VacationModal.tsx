@@ -7,6 +7,7 @@ type Props = {
   isOpen: boolean;
   onClose: () => void;
   vacations: Vacation[];
+  allVacations: Vacation[];
   onChange: (id: string, field: 'person' | 'team' | 'label' | 'start' | 'end', value: string) => void;
   onAdd: () => void;
   onRemove: (id: string) => void;
@@ -18,6 +19,7 @@ const VacationModal: React.FC<Props> = ({
   isOpen,
   onClose,
   vacations,
+  allVacations,
   onChange,
   onAdd,
   onRemove,
@@ -25,18 +27,58 @@ const VacationModal: React.FC<Props> = ({
   allAssignees,
 }) => {
   const [openSuggestId, setOpenSuggestId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'create' | 'list'>('create');
 
   if (!isOpen) return null;
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <h3 className={styles.title}>구성원 휴가 입력</h3>
+          <h3 className={styles.title}>구성원 휴가</h3>
           <button onClick={onClose} className={styles.iconButton}>
             <X className="w-5 h-5" />
           </button>
         </div>
+        <div className={styles.tabBar}>
+          <button
+            className={`${styles.tabButton} ${activeTab === 'create' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('create')}
+          >
+            휴가 등록
+          </button>
+          <button
+            className={`${styles.tabButton} ${activeTab === 'list' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('list')}
+          >
+            휴가 현황
+          </button>
+        </div>
         <div className={styles.body}>
+          {activeTab === 'list' ? (
+            <div className="space-y-2">
+              <div className={styles.gridHeader}>
+                <div className={styles.col3}>구성원</div>
+                <div className={styles.col3}>팀</div>
+                <div className={styles.col3}>기간</div>
+                <div className={styles.col3}>비고</div>
+              </div>
+              {allVacations.length === 0 ? (
+                <div className="text-sm text-gray-500">등록된 휴가가 없습니다.</div>
+              ) : (
+                <div className="space-y-1 max-h-64 overflow-y-auto pr-1">
+                  {allVacations.map((v, idx) => (
+                    <div key={v.id || idx} className="grid grid-cols-12 gap-2 text-sm items-center px-2 py-1 border-b border-gray-100">
+                      <div className="col-span-3 font-bold text-gray-800">{v.person}</div>
+                      <div className="col-span-3 text-gray-600">{v.team}</div>
+                      <div className="col-span-3 text-gray-700">{v.start} ~ {v.end}</div>
+                      <div className="col-span-3 text-gray-500 truncate">{v.label || '-'}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+<>
           <div className={styles.gridHeader}>
             <div className={styles.col2}>구성원명</div>
             <div className={styles.col2}>팀</div>
@@ -122,10 +164,12 @@ const VacationModal: React.FC<Props> = ({
           <button onClick={onAdd} className={styles.addButton}>
             + 휴가 추가
           </button>
+        </>
+          )}
         </div>
         <div className={styles.footer}>
           <button onClick={onClose} className={styles.cancel}>취소</button>
-          <button onClick={() => onSave(vacations)} className={styles.save}>저장</button>
+          {activeTab === 'create' && <button onClick={() => onSave(vacations)} className={styles.save}>저장</button>}
         </div>
       </div>
     </div>

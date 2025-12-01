@@ -1186,21 +1186,31 @@ export default function ResourceGanttChart() {
         <div className={pageStyles.cardTight}>
                   <div className={pageStyles.vacationHeader}>
                     <h4 className={pageStyles.subTitle}>구성원 휴가</h4>
-                    <button onClick={() => openVacationModal('edit')} className={pageStyles.vacationButton}>휴가 입력</button>
+                    <button onClick={() => openVacationModal('create', 'global')} className={pageStyles.vacationButton}>글로벌 휴가 관리</button>
                   </div>
-                  {editingMembers.some(m => m.vacations && m.vacations.length) ? (
+                  {editingMembers.some(m => m.vacations && m.vacations.length) || vacations.length ? (
                     <div className={pageStyles.vacationList}>
                       {editingMembers.flatMap((m, idx) => (m.vacations || []).map((v, i) => (
                         <div key={`${idx}-${i}`} className={pageStyles.vacationItem}>
                           <span className="font-bold">{v.person || m.person}</span>
                           <span className="text-gray-500">{v.team || m.team}</span>
                           <span className="text-gray-600">{v.start} ~ {v.end}</span>
-                          {v.label && <span className="text-gray-500">({v.label})</span>}
+                          <span className="text-gray-500">(프로젝트 내 등록)</span>
                         </div>
                       )))}
+                      {vacations
+                        .filter(v => editingMembers.some(m => (m.person || '').toLowerCase() === (v.person || '').toLowerCase()))
+                        .map((v, i) => (
+                          <div key={`global-${i}`} className={pageStyles.vacationItem}>
+                            <span className="font-bold">{v.person}</span>
+                            <span className="text-gray-500">{v.team}</span>
+                            <span className="text-gray-600">{v.start} ~ {v.end}</span>
+                            <span className="text-gray-500">(글로벌 등록)</span>
+                          </div>
+                        ))}
                     </div>
                   ) : (
-                    <div className={pageStyles.vacationEmpty}>등록된 휴가가 없습니다.</div>
+                    <div className={pageStyles.vacationEmpty}>등록된 휴가가 없습니다. 글로벌에서 등록하세요.</div>
                   )}
                 </div>
 
@@ -1346,6 +1356,7 @@ export default function ResourceGanttChart() {
           isOpen={isVacationModalOpen}
           onClose={() => setIsVacationModalOpen(false)}
           vacations={projectVacations}
+          allVacations={combinedVacations}
           onChange={updateProjectVacation}
           onAdd={addProjectVacation}
           onRemove={removeProjectVacation}

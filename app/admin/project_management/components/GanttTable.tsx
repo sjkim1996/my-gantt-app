@@ -191,11 +191,6 @@ const GanttTable: React.FC<Props> = ({
                           const milestoneHeight = barHeight; // match project bar height
                           const milestoneTop = barTop; // align with project bar top
                           const milestoneOpacity = isHighlighted ? 0.95 : hoveredProjectName ? 0.25 : 0.7;
-                          const overlapsVacation = memberVacations.some(v => {
-                            const vStart = parseDate(formatDate(v.start));
-                            const vEnd = parseDate(formatDate(v.end));
-                            return vEnd >= pStart && vStart <= pEnd;
-                          });
 
                           return (
                             <div key={proj.id}>
@@ -205,7 +200,7 @@ const GanttTable: React.FC<Props> = ({
                                 onMouseLeave={() => { setHoveredProjectName(null); setHoveredBlockKey(null); }}
                                 className={`${styles.projectBlock} group ${colorSet.customBg ? '' : `${colorSet.bg} ${colorSet.border}`} ${
                                   isDimmed ? styles.projectDimmed : styles.projectHover
-                                } ${isHighlighted ? styles.projectHighlighted : ''} ${overlapsVacation ? styles.projectOnVacation : ''}`}
+                                } ${isHighlighted ? styles.projectHighlighted : ''}`}
                                 style={{ left: `${left}%`, width: `${width}%`, top, backgroundColor: colorSet.customBg, borderColor: colorSet.customBorder }}
                                 title={barTitle}
                               >
