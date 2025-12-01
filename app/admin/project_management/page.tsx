@@ -548,7 +548,6 @@ export default function ResourceGanttChart() {
 
   const openVacationModal = () => {
     if (!guardEdit()) return;
-    setVacationModalMode('global');
     vacationSnapshotRef.current = vacations;
     const seed = vacations.length ? vacations.map(v => ({ ...v, id: v.id || v._id || `${v.person}-${v.start}` })) : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#0f172a' }];
     setProjectVacations(seed);
@@ -1280,7 +1279,7 @@ export default function ResourceGanttChart() {
                 {canEdit && (
                   <>
                     <button
-                      onClick={() => openVacationModal('create', 'global')}
+                      onClick={() => openVacationModal()}
                       className={`${pageStyles.teamButton} ${pageStyles.vacationAccent}`}
                       title="휴가 일정을 추가합니다."
                     >
@@ -1398,8 +1397,6 @@ export default function ResourceGanttChart() {
           chartTotalDays={chartTotalDays}
           onVacationClick={(vac) => {
             if (!canEdit) return;
-            setVacationModalMode('global');
-            setVacationContext('edit');
             setProjectVacations([{ ...vac, id: vac.id || vac._id || `${vac.person}-${vac.start}` }]);
             setIsVacationModalOpen(true);
           }}
