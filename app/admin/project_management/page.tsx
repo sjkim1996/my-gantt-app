@@ -115,6 +115,7 @@ export default function ResourceGanttChart() {
   const effectiveSession = sessionUser || sessionRef.current;
   const role = effectiveSession?.role ?? null;
   const canEdit = isEditRole(role);
+  const initialScrolledRef = useRef(false);
 
   useEffect(() => {
     if (banner) {
@@ -163,7 +164,7 @@ export default function ResourceGanttChart() {
 
   useEffect(() => {
     setAnchorDate(parseDate(chartStartDate));
-  }, [viewMode]);
+  }, [viewMode, chartStartDate]);
 
   useEffect(() => {
     const lockScroll = isModalOpen || isTeamModalOpen || isVacationModalOpen;
@@ -298,15 +299,17 @@ export default function ResourceGanttChart() {
     return list;
   }, [teams]);
 
-  // Initial Scroll to Today
+  // Initial Scroll to Today (run once)
   useEffect(() => {
+    if (initialScrolledRef.current) return;
     if (!isLoading && todayColumnRef.current && chartContainerRef.current) {
+      initialScrolledRef.current = true;
       const timer = setTimeout(() => {
         todayColumnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [isLoading, viewMode, timeline]);
+  }, [isLoading]);
 
   type ApiResponse<T> = { success: boolean; data?: T; error?: string };
   type ProjectPayload = Omit<Project, 'id'> & { id?: string | number; _id?: string };
@@ -551,9 +554,6 @@ export default function ResourceGanttChart() {
   const updateProjectVacation = (id: string, field: 'person' | 'team' | 'label' | 'start' | 'end', value: string) => {
     setProjectVacations(prev => prev.map(v => v.id === id ? { ...v, [field]: value } : v));
   };
-  const removeProjectVacation = (id: string) => {
-    setProjectVacations(prev => prev.filter(v => v.id !== id));
-  };
   const distributeVacationsToMembers = (vacs: Vacation[]) => {
     setEditingMembers(prev => prev.map(m => {
       const matched = vacs.filter(v => (v.person || '').toLowerCase() === m.person.toLowerCase() && (v.team || '').toLowerCase() === m.team.toLowerCase());
@@ -610,6 +610,25 @@ export default function ResourceGanttChart() {
     }
     setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#0f172a' }]);
     setIsVacationModalOpen(false);
+  };
+
+  const handleVacationRemove = async (id: string) => {
+    if (vacationModalMode === 'global') {
+      const target = projectVacations.find(v => v.id === id);
+      const deleteId = target?._id || (typeof target?.id === 'string' ? target.id : undefined);
+      if (deleteId) {
+        try {
+          const res = await fetch(`/api/vacations?id=${encodeURIComponent(deleteId)}`, { method: 'DELETE' });
+          if (!res.ok) throw new Error(`Status ${res.status}`);
+          setVacations(prev => prev.filter(v => (v._id || v.id) !== deleteId));
+          showBanner('휴가가 삭제되었습니다.', 'success');
+        } catch (error) {
+          console.error('[VACATION] delete failed', error);
+          showBanner('휴가 삭제에 실패했습니다.', 'error');
+        }
+      }
+    }
+    setProjectVacations(prev => prev.filter(v => v.id !== id));
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -1344,7 +1363,7 @@ export default function ResourceGanttChart() {
           allVacations={combinedVacations}
           onChange={updateProjectVacation}
           onAdd={addProjectVacation}
-          onRemove={removeProjectVacation}
+          onRemove={handleVacationRemove}
           onSave={handleVacationSave}
           allAssignees={allMembers}
         />

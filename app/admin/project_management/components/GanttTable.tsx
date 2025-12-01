@@ -157,7 +157,7 @@ const GanttTable: React.FC<Props> = ({
                           const duration = Math.max(1, getDaysDiff(chartStart, chartEnd) + 1);
                           const left = (getDaysDiff(chartStart, effectiveStart) / duration) * 100;
                           const width = (getDaysDiff(effectiveStart, effectiveEnd) + 1) / duration * 100;
-                          const vacHeight = Math.max(28, rowHeight - 12);
+                          const vacHeight = 18;
                           return (
                             <div
                               key={`vac-${rowKey}-${idx}`}
