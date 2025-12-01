@@ -361,7 +361,7 @@ export default function ResourceGanttChart() {
     const d = new Date(chartStartDate);
     if (viewMode === 'week') {
       d.setDate(d.getDate() - 7);
-      setChartStartDate(formatDate(getStartOfWeek(d)));
+      setChartStartDate(formatDate(d));
     } else {
       d.setDate(d.getDate() - 14);
       setChartStartDate(formatDate(d));
@@ -371,7 +371,7 @@ export default function ResourceGanttChart() {
     const d = new Date(chartStartDate);
     if (viewMode === 'week') {
       d.setDate(d.getDate() + 7);
-      setChartStartDate(formatDate(getStartOfWeek(d)));
+      setChartStartDate(formatDate(d));
     } else {
       d.setDate(d.getDate() + 14);
       setChartStartDate(formatDate(d));
