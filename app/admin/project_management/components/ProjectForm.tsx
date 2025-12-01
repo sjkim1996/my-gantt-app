@@ -270,7 +270,7 @@ const ProjectForm: React.FC<Props> = ({
             onClick={onOpenVacationModal}
             className={styles.vacationButton}
           >
-            구성원 휴가 입력
+            구성원 휴가 등록
           </button>
         </div>
         <div className={styles.actionsRow}>

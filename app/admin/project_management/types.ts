@@ -7,6 +7,7 @@ export interface Milestone {
 
 export interface Vacation {
   id: string;
+  _id?: string;
   person: string;
   team?: string;
   label?: string;

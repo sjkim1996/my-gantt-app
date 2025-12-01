@@ -120,6 +120,10 @@
   @apply opacity-100 hover:shadow-md hover:z-50;
 }
 
+.projectOnVacation {
+  @apply opacity-30 saturate-0;
+}
+
 .projectBar {
   @apply absolute left-0 top-0 bottom-0 w-1;
 }

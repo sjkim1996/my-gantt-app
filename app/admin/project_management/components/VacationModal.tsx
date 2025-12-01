@@ -38,15 +38,16 @@ const VacationModal: React.FC<Props> = ({
         </div>
         <div className={styles.body}>
           <div className={styles.gridHeader}>
-            <div className={styles.col3}>구성원명</div>
+            <div className={styles.col2}>구성원명</div>
+            <div className={styles.col2}>팀</div>
             <div className={styles.col3}>휴가 시작일</div>
             <div className={styles.col3}>휴가 종료일</div>
-            <div className={styles.col3}>비고 / 삭제</div>
+            <div className={styles.col2}>비고 / 삭제</div>
           </div>
           {vacations.map((v) => (
             <div key={v.id} className="bg-gray-50 p-3 rounded border border-gray-100 space-y-2 shadow-sm">
               <div className="grid grid-cols-12 gap-2 items-center">
-                <div className="col-span-3 relative">
+                <div className="col-span-2 relative">
                   <input
                     className={`${styles.input} w-full`}
                     value={v.person}
@@ -80,6 +81,12 @@ const VacationModal: React.FC<Props> = ({
                   )}
                 </div>
                 <input
+                  className={`${styles.input} col-span-2`}
+                  value={v.team || ''}
+                  onChange={(e) => onChange(v.id, 'team', e.target.value)}
+                  placeholder="팀"
+                />
+                <input
                   type="date"
                   className={`${styles.input} col-span-3`}
                   value={v.start}
@@ -93,7 +100,7 @@ const VacationModal: React.FC<Props> = ({
                 />
                 <button
                   onClick={() => onRemove(v.id)}
-                  className="col-span-1 text-sm font-bold text-red-600 hover:text-red-700 border border-red-200 rounded px-2 py-2 transition flex items-center justify-center gap-1 bg-red-50"
+                  className="col-span-2 text-sm font-bold text-red-600 hover:text-red-700 border border-red-200 rounded px-2 py-2 transition flex items-center justify-center gap-1 bg-red-50"
                   aria-label="휴가 삭제"
                 >
                   <Trash2 className="w-4 h-4" />

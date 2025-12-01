@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { parseDate, formatDate, getDaysDiff } from '../utils/date';
 import { darkenColor, getColorSet } from '../utils/colors';
 import { getPackedProjects } from '../utils/gantt';
-import { Project, Team } from '../types';
+import { Project, Team, Vacation } from '../types';
 import styles from '../styles/GanttTable.module.css';
 
 export type TimelineBlock = {
@@ -19,6 +19,7 @@ type Props = {
   timeline: TimelineBlock[];
   teams: Team[];
   projects: Project[];
+  vacations: Vacation[];
   viewMode: 'week' | 'day';
   chartContainerRef: React.RefObject<HTMLDivElement | null>;
   todayColumnRef: React.RefObject<HTMLTableHeaderCellElement | null>;
@@ -33,6 +34,7 @@ const GanttTable: React.FC<Props> = ({
   timeline,
   teams,
   projects,
+  vacations,
   viewMode,
   chartContainerRef,
   todayColumnRef,
@@ -98,14 +100,14 @@ const GanttTable: React.FC<Props> = ({
                   const { packed, totalRows } = getPackedProjects(myProjects);
                   const memberVacations = (() => {
                     const map = new Map<string, { label: string; start: Date; end: Date; color: string }>();
-                    projects
-                      .filter(p => p.person.toLowerCase() === member.toLowerCase())
-                      .forEach(p => (p.vacations || []).forEach(v => {
+                    vacations
+                      .filter(v => (v.person || '').toLowerCase() === member.toLowerCase() && (v.team || '').toLowerCase() === team.name.toLowerCase())
+                      .forEach(v => {
                         const s = parseDate(v.start);
                         const e = parseDate(v.end);
                         const key = `${v.label || ''}-${v.start}-${v.end}`;
-                        if (!map.has(key)) map.set(key, { label: v.label || '', start: s, end: e, color: v.color || '#94a3b8' });
-                      }));
+                        if (!map.has(key)) map.set(key, { label: v.label || '', start: s, end: e, color: v.color || '#0f172a' });
+                      });
                     return Array.from(map.values());
                   })();
                   const hasNotes = myProjects.some(p => p.notes && p.notes.trim().length > 0);
@@ -189,6 +191,11 @@ const GanttTable: React.FC<Props> = ({
                           const milestoneHeight = barHeight; // match project bar height
                           const milestoneTop = barTop; // align with project bar top
                           const milestoneOpacity = isHighlighted ? 0.95 : hoveredProjectName ? 0.25 : 0.7;
+                          const overlapsVacation = memberVacations.some(v => {
+                            const vStart = parseDate(formatDate(v.start));
+                            const vEnd = parseDate(formatDate(v.end));
+                            return vEnd >= pStart && vStart <= pEnd;
+                          });
 
                           return (
                             <div key={proj.id}>
@@ -198,7 +205,7 @@ const GanttTable: React.FC<Props> = ({
                                 onMouseLeave={() => { setHoveredProjectName(null); setHoveredBlockKey(null); }}
                                 className={`${styles.projectBlock} group ${colorSet.customBg ? '' : `${colorSet.bg} ${colorSet.border}`} ${
                                   isDimmed ? styles.projectDimmed : styles.projectHover
-                                } ${isHighlighted ? styles.projectHighlighted : ''}`}
+                                } ${isHighlighted ? styles.projectHighlighted : ''} ${overlapsVacation ? styles.projectOnVacation : ''}`}
                                 style={{ left: `${left}%`, width: `${width}%`, top, backgroundColor: colorSet.customBg, borderColor: colorSet.customBorder }}
                                 title={barTitle}
                               >

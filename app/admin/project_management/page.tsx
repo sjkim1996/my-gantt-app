@@ -108,7 +108,9 @@ export default function ResourceGanttChart() {
   // Tracking hook for future highlighting; only setter used to satisfy references
   const [, setRecentlyAddedProject] = useState<string | null>(null);
   const [isVacationModalOpen, setIsVacationModalOpen] = useState(false);
+  const [vacationModalMode, setVacationModalMode] = useState<'project' | 'global'>('project');
   const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
+  const [vacations, setVacations] = useState<Vacation[]>([]);
   const effectiveSession = sessionUser || sessionRef.current;
   const role = effectiveSession?.role ?? null;
   const canEdit = isEditRole(role);
@@ -150,6 +152,19 @@ export default function ResourceGanttChart() {
     [filterProjectsByRole],
   );
 
+  const combinedVacations = useMemo(() => {
+    const fromProjects: Vacation[] = projects.flatMap((p) =>
+      (p.vacations || []).map((v, idx) => ({
+        ...v,
+        id: v.id || `${p.id}-vac-${idx}`,
+        team: v.team || p.team,
+        person: v.person || p.person,
+        color: v.color || '#0f172a',
+      }))
+    );
+    return [...vacations, ...fromProjects];
+  }, [projects, vacations]);
+
   const lastViewMode = useRef<'week' | 'day'>(viewMode);
   useEffect(() => {
     if (viewMode !== lastViewMode.current) {
@@ -185,9 +200,10 @@ export default function ResourceGanttChart() {
         setSessionUser(sessionData);
         setIsAuthorized(true);
 
-        const [projectsRes, teamsRes] = await Promise.all([
+        const [projectsRes, teamsRes, vacationsRes] = await Promise.all([
           fetch('/api/projects', { cache: 'no-store' }),
           fetch('/api/teams', { cache: 'no-store' }),
+          fetch('/api/vacations', { cache: 'no-store' }),
         ]);
 
         if (projectsRes.status === 401 || projectsRes.status === 403) throw new Error('unauthorized');
@@ -221,6 +237,14 @@ export default function ResourceGanttChart() {
         } else {
           setTeams(DEFAULT_TEAMS);
         }
+
+        if (vacationsRes.ok) {
+          const vacJson = await vacationsRes.json();
+          if (vacJson?.success && Array.isArray(vacJson.data)) {
+            const loadedVac = vacJson.data.map((v: Vacation, idx: number) => ({ ...v, id: v._id || `vac-${idx}` }));
+            setVacations(loadedVac);
+          }
+        }
       } catch (error) {
         console.error('[AUTH] bootstrap failed', error);
         setIsAuthorized(false);
@@ -229,6 +253,7 @@ export default function ResourceGanttChart() {
         clearLoginToken();
         setProjects([]);
         setTeams(DEFAULT_TEAMS);
+        setVacations([]);
         router.replace('/login'); 
       } finally {
         setAuthChecked(true);
@@ -542,25 +567,54 @@ export default function ResourceGanttChart() {
     }));
   };
 
-  const openVacationModal = (mode: 'create' | 'edit') => {
+  const openVacationModal = (mode: 'create' | 'edit', target: 'project' | 'global' = 'project') => {
     if (!guardEdit()) return;
-    if (mode === 'edit') {
-      const combined = editingMembers.flatMap(m => (m.vacations || []).map(v => ({ ...v, person: v.person || m.person, team: v.team || m.team })));
-      setProjectVacations(combined.length ? combined : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
+    setVacationModalMode(target);
+    if (target === 'project') {
+      if (mode === 'edit') {
+        const combined = editingMembers.flatMap(m => (m.vacations || []).map(v => ({ ...v, person: v.person || m.person, team: v.team || m.team })));
+        setProjectVacations(combined.length ? combined : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#0f172a' }]);
+      } else {
+        setProjectVacations(prev => prev.length ? prev : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#0f172a' }]);
+      }
+      setVacationContext(mode);
     } else {
-      setProjectVacations(prev => prev.length ? prev : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
+      setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#0f172a' }]);
+      setVacationContext('create');
     }
-    setVacationContext(mode);
     setIsVacationModalOpen(true);
   };
 
-  const handleVacationSave = (vacs: Vacation[]) => {
+  const handleVacationSave = async (vacs: Vacation[]) => {
     if (!guardEdit()) return;
-    const valid = vacs.filter(v => v.person && v.start && v.end && !isNaN(Date.parse(v.start)) && !isNaN(Date.parse(v.end)) && new Date(v.start) <= new Date(v.end))
-      .map(v => ({ ...v, team: v.team || '미배정', color: v.color || '#94a3b8' }));
-    setProjectVacations(valid.length ? valid : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
-    if (vacationContext === 'edit') distributeVacationsToMembers(valid);
-    showBanner('휴가가 적용되었습니다.', 'info');
+    const valid = vacs
+      .filter(v => v.person && v.start && v.end && !isNaN(Date.parse(v.start)) && !isNaN(Date.parse(v.end)) && new Date(v.start) <= new Date(v.end))
+      .map(v => {
+        const matchedTeam = v.team || allMembers.find(m => m.name === v.person)?.team || '';
+        return { ...v, team: matchedTeam || '미배정', color: v.color || '#0f172a' };
+      });
+    if (vacationModalMode === 'project') {
+      setProjectVacations(valid.length ? valid : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#0f172a' }]);
+      if (vacationContext === 'edit') distributeVacationsToMembers(valid);
+      showBanner('휴가가 적용되었습니다.', 'info');
+    } else {
+      try {
+        const res = await fetch('/api/vacations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(valid),
+        });
+        const data = await res.json();
+        if (!res.ok || !data?.success) throw new Error(data?.error || `Status ${res.status}`);
+        const created = (data.data as Vacation[]).map((v, idx) => ({ ...v, id: v._id || `${Date.now()}-${idx}` }));
+        setVacations(prev => [...prev, ...created]);
+        showBanner('휴가가 등록되었습니다.', 'success');
+      } catch (error) {
+        console.error('[VACATION] create failed', error);
+        showBanner('휴가 등록에 실패했습니다.', 'error');
+      }
+    }
+    setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#0f172a' }]);
     setIsVacationModalOpen(false);
   };
 
@@ -1217,7 +1271,7 @@ export default function ResourceGanttChart() {
             </div>
             <div className={pageStyles.headerButtons}>
                 <button
-                  onClick={() => openVacationModal('create')}
+                  onClick={() => openVacationModal('create', 'global')}
                   className={`${pageStyles.teamButton}`}
                   disabled={!canEdit}
                   title={!canEdit ? '팀원 계정은 휴가 입력이 제한됩니다.' : '휴가 일정을 추가합니다.'}
@@ -1275,7 +1329,7 @@ export default function ResourceGanttChart() {
             addProjectMilestone={addProjectMilestone}
             updateProjectMilestone={updateProjectMilestone}
             removeProjectMilestone={removeProjectMilestone}
-            onOpenVacationModal={() => openVacationModal('create')}
+            onOpenVacationModal={() => openVacationModal('create', 'global')}
           />
         ) : (
           <div className={pageStyles.readOnlyCard}>
@@ -1326,6 +1380,7 @@ export default function ResourceGanttChart() {
           timeline={timeline}
           teams={teams}
           projects={projects}
+          vacations={combinedVacations}
           viewMode={viewMode}
           chartContainerRef={chartContainerRef}
           todayColumnRef={todayColumnRef}
