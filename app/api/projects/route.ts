@@ -24,9 +24,7 @@ export async function GET(req: Request) {
             .filter((p: any) => (p.person || '').toLowerCase() === session.id.toLowerCase())
             .map((p: any) => ({
               ...p,
-              vacations: Array.isArray(p.vacations)
-                ? p.vacations.filter((v: any) => (v.person || '').toLowerCase() === session.id.toLowerCase())
-                : [],
+              vacations: [],
             }))
         : normalized;
 

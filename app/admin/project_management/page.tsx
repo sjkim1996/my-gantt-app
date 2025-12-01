@@ -543,6 +543,7 @@ export default function ResourceGanttChart() {
   };
 
   const openVacationModal = (mode: 'create' | 'edit') => {
+    if (!guardEdit()) return;
     if (mode === 'edit') {
       const combined = editingMembers.flatMap(m => (m.vacations || []).map(v => ({ ...v, person: v.person || m.person, team: v.team || m.team })));
       setProjectVacations(combined.length ? combined : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
@@ -554,6 +555,7 @@ export default function ResourceGanttChart() {
   };
 
   const handleVacationSave = (vacs: Vacation[]) => {
+    if (!guardEdit()) return;
     const valid = vacs.filter(v => v.person && v.start && v.end && !isNaN(Date.parse(v.start)) && !isNaN(Date.parse(v.end)) && new Date(v.start) <= new Date(v.end))
       .map(v => ({ ...v, team: v.team || '미배정', color: v.color || '#94a3b8' }));
     setProjectVacations(valid.length ? valid : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
@@ -1128,7 +1130,7 @@ export default function ResourceGanttChart() {
         <div className={pageStyles.cardTight}>
                   <div className={pageStyles.vacationHeader}>
                     <h4 className={pageStyles.subTitle}>구성원 휴가</h4>
-                    <button onClick={() => openVacationModal('edit')} className={`${pageStyles.vacationButton} hidden`}>휴가 입력</button>
+                    <button onClick={() => openVacationModal('edit')} className={pageStyles.vacationButton}>휴가 입력</button>
                   </div>
                   {editingMembers.some(m => m.vacations && m.vacations.length) ? (
                     <div className={pageStyles.vacationList}>

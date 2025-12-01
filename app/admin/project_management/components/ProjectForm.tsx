@@ -276,7 +276,7 @@ const ProjectForm: React.FC<Props> = ({
           <button
             type="button"
             onClick={onOpenVacationModal}
-            className={`${styles.vacationButton} hidden`}
+            className={styles.vacationButton}
           >
             구성원 휴가 입력
           </button>

@@ -97,7 +97,11 @@
 }
 
 .vacation {
-  @apply absolute h-3 rounded bg-slate-700 border border-slate-800 z-[70] pointer-events-none;
+  @apply absolute rounded border border-slate-800/80 bg-slate-800/70 text-white text-[10px] font-bold flex items-center justify-center z-[70] pointer-events-none shadow-md;
+}
+
+.vacationLabel {
+  @apply px-3 py-1 rounded-full bg-black/30 backdrop-blur-[1px] leading-none;
 }
 
 .projectBlock {
