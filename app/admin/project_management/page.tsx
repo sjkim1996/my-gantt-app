@@ -15,17 +15,8 @@ import VacationModal from './components/VacationModal';
 import { Vacation } from './types';
 import pageStyles from './styles/Page.module.css';
 import { uploadPdf, getPresignedViewUrl } from '@/lib/pdfUpload';
-
-// Auth Logic (Inlined for single-file stability)
-const hasValidLoginToken = () => {
-  if (typeof window === 'undefined') return false;
-  return sessionStorage.getItem('isLoggedIn') === 'true';
-};
-
-const clearLoginToken = () => {
-  if (typeof window === 'undefined') return;
-  sessionStorage.removeItem('isLoggedIn');
-};
+import { clearLoginToken } from '@/lib/auth';
+import { UserRole, isEditRole } from '@/lib/authShared';
 
 const DEFAULT_TEAMS: Team[] = [
   { id: 't1', name: '기획팀', members: ['김철수', '이영희', '최기획'] },
@@ -46,6 +37,7 @@ const MOCK_PROJECTS_2025: Project[] = [
 // --- 4. 메인 컴포넌트 ---
 export default function ResourceGanttChart() {
   const router = useRouter();
+  const sessionRef = useRef<{ id: string; role: UserRole; label?: string } | null>(null);
   const [chartStartDate, setChartStartDate] = useState('2025-01-01');
   type AttachmentItem = Attachment & { id: string };
   const makeAttachment = (data?: Partial<AttachmentItem>): AttachmentItem => ({
@@ -67,6 +59,7 @@ export default function ResourceGanttChart() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [sessionUser, setSessionUser] = useState<{ id: string; role: UserRole; label?: string } | null>(null);
   
   const [masterProjectName, setMasterProjectName] = useState('');
   const [masterColorIdx, setMasterColorIdx] = useState(0);
@@ -116,6 +109,9 @@ export default function ResourceGanttChart() {
   const [, setRecentlyAddedProject] = useState<string | null>(null);
   const [isVacationModalOpen, setIsVacationModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
+  const effectiveSession = sessionUser || sessionRef.current;
+  const role = effectiveSession?.role ?? null;
+  const canEdit = isEditRole(role);
 
   useEffect(() => {
     if (banner) {
@@ -128,6 +124,31 @@ export default function ResourceGanttChart() {
   const showBanner = (text: string, tone: 'success' | 'error' | 'info' = 'success') => {
     setBanner({ text, tone });
   };
+
+  const guardEdit = () => {
+    if (canEdit) return true;
+    showBanner('조회 전용 계정입니다. 팀장에게 권한을 요청하세요.', 'error');
+    return false;
+  };
+
+  const filterProjectsByRole = useCallback(
+    (list: Project[]) => {
+      const activeSession = sessionUser || sessionRef.current;
+      if (activeSession?.role === 'member' && activeSession.id) {
+        const idLower = activeSession.id.toLowerCase();
+        return list.filter((p) => (p.person || '').toLowerCase() === idLower);
+      }
+      return list;
+    },
+    [sessionUser],
+  );
+
+  const applyProjects = useCallback(
+    (list: Project[]) => {
+      setProjects(dedupeProjects(filterProjectsByRole(list)));
+    },
+    [filterProjectsByRole],
+  );
 
   const lastViewMode = useRef<'week' | 'day'>(viewMode);
   useEffect(() => {
@@ -152,69 +173,70 @@ export default function ResourceGanttChart() {
 
   // --- Auth & Data Fetch ---
   useEffect(() => {
-    if (!hasValidLoginToken()) {
-      clearLoginToken();
-      setIsAuthorized(false);
-      setAuthChecked(true);
-      setIsLoading(false);
-      router.replace('/login'); 
-      return;
-    }
-
-    setIsAuthorized(true);
-    setAuthChecked(true);
-
-    const fetchProjects = async () => {
+    const bootstrap = async () => {
       try {
-        const res = await fetch('/api/projects');
-        const data = (await res.json()) as ApiProjectsResponse;
+        const sessionRes = await fetch('/api/auth/session', { cache: 'no-store' });
+        const sessionJson = await sessionRes.json();
+        if (!sessionRes.ok || !sessionJson?.success) {
+          throw new Error('unauthorized');
+        }
+        const sessionData = sessionJson.data as { id: string; role: UserRole; label?: string };
+        sessionRef.current = sessionData;
+        setSessionUser(sessionData);
+        setIsAuthorized(true);
 
-        if (!res.ok || !data.success) {
-          setProjects(MOCK_PROJECTS_2025);
-          return;
+        const [projectsRes, teamsRes] = await Promise.all([
+          fetch('/api/projects', { cache: 'no-store' }),
+          fetch('/api/teams', { cache: 'no-store' }),
+        ]);
+
+        if (projectsRes.status === 401 || projectsRes.status === 403) throw new Error('unauthorized');
+        const projectsJson = (await projectsRes.json()) as ApiProjectsResponse;
+        if (projectsRes.ok && projectsJson.success && Array.isArray(projectsJson.data)) {
+          const loadedProjects = (projectsJson.data || []).map((p, idx) => {
+            const normalizedId = typeof p._id === 'string'
+              ? p._id
+              : p._id
+              ? String(p._id)
+              : typeof p.id === 'string'
+              ? p.id
+              : `local-${idx}`;
+            return { 
+              ...p, 
+              vacations: (p.vacations || []).map(v => ({ ...v, person: v.person || p.person || '', team: v.team || p.team || '' })), 
+              _id: normalizedId, 
+              id: normalizedId 
+            };
+          });
+          applyProjects(loadedProjects);
+        } else {
+          applyProjects(MOCK_PROJECTS_2025);
         }
 
-        const loadedProjects = (data.data || []).map((p, idx) => {
-          const normalizedId = typeof p._id === 'string'
-            ? p._id
-            : p._id
-            ? String(p._id)
-            : typeof p.id === 'string'
-            ? p.id
-            : `local-${idx}`;
-          return { 
-            ...p, 
-            vacations: (p.vacations || []).map(v => ({ ...v, person: v.person || p.person || '', team: v.team || p.team || '' })), 
-            _id: normalizedId, 
-            id: normalizedId 
-          };
-        });
-        setProjects(dedupeProjects(loadedProjects));
+        if (teamsRes.status === 401 || teamsRes.status === 403) throw new Error('unauthorized');
+        const teamJson = await teamsRes.json();
+        if (teamsRes.ok && teamJson.success && Array.isArray(teamJson.data)) {
+          const loaded = teamJson.data.map((t: Team, idx: number) => ({ ...t, id: t._id || `t${idx}` }));
+          setTeams(loaded);
+        } else {
+          setTeams(DEFAULT_TEAMS);
+        }
       } catch (error) {
-        console.error('API Fetch failed (Preview Mode), using mock data.', error);
-        setProjects(dedupeProjects(MOCK_PROJECTS_2025));
+        console.error('[AUTH] bootstrap failed', error);
+        setIsAuthorized(false);
+        setSessionUser(null);
+        sessionRef.current = null;
+        clearLoginToken();
+        setProjects([]);
+        setTeams(DEFAULT_TEAMS);
+        router.replace('/login'); 
       } finally {
+        setAuthChecked(true);
         setIsLoading(false);
       }
     };
 
-    const fetchTeams = async () => {
-      try {
-        const res = await fetch('/api/teams');
-        const data = await res.json();
-        if (res.ok && data.success && Array.isArray(data.data)) {
-          const loaded = data.data.map((t: Team, idx: number) => ({ ...t, id: t._id || `t${idx}` }));
-          setTeams(loaded);
-          return;
-        }
-      } catch (error) {
-        console.error('[API] /api/teams failed, using defaults.', error);
-      }
-      setTeams(DEFAULT_TEAMS);
-    };
-
-    fetchProjects();
-    fetchTeams();
+    bootstrap();
   }, [router]);
 
   const timeline = useMemo<TimelineBlock[]>(() => {
@@ -281,9 +303,14 @@ export default function ResourceGanttChart() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newProjects),
       });
-      return res.json();
-    } catch {
-      return { success: true, data: newProjects.map((p, i) => ({ ...p, id: `${Date.now()}-${i}` })) };
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        return { success: false, error: data?.error || `저장 실패 (status ${res.status})` };
+      }
+      return data as ApiResponse<ProjectPayload[]>;
+    } catch (error) {
+      console.error('[API] create project failed', error);
+      return { success: false, error: '네트워크 오류로 저장하지 못했습니다.' };
     }
   };
 
@@ -294,9 +321,14 @@ export default function ResourceGanttChart() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(project),
       });
-      return res.json();
-    } catch {
-      return { success: true, data: project };
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        return { success: false, error: data?.error || `업데이트 실패 (status ${res.status})` };
+      }
+      return data as ApiResponse<ProjectPayload>;
+    } catch (error) {
+      console.error('[API] update project failed', error);
+      return { success: false, error: '네트워크 오류로 업데이트하지 못했습니다.' };
     }
   };
 
@@ -546,6 +578,7 @@ export default function ResourceGanttChart() {
   };
 
   const handleAddProject = async () => {
+    if (!guardEdit()) return;
     if (!projectName.trim()) { showBanner('프로젝트명을 입력하세요.', 'error'); return; }
     if (selectedAssignees.length === 0) { showBanner('담당자를 최소 1명 선택하세요.', 'error'); return; }
     if (!projectStart || !projectEnd) { showBanner('시작일과 종료일을 입력하세요.', 'error'); return; }
@@ -626,7 +659,7 @@ export default function ResourceGanttChart() {
             id: normalizedId 
           };
         });
-        setProjects(prev => dedupeProjects([...prev, ...normalized]));
+        setProjects(prev => dedupeProjects(filterProjectsByRole([...prev, ...normalized])));
         setProjectName(''); setSelectedAssignees([]); setProjectAttachments([makeAttachment()]); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([{ id: `${Date.now()}`, label: '', date: '', color: getRandomHexColor() }]); setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
         showBanner('프로젝트가 추가되었습니다.', 'success');
         setRecentlyAddedProject(targetName);
@@ -639,6 +672,7 @@ export default function ResourceGanttChart() {
   };
 
   const handleProjectClick = (project: Project) => {
+    if (!guardEdit()) return;
     const targetName = project.name;
     const relatedProjects = dedupeProjects(projects.filter(p => p.name === targetName));
     const normalizedAttachments = normalizeProjectAttachments(project);
@@ -705,6 +739,7 @@ export default function ResourceGanttChart() {
   const syncDatesToAll = () => { const updated = editingMembers.map(m => ({ ...m, start: masterStart, end: masterEnd })); setEditingMembers(updated); };
   
   const handleSaveMasterProject = async () => {
+    if (!guardEdit()) return;
     const masterAttachmentPayload = toAttachmentPayload(masterAttachments);
     const primaryAttachment = masterAttachmentPayload[0];
     const resolvedDocUrl = primaryAttachment?.url || '';
@@ -753,7 +788,7 @@ export default function ResourceGanttChart() {
                   : `reload-${idx}`;
                 return { ...p, _id: normalizedId, id: normalizedId };
               });
-              setProjects(dedupeProjects(normalized)); 
+              applyProjects(normalized); 
             }
         }
     } catch {
@@ -766,6 +801,7 @@ export default function ResourceGanttChart() {
   };
 
   const handleDeleteAll = async () => { 
+      if (!guardEdit()) return;
       const idsToDelete = editingMembers
         .filter(m => !m.isNew)
         .map(m => {
@@ -783,10 +819,10 @@ export default function ResourceGanttChart() {
         }
       }
 
-      setProjects(prev => prev.filter(p => {
+      setProjects(prev => dedupeProjects(filterProjectsByRole(prev.filter(p => {
         const key = typeof p._id === 'string' ? p._id : (typeof p.id === 'string' ? p.id : String(p.id));
         return !idsToDelete.includes(key);
-      }));
+      }))));
 
       try {
         const res = await fetch('/api/projects');
@@ -803,7 +839,7 @@ export default function ResourceGanttChart() {
                 : `reload-${idx}`;
               return { ...p, _id: normalizedId, id: normalizedId };
             });
-            setProjects(dedupeProjects(normalized));
+            applyProjects(normalized);
           }
         }
       } catch (err) {
@@ -840,9 +876,10 @@ export default function ResourceGanttChart() {
     setTimeout(() => setHoveredProjectName(null), 3000);
   };
 
-  const openTeamModal = () => { setEditingTeams(JSON.parse(JSON.stringify(teams))); setIsTeamModalOpen(true); };
+  const openTeamModal = () => { if (!guardEdit()) return; setEditingTeams(JSON.parse(JSON.stringify(teams))); setIsTeamModalOpen(true); };
 
   const saveTeams = async () => {
+    if (!guardEdit()) return;
     try {
       const payload = editingTeams.map(({ name, members }) => ({ name, members }));
       const res = await fetch('/api/teams', {
@@ -866,22 +903,26 @@ export default function ResourceGanttChart() {
     }
   };
 
-  const addTeam = () => { setEditingTeams([...editingTeams, { id: `t${Date.now()}`, name: '새 팀', members: [] }]); };
-  const updateTeamName = (idx: number, name: string) => { const n = [...editingTeams]; n[idx].name = name; setEditingTeams(n); };
-  const addMemberToTeam = (teamIdx: number) => { const name = prompt("이름:"); if (name) { const n = [...editingTeams]; n[teamIdx].members.push(name); setEditingTeams(n); } };
-  const removeMember = (tIdx: number, mIdx: number) => { const n = [...editingTeams]; n[tIdx].members.splice(mIdx, 1); setEditingTeams(n); };
-  const removeTeamCompletely = (tIdx: number) => { const n = [...editingTeams]; n.splice(tIdx, 1); setEditingTeams(n); };
+  const addTeam = () => { if (!guardEdit()) return; setEditingTeams([...editingTeams, { id: `t${Date.now()}`, name: '새 팀', members: [] }]); };
+  const updateTeamName = (idx: number, name: string) => { if (!guardEdit()) return; const n = [...editingTeams]; n[idx].name = name; setEditingTeams(n); };
+  const addMemberToTeam = (teamIdx: number) => { if (!guardEdit()) return; const name = prompt("이름:"); if (name) { const n = [...editingTeams]; n[teamIdx].members.push(name); setEditingTeams(n); } };
+  const removeMember = (tIdx: number, mIdx: number) => { if (!guardEdit()) return; const n = [...editingTeams]; n[tIdx].members.splice(mIdx, 1); setEditingTeams(n); };
+  const removeTeamCompletely = (tIdx: number) => { if (!guardEdit()) return; const n = [...editingTeams]; n.splice(tIdx, 1); setEditingTeams(n); };
   const handleModalInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (isEventComposing(e)) return;
     if (e.key === 'Enter' && modalAssigneeInput.trim()) { e.preventDefault(); if (modalSuggestions.length === 1) { addMemberInModal(modalSuggestions[0]); return; } const exact = allMembers.filter(m => m.name === modalAssigneeInput.trim()); if (exact.length === 1) { addMemberInModal(exact[0]); return; } let newName = modalAssigneeInput.trim(); let newTeam = '미배정'; if (newName.includes('-')) { const parts = newName.split('-'); newTeam = parts[0].trim(); newName = parts[1].trim(); } addMemberInModal({ name: newName, team: newTeam, isNew: true }); }
   };
   useEffect(() => { if (isModalOpen) setDeleteConfirmMode(false); }, [isModalOpen]);
 
-  const handleLogout = () => { 
-    if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('isLoggedIn'); 
-        document.cookie = 'auth_token=; Max-Age=0; path=/;';
+  const handleLogout = async () => { 
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (error) {
+      console.error('[AUTH] logout failed', error);
     }
+    clearLoginToken();
+    setSessionUser(null);
+    sessionRef.current = null;
     router.push('/login'); 
   };
 
@@ -1166,9 +1207,21 @@ export default function ResourceGanttChart() {
                     <Briefcase className="w-6 h-6 text-indigo-600"/> Resource Gantt
                 </h1>
                 <p className={pageStyles.subtitle}>팀 리소스 및 프로젝트 일정 관리 (2025)</p>
+                {sessionUser && (
+                  <p className={pageStyles.roleBadge}>
+                    {sessionUser.label || sessionUser.role} · {sessionUser.id}
+                  </p>
+                )}
             </div>
             <div className={pageStyles.headerButtons}>
-                <button onClick={openTeamModal} className={pageStyles.teamButton}><Settings className="w-4 h-4" /> 팀 설정</button>
+                <button
+                  onClick={openTeamModal}
+                  className={`${pageStyles.teamButton} ${!canEdit ? pageStyles.disabledButton : ''}`}
+                  disabled={!canEdit}
+                  title={!canEdit ? '팀원 계정은 팀 설정을 변경할 수 없습니다.' : undefined}
+                >
+                  <Settings className="w-4 h-4" /> 팀 설정
+                </button>
                 <button onClick={handleLogout} className={pageStyles.logoutButton}><LogOut className="w-4 h-4" /></button>
             </div>
         </div>
@@ -1181,38 +1234,47 @@ export default function ResourceGanttChart() {
         )}
         
         {/* Input Row */}
-        <ProjectForm
-          projectName={projectName}
-          setProjectName={setProjectName}
-          selectedAssignees={selectedAssignees}
-          removeAssignee={removeAssignee}
-          assigneeInput={assigneeInput}
-          setAssigneeInput={setAssigneeInput}
-          showSuggestions={showSuggestions}
-          setShowSuggestions={setShowSuggestions}
-          mainSuggestions={mainSuggestions}
-          addAssignee={addAssignee}
-          handleInputKeyDown={handleInputKeyDown}
-          inputRef={inputRef}
-          projectStart={projectStart}
-          setProjectStart={setProjectStart}
-          projectEnd={projectEnd}
-          setProjectEnd={setProjectEnd}
-          handleAddProject={handleAddProject}
-          projectNotes={projectNotes}
-          setProjectNotes={setProjectNotes}
-          attachments={projectAttachments}
-          addAttachment={addProjectAttachment}
-          removeAttachment={removeProjectAttachment}
-          uploadAttachment={uploadProjectAttachment}
-          clearAttachment={clearProjectAttachment}
-          onOpenAttachment={openAttachment}
-          projectMilestones={projectMilestones}
-          addProjectMilestone={addProjectMilestone}
-          updateProjectMilestone={updateProjectMilestone}
-          removeProjectMilestone={removeProjectMilestone}
-          onOpenVacationModal={() => openVacationModal('create')}
-        />
+        {canEdit ? (
+          <ProjectForm
+            projectName={projectName}
+            setProjectName={setProjectName}
+            selectedAssignees={selectedAssignees}
+            removeAssignee={removeAssignee}
+            assigneeInput={assigneeInput}
+            setAssigneeInput={setAssigneeInput}
+            showSuggestions={showSuggestions}
+            setShowSuggestions={setShowSuggestions}
+            mainSuggestions={mainSuggestions}
+            addAssignee={addAssignee}
+            handleInputKeyDown={handleInputKeyDown}
+            inputRef={inputRef}
+            projectStart={projectStart}
+            setProjectStart={setProjectStart}
+            projectEnd={projectEnd}
+            setProjectEnd={setProjectEnd}
+            handleAddProject={handleAddProject}
+            projectNotes={projectNotes}
+            setProjectNotes={setProjectNotes}
+            attachments={projectAttachments}
+            addAttachment={addProjectAttachment}
+            removeAttachment={removeProjectAttachment}
+            uploadAttachment={uploadProjectAttachment}
+            clearAttachment={clearProjectAttachment}
+            onOpenAttachment={openAttachment}
+            projectMilestones={projectMilestones}
+            addProjectMilestone={addProjectMilestone}
+            updateProjectMilestone={updateProjectMilestone}
+            removeProjectMilestone={removeProjectMilestone}
+            onOpenVacationModal={() => openVacationModal('create')}
+          />
+        ) : (
+          <div className={pageStyles.readOnlyCard}>
+            <p className={pageStyles.readOnlyTitle}>조회 전용 모드</p>
+            <p className={pageStyles.readOnlyBody}>
+              팀원 계정은 본인에게 배정된 프로젝트 일정만 확인할 수 있습니다. 수정이나 신규 등록이 필요하면 팀장에게 요청하세요.
+            </p>
+          </div>
+        )}
 
         <VacationModal
           isOpen={isVacationModalOpen}

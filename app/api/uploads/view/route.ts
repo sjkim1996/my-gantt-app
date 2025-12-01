@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createPresignedRead } from '@/lib/s3';
+import { requireAuth } from '@/lib/serverAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -7,6 +8,9 @@ export const dynamic = 'force-dynamic';
 type Body = { key?: string };
 
 export async function POST(req: Request) {
+  const { session: _session, response } = requireAuth(req);
+  if (!_session) return response!;
+
   try {
     const body = (await req.json()) as Body;
     const key = body.key?.trim();

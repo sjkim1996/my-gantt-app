@@ -1,12 +1,16 @@
 import dbConnect from '@/lib/db';
 import Team from '@/models/Team';
 import { NextResponse } from 'next/server';
+import { requireAuth, requireEditor } from '@/lib/serverAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 // 팀 목록 조회
-export async function GET() {
+export async function GET(req: Request) {
+  const { session: _session, response } = requireAuth(req);
+  if (!_session) return response!;
+
   try {
     await dbConnect();
     const teams = await Team.find({}).sort({ createdAt: 1 });
@@ -19,6 +23,9 @@ export async function GET() {
 
 // 팀 전체 저장 (간단히 모두 덮어쓰기)
 export async function PUT(req: Request) {
+  const { session: _session, response } = requireEditor(req);
+  if (!_session) return response!;
+
   try {
     await dbConnect();
     const body = (await req.json()) as Array<{ name: string; members: string[] }>;

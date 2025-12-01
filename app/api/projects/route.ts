@@ -1,6 +1,7 @@
 import dbConnect from '@/lib/db';
 import Project from '@/models/Project';
 import { NextResponse } from 'next/server';
+import { requireAuth, requireEditor } from '@/lib/serverAuth';
 
 // Ensure serverful runtime for mongoose
 export const runtime = 'nodejs';
@@ -8,11 +9,28 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 // [GET] 프로젝트 목록 가져오기
-export async function GET() {
+export async function GET(req: Request) {
+  const { session, response } = requireAuth(req);
+  if (!session) return response!;
+
   try {
     await dbConnect();
     const projects = await Project.find({});
-    return NextResponse.json({ success: true, data: projects });
+
+    const normalized = projects.map((p) => (typeof (p as any).toObject === 'function' ? (p as any).toObject() : p));
+    const visible =
+      session.role === 'member'
+        ? normalized
+            .filter((p: any) => (p.person || '').toLowerCase() === session.id.toLowerCase())
+            .map((p: any) => ({
+              ...p,
+              vacations: Array.isArray(p.vacations)
+                ? p.vacations.filter((v: any) => (v.person || '').toLowerCase() === session.id.toLowerCase())
+                : [],
+            }))
+        : normalized;
+
+    return NextResponse.json({ success: true, data: visible });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ success: false, error: message }, { status: 500 });
@@ -67,6 +85,9 @@ const sanitizeProject = (p?: IncomingProject | null) => {
 
 // [POST] 프로젝트 추가하기
 export async function POST(req: Request) {
+  const { session: _session, response } = requireEditor(req);
+  if (!_session) return response!;
+
   try {
     await dbConnect();
     const body = await req.json();
@@ -89,6 +110,9 @@ export async function POST(req: Request) {
 
 // [PUT] 프로젝트 수정하기
 export async function PUT(req: Request) {
+  const { session: _session, response } = requireEditor(req);
+  if (!_session) return response!;
+
   try {
     await dbConnect();
     const body = await req.json();
@@ -107,6 +131,9 @@ export async function PUT(req: Request) {
 
 // [DELETE] 프로젝트 삭제하기
 export async function DELETE(req: Request) {
+  const { session: _session, response } = requireEditor(req);
+  if (!_session) return response!;
+
   try {
     await dbConnect();
     const { searchParams } = new URL(req.url);
