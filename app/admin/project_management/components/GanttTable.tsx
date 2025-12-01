@@ -28,6 +28,7 @@ type Props = {
   setHoveredProjectName: (name: string | null) => void;
   handleProjectClick: (project: Project) => void;
   chartTotalDays: number;
+  onVacationClick: (vacation: Vacation) => void;
 };
 
 const GanttTable: React.FC<Props> = ({
@@ -43,6 +44,7 @@ const GanttTable: React.FC<Props> = ({
   setHoveredProjectName,
   handleProjectClick,
   chartTotalDays,
+  onVacationClick,
 }) => {
   const [hoveredBlockKey, setHoveredBlockKey] = useState<string | null>(null);
   const chartStart = timeline.length > 0 ? parseDate(formatDate(timeline[0].start)) : null;
@@ -99,14 +101,12 @@ const GanttTable: React.FC<Props> = ({
                   const myProjects = projects.filter((p) => p.person === member && p.team === team.name);
                   const { packed, totalRows } = getPackedProjects(myProjects);
                   const memberVacations = (() => {
-                    const map = new Map<string, { label: string; start: Date; end: Date; color: string }>();
+                    const map = new Map<string, Vacation>();
                     vacations
                       .filter(v => (v.person || '').toLowerCase() === member.toLowerCase())
                       .forEach(v => {
-                        const s = parseDate(v.start);
-                        const e = parseDate(v.end);
-                        const key = `${v.label || ''}-${v.start}-${v.end}`;
-                        if (!map.has(key)) map.set(key, { label: v.label || '', start: s, end: e, color: v.color || '#0f172a' });
+                        const key = `${v.label || ''}-${v.start}-${v.end}-${v.team || ''}`;
+                        if (!map.has(key)) map.set(key, { ...v, color: v.color || '#0f172a' });
                       });
                     return Array.from(map.values());
                   })();
@@ -158,6 +158,7 @@ const GanttTable: React.FC<Props> = ({
                               className={styles.vacation}
                               style={{ left: `${left}%`, width: `${width}%`, top: '2px', height: `${vacHeight}px` }}
                               title={vac.label ? `휴가: ${vac.label}` : '휴가'}
+                              onClick={() => onVacationClick(vac)}
                             >
                               <span className={styles.vacationLabel}>{vac.label || '휴가'}</span>
                             </div>

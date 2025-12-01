@@ -38,7 +38,8 @@ const MOCK_PROJECTS_2025: Project[] = [
 export default function ResourceGanttChart() {
   const router = useRouter();
   const sessionRef = useRef<{ id: string; role: UserRole; label?: string } | null>(null);
-  const [chartStartDate, setChartStartDate] = useState('2025-01-01');
+  const [anchorDate, setAnchorDate] = useState<Date>(new Date());
+  const [chartStartDate, setChartStartDate] = useState(formatDate(getStartOfWeek(new Date())));
   type AttachmentItem = Attachment & { id: string };
   const makeAttachment = (data?: Partial<AttachmentItem>): AttachmentItem => ({
     id: data?.id || `att-${Math.random().toString(36).slice(2, 7)}-${Date.now()}`,
@@ -158,14 +159,14 @@ export default function ResourceGanttChart() {
   const lastViewMode = useRef<'week' | 'day'>(viewMode);
   useEffect(() => {
     if (viewMode !== lastViewMode.current) {
-      if (viewMode === 'week') {
-        setChartStartDate(prev => formatDate(getStartOfWeek(new Date(prev))));
-      } else {
-        setChartStartDate(formatDate(todayDate));
-      }
       lastViewMode.current = viewMode;
     }
-  }, [viewMode, todayDate]);
+  }, [viewMode]);
+
+  useEffect(() => {
+    const base = viewMode === 'week' ? getStartOfWeek(anchorDate) : anchorDate;
+    setChartStartDate(formatDate(base));
+  }, [anchorDate, viewMode]);
 
   useEffect(() => {
     const lockScroll = isModalOpen || isTeamModalOpen || isVacationModalOpen;
@@ -358,31 +359,29 @@ export default function ResourceGanttChart() {
   };
 
   const handlePrevMonth = () => {
-    const d = new Date(chartStartDate);
     if (viewMode === 'week') {
-      const base = getStartOfWeek(d);
-      base.setDate(base.getDate() - 7);
-      setChartStartDate(formatDate(base));
+      const next = new Date(anchorDate);
+      next.setDate(next.getDate() - 7);
+      setAnchorDate(next);
     } else {
-      d.setDate(d.getDate() - 14);
-      setChartStartDate(formatDate(d));
+      const next = new Date(anchorDate);
+      next.setDate(next.getDate() - 14);
+      setAnchorDate(next);
     }
   };
   const handleNextMonth = () => {
-    const d = new Date(chartStartDate);
     if (viewMode === 'week') {
-      const base = getStartOfWeek(d);
-      base.setDate(base.getDate() + 7);
-      setChartStartDate(formatDate(base));
+      const next = new Date(anchorDate);
+      next.setDate(next.getDate() + 7);
+      setAnchorDate(next);
     } else {
-      d.setDate(d.getDate() + 14);
-      setChartStartDate(formatDate(d));
+      const next = new Date(anchorDate);
+      next.setDate(next.getDate() + 14);
+      setAnchorDate(next);
     }
   };
   const handleJumpToToday = () => {
-    const base = new Date(todayDate.getFullYear(), todayDate.getMonth(), 1);
-    const startPoint = viewMode === 'week' ? getStartOfWeek(base) : todayDate;
-    setChartStartDate(formatDate(startPoint));
+    setAnchorDate(todayDate);
     setTimeout(() => {
         todayColumnRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }, 300);
@@ -1176,7 +1175,7 @@ export default function ResourceGanttChart() {
         <div className={pageStyles.cardTight}>
                   <div className={pageStyles.vacationHeader}>
                     <h4 className={pageStyles.subTitle}>구성원 휴가</h4>
-                    <button onClick={() => openVacationModal('create', 'global')} className={pageStyles.vacationButton}>글로벌 휴가 관리</button>
+                    <button onClick={() => openVacationModal('create', 'global')} className={pageStyles.vacationButton}>휴가 관리</button>
                   </div>
                   {editingMembers.some(m => m.vacations && m.vacations.length) || vacations.length ? (
                     <div className={pageStyles.vacationList}>
@@ -1185,7 +1184,7 @@ export default function ResourceGanttChart() {
                           <span className="font-bold">{v.person || m.person}</span>
                           <span className="text-gray-500">{v.team || m.team}</span>
                           <span className="text-gray-600">{v.start} ~ {v.end}</span>
-                          <span className="text-gray-500">(프로젝트 내 등록)</span>
+                          {v.label && <span className="text-gray-500">({v.label})</span>}
                         </div>
                       )))}
                       {vacations
@@ -1195,7 +1194,7 @@ export default function ResourceGanttChart() {
                             <span className="font-bold">{v.person}</span>
                             <span className="text-gray-500">{v.team}</span>
                             <span className="text-gray-600">{v.start} ~ {v.end}</span>
-                            <span className="text-gray-500">(글로벌 등록)</span>
+                            {v.label && <span className="text-gray-500">({v.label})</span>}
                           </div>
                         ))}
                     </div>
@@ -1391,6 +1390,13 @@ export default function ResourceGanttChart() {
           setHoveredProjectName={setHoveredProjectName}
           handleProjectClick={handleProjectClick}
           chartTotalDays={chartTotalDays}
+          onVacationClick={(vac) => {
+            if (!canEdit) return;
+            setVacationModalMode('global');
+            setVacationContext('edit');
+            setProjectVacations([{ ...vac, id: vac.id || vac._id || `${vac.person}-${vac.start}` }]);
+            setIsVacationModalOpen(true);
+          }}
         />
       </div>
     </div>

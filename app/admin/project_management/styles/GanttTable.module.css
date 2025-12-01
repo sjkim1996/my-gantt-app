@@ -17,11 +17,11 @@
 }
 
 .teamHeader {
-  @apply sticky left-0 z-50 bg-gray-50 w-24 min-w-[96px] text-left py-3 pl-4 text-xs font-bold text-gray-500 uppercase border-b border-r border-gray-200;
+  @apply sticky left-0 z-[200] bg-gray-50 w-24 min-w-[96px] text-left py-3 pl-4 text-xs font-bold text-gray-500 uppercase border-b border-r border-gray-200;
 }
 
 .memberHeader {
-  @apply sticky left-24 z-50 bg-gray-50 w-28 min-w-[112px] text-left py-3 pl-4 text-xs font-bold text-gray-500 uppercase border-b border-r border-gray-200 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)];
+  @apply sticky left-24 z-[200] bg-gray-50 w-28 min-w-[112px] text-left py-3 pl-4 text-xs font-bold text-gray-500 uppercase border-b border-r border-gray-200 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)];
 }
 
 .timelineHead {
@@ -61,7 +61,7 @@
 }
 
 .teamCell {
-  @apply sticky left-0 z-40 bg-white align-top py-3 pl-4 text-xs font-bold text-gray-700 border-r border-gray-200;
+  @apply sticky left-0 z-[190] bg-white align-top py-3 pl-4 text-xs font-bold text-gray-700 border-r border-gray-200;
 }
 
 .teamCellBottom {
@@ -73,7 +73,7 @@
 }
 
 .memberCell {
-  @apply sticky left-24 z-40 bg-white align-top py-3 pl-4 text-sm font-medium text-black border-r border-gray-200 border-b border-gray-200 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)];
+  @apply sticky left-24 z-[190] bg-white align-top py-3 pl-4 text-sm font-medium text-black border-r border-gray-200 border-b border-gray-200 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)];
 }
 
 .rowBody {
@@ -97,7 +97,7 @@
 }
 
 .vacation {
-  @apply absolute rounded border border-slate-900 bg-slate-900/90 text-white text-[10px] font-bold flex items-center justify-center z-[90] pointer-events-none shadow-lg backdrop-blur-[1px];
+  @apply absolute rounded border border-slate-900 bg-slate-900/90 text-white text-[10px] font-bold flex items-center justify-center z-[120] shadow-lg backdrop-blur-[1px] cursor-pointer;
 }
 
 .vacationLabel {
