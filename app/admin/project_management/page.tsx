@@ -522,6 +522,7 @@ export default function ResourceGanttChart() {
     }
   };
 
+  const addProjectAttachment = () => setProjectAttachments((prev) => [...prev, makeAttachment()]);
   const removeProjectAttachment = (id: string) => setProjectAttachments((prev) => (prev.length === 1 ? prev : prev.filter((a) => a.id !== id)));
   const uploadProjectAttachment = (id: string, files: FileList | null) => uploadAttachmentsToState(id, files, setProjectAttachments);
 
@@ -1322,6 +1323,7 @@ export default function ResourceGanttChart() {
             projectNotes={projectNotes}
             setProjectNotes={setProjectNotes}
             attachments={projectAttachments}
+            addAttachment={addProjectAttachment}
             removeAttachment={removeProjectAttachment}
             uploadAttachment={uploadProjectAttachment}
             onOpenAttachment={openAttachment}

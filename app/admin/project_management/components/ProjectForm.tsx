@@ -24,6 +24,7 @@ type Props = {
   projectNotes: string;
   setProjectNotes: (v: string) => void;
   attachments: (Attachment & { id: string })[];
+  addAttachment: () => void;
   removeAttachment: (id: string) => void;
   uploadAttachment: (id: string, files: FileList | null) => void;
   onOpenAttachment: (att: Attachment) => void;
@@ -54,6 +55,7 @@ const ProjectForm: React.FC<Props> = ({
   projectNotes,
   setProjectNotes,
   attachments,
+  addAttachment,
   removeAttachment,
   uploadAttachment,
   onOpenAttachment,
@@ -82,7 +84,6 @@ const ProjectForm: React.FC<Props> = ({
     <div className={styles.container}>
       <div className={styles.titleRow}>
         <h2 className={styles.title}>프로젝트 추가</h2>
-        <span className={styles.titleBadge}>신규 등록</span>
       </div>
       <div className={styles.grid}>
         <div className={styles.col3}>
@@ -209,34 +210,35 @@ const ProjectForm: React.FC<Props> = ({
               onChange={(e) => handleFileSelect(e.target.files)}
             />
           </div>
-          {attachments.length > 0 && (
-            <div className={styles.attachmentList}>
-              {attachments.map((att, idx) => (
-                <div key={att.id} className={styles.attachmentItem}>
-                  <div className={styles.attachmentMeta}>
-                    <span className={styles.attachmentName}>{att.name || `첨부 ${idx + 1}`}</span>
-                    {(att.key || att.url) && <span className={styles.attachmentSub}>{att.key || att.url}</span>}
-                  </div>
-                  <div className={styles.attachmentActions}>
-                    <label className={styles.attachmentReplace}>
-                      교체
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={(e) => uploadAttachment(att.id, e.target.files)}
-                      />
-                    </label>
-                    <button type="button" className={styles.attachmentOpen} onClick={() => onOpenAttachment(att)} disabled={!att.key && !att.url}>
-                      열기
-                    </button>
-                    <button type="button" className={styles.attachmentDelete} onClick={() => removeAttachment(att.id)} disabled={attachments.length === 1}>
-                      삭제
-                    </button>
-                  </div>
+          <div className={styles.attachmentList}>
+            {attachments.map((att, idx) => (
+              <div key={att.id} className={styles.attachmentItem}>
+                <div className={styles.attachmentMeta}>
+                  <span className={styles.attachmentName}>{att.name || `첨부 ${idx + 1}`}</span>
+                  {(att.key || att.url) && <span className={styles.attachmentSub}>{att.key || att.url}</span>}
                 </div>
-              ))}
-            </div>
-          )}
+                <div className={styles.attachmentActions}>
+                  <label className={styles.attachmentReplace}>
+                    교체
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={(e) => uploadAttachment(att.id, e.target.files)}
+                    />
+                  </label>
+                  <button type="button" className={styles.attachmentOpen} onClick={() => onOpenAttachment(att)} disabled={!att.key && !att.url}>
+                    열기
+                  </button>
+                  <button type="button" className={styles.attachmentDelete} onClick={() => removeAttachment(att.id)} disabled={attachments.length === 1}>
+                    삭제
+                  </button>
+                </div>
+              </div>
+            ))}
+            <button type="button" className={styles.attachmentAdd} onClick={addAttachment}>
+              + 파일 추가
+            </button>
+          </div>
         </div>
         <div className={styles.gridFull + ' space-y-2'}>
           <label className={styles.label}>특이 스케줄 (시사일/PPM 등)</label>
