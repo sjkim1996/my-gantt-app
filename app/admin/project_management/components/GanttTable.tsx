@@ -101,12 +101,18 @@ const GanttTable: React.FC<Props> = ({
                   const myProjects = projects.filter((p) => p.person === member && p.team === team.name);
                   const { packed, totalRows } = getPackedProjects(myProjects);
                   const memberVacations = (() => {
-                    const map = new Map<string, Vacation>();
+                    const map = new Map<
+                      string,
+                      { label?: string; startDate: Date; endDate: Date; color: string; raw: Vacation }
+                    >();
                     vacations
                       .filter(v => (v.person || '').toLowerCase() === member.toLowerCase())
                       .forEach(v => {
+                        const s = parseDate(v.start);
+                        const e = parseDate(v.end);
+                        if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return;
                         const key = `${v.label || ''}-${v.start}-${v.end}-${v.team || ''}`;
-                        if (!map.has(key)) map.set(key, { ...v, color: v.color || '#0f172a' });
+                        if (!map.has(key)) map.set(key, { label: v.label, startDate: s, endDate: e, color: v.color || '#0f172a', raw: v });
                       });
                     return Array.from(map.values());
                   })();
@@ -145,9 +151,9 @@ const GanttTable: React.FC<Props> = ({
                         </div>
 
                         {chartStart && chartEnd && memberVacations.map((vac, idx) => {
-                          if (vac.end < chartStart || vac.start > chartEnd) return null;
-                          const effectiveStart = vac.start < chartStart ? chartStart : vac.start;
-                          const effectiveEnd = vac.end > chartEnd ? chartEnd : vac.end;
+                          if (vac.endDate < chartStart || vac.startDate > chartEnd) return null;
+                          const effectiveStart = vac.startDate < chartStart ? chartStart : vac.startDate;
+                          const effectiveEnd = vac.endDate > chartEnd ? chartEnd : vac.endDate;
                           const duration = Math.max(1, getDaysDiff(chartStart, chartEnd) + 1);
                           const left = (getDaysDiff(chartStart, effectiveStart) / duration) * 100;
                           const width = (getDaysDiff(effectiveStart, effectiveEnd) + 1) / duration * 100;
@@ -158,7 +164,7 @@ const GanttTable: React.FC<Props> = ({
                               className={styles.vacation}
                               style={{ left: `${left}%`, width: `${width}%`, top: '2px', height: `${vacHeight}px` }}
                               title={vac.label ? `휴가: ${vac.label}` : '휴가'}
-                              onClick={() => onVacationClick(vac)}
+                              onClick={() => onVacationClick(vac.raw)}
                             >
                               <span className={styles.vacationLabel}>{vac.label || '휴가'}</span>
                             </div>

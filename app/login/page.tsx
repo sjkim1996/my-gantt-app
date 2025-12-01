@@ -47,7 +47,7 @@ export default function LoginPage() {
             <Lock className="w-6 h-6 text-indigo-600" />
           </div>
         </div>
-        <h1 className={styles.title}>Capra Admin</h1>
+        <h1 className={styles.title}>CAPRA Admin</h1>
         <div className={styles.fieldGroup}>
           <div>
             <label className={styles.label}>ID</label>
