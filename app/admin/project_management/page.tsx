@@ -360,8 +360,9 @@ export default function ResourceGanttChart() {
   const handlePrevMonth = () => {
     const d = new Date(chartStartDate);
     if (viewMode === 'week') {
-      d.setDate(d.getDate() - 7);
-      setChartStartDate(formatDate(d));
+      const base = getStartOfWeek(d);
+      base.setDate(base.getDate() - 7);
+      setChartStartDate(formatDate(base));
     } else {
       d.setDate(d.getDate() - 14);
       setChartStartDate(formatDate(d));
@@ -370,8 +371,9 @@ export default function ResourceGanttChart() {
   const handleNextMonth = () => {
     const d = new Date(chartStartDate);
     if (viewMode === 'week') {
-      d.setDate(d.getDate() + 7);
-      setChartStartDate(formatDate(d));
+      const base = getStartOfWeek(d);
+      base.setDate(base.getDate() + 7);
+      setChartStartDate(formatDate(base));
     } else {
       d.setDate(d.getDate() + 14);
       setChartStartDate(formatDate(d));
@@ -520,10 +522,8 @@ export default function ResourceGanttChart() {
     }
   };
 
-  const addProjectAttachment = () => setProjectAttachments((prev) => [...prev, makeAttachment()]);
   const removeProjectAttachment = (id: string) => setProjectAttachments((prev) => (prev.length === 1 ? prev : prev.filter((a) => a.id !== id)));
   const uploadProjectAttachment = (id: string, files: FileList | null) => uploadAttachmentsToState(id, files, setProjectAttachments);
-  const clearProjectAttachment = (id: string) => setProjectAttachments((prev) => prev.map((a) => a.id === id ? makeAttachment({ id }) : a));
 
   const addMasterAttachment = () => setMasterAttachments((prev) => [...prev, makeAttachment()]);
   const removeMasterAttachment = (id: string) => setMasterAttachments((prev) => (prev.length === 1 ? prev : prev.filter((a) => a.id !== id)));
@@ -1322,10 +1322,8 @@ export default function ResourceGanttChart() {
             projectNotes={projectNotes}
             setProjectNotes={setProjectNotes}
             attachments={projectAttachments}
-            addAttachment={addProjectAttachment}
             removeAttachment={removeProjectAttachment}
             uploadAttachment={uploadProjectAttachment}
-            clearAttachment={clearProjectAttachment}
             onOpenAttachment={openAttachment}
             projectMilestones={projectMilestones}
             addProjectMilestone={addProjectMilestone}

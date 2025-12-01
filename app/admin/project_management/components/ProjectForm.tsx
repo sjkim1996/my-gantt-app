@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { X } from 'lucide-react';
 import { Assignee, Attachment, Milestone } from '../types';
 import styles from '../styles/ProjectForm.module.css';
@@ -24,10 +24,8 @@ type Props = {
   projectNotes: string;
   setProjectNotes: (v: string) => void;
   attachments: (Attachment & { id: string })[];
-  addAttachment: () => void;
   removeAttachment: (id: string) => void;
   uploadAttachment: (id: string, files: FileList | null) => void;
-  clearAttachment: (id: string) => void;
   onOpenAttachment: (att: Attachment) => void;
   projectMilestones: Milestone[];
   addProjectMilestone: () => void;
@@ -56,16 +54,30 @@ const ProjectForm: React.FC<Props> = ({
   projectNotes,
   setProjectNotes,
   attachments,
-  addAttachment,
   removeAttachment,
   uploadAttachment,
-  clearAttachment,
   onOpenAttachment,
   projectMilestones,
   addProjectMilestone,
   updateProjectMilestone,
   removeProjectMilestone,
 }) => {
+  const dropInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0 && attachments[0]?.id) {
+      uploadAttachment(attachments[0].id, files);
+    }
+  };
+
+  const handleFileSelect = (files: FileList | null) => {
+    if (files && files.length > 0 && attachments[0]?.id) {
+      uploadAttachment(attachments[0].id, files);
+    }
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.titleRow}>
@@ -172,69 +184,59 @@ const ProjectForm: React.FC<Props> = ({
         </div>
         <div className={`${styles.gridFull} flex flex-col gap-3`}>
           <label className={styles.label}>프로젝트 문서 (첨부 파일)</label>
-          <div className={styles.attachmentCard}>
-            <p className={styles.attachmentHint}>파일이 등록되면 여기에서 확인할 수 있습니다.</p>
-            <div className="space-y-2 opacity-70 pointer-events-none">
-              {attachments.map((att) => (
-                <div key={att.id} className="flex flex-wrap items-center gap-2">
-                  <div className="flex-1 min-w-[200px]">
-                    <input
-                      type="text"
-                      value={att.name}
-                      readOnly
-                      placeholder="파일을 업로드하면 이름이 표시됩니다"
-                      className={`${styles.textInput} bg-gray-50 cursor-not-allowed`}
-                    />
+          <div
+            className={styles.uploadDrop}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop}
+            onClick={() => dropInputRef.current?.click()}
+          >
+            <p className={styles.attachmentHint}>첨부할 파일을 여기로 끌어다 놓거나, 파일 선택 버튼을 눌러 주세요.</p>
+            <button
+              type="button"
+              className={styles.uploadButton}
+              onClick={(e) => {
+                e.stopPropagation();
+                dropInputRef.current?.click();
+              }}
+            >
+              파일 선택
+            </button>
+            <input
+              ref={dropInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={(e) => handleFileSelect(e.target.files)}
+            />
+          </div>
+          {attachments.length > 0 && (
+            <div className={styles.attachmentList}>
+              {attachments.map((att, idx) => (
+                <div key={att.id} className={styles.attachmentItem}>
+                  <div className={styles.attachmentMeta}>
+                    <span className={styles.attachmentName}>{att.name || `첨부 ${idx + 1}`}</span>
+                    {(att.key || att.url) && <span className={styles.attachmentSub}>{att.key || att.url}</span>}
                   </div>
-                  <label className="px-3 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-bold cursor-not-allowed">
-                    파일 선택/교체
-                    <input
-                      type="file"
-                      accept="*/*"
-                      multiple
-                      className="hidden"
-                      onChange={(e) => uploadAttachment(att.id, e.target.files)}
-                    />
-                  </label>
-                  {(att.key || att.url) && (
-                    <span className="text-xs text-gray-600 truncate max-w-[180px]">{att.key || att.url}</span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => onOpenAttachment(att)}
-                    className="px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-bold"
-                    disabled
-                  >
-                    열기
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => clearAttachment(att.id)}
-                    className="px-2 py-1 bg-white text-gray-500 border border-gray-200 rounded text-xs font-bold"
-                    disabled
-                  >
-                    초기화
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeAttachment(att.id)}
-                    className={`${styles.milestoneRemove} text-sm ${attachments.length === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled
-                  >
-                    -
-                  </button>
+                  <div className={styles.attachmentActions}>
+                    <label className={styles.attachmentReplace}>
+                      교체
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={(e) => uploadAttachment(att.id, e.target.files)}
+                      />
+                    </label>
+                    <button type="button" className={styles.attachmentOpen} onClick={() => onOpenAttachment(att)} disabled={!att.key && !att.url}>
+                      열기
+                    </button>
+                    <button type="button" className={styles.attachmentDelete} onClick={() => removeAttachment(att.id)} disabled={attachments.length === 1}>
+                      삭제
+                    </button>
+                  </div>
                 </div>
               ))}
-              <button
-                type="button"
-                onClick={addAttachment}
-                className="px-3 py-2 bg-white border border-dashed border-gray-300 rounded text-sm text-gray-600"
-                disabled
-              >
-                + 파일 추가
-              </button>
             </div>
-          </div>
+          )}
         </div>
         <div className={styles.gridFull + ' space-y-2'}>
           <label className={styles.label}>특이 스케줄 (시사일/PPM 등)</label>
