@@ -133,26 +133,16 @@ export default function ResourceGanttChart() {
     return false;
   };
 
-  const filterProjectsByRole = useCallback(
-    (list: Project[]) => {
-      const activeSession = sessionUser || sessionRef.current;
-      if (activeSession?.role === 'member' && activeSession.id) {
-        const idLower = activeSession.id.toLowerCase();
-        return list.filter((p) => (p.person || '').toLowerCase() === idLower);
-      }
-      return list;
-    },
-    [sessionUser],
-  );
-
-  const applyProjects = useCallback(
-    (list: Project[]) => {
-      setProjects(dedupeProjects(filterProjectsByRole(list)));
-    },
-    [filterProjectsByRole],
-  );
+  const applyProjects = useCallback((list: Project[]) => {
+    const sanitized =
+      role === 'member'
+        ? list.map((p) => ({ ...p, vacations: [] }))
+        : list;
+    setProjects(dedupeProjects(sanitized));
+  }, [role]);
 
   const combinedVacations = useMemo(() => {
+    if (role === 'member') return [];
     const fromProjects: Vacation[] = projects.flatMap((p) =>
       (p.vacations || []).map((v, idx) => ({
         ...v,
@@ -163,7 +153,7 @@ export default function ResourceGanttChart() {
       }))
     );
     return [...vacations, ...fromProjects];
-  }, [projects, vacations]);
+  }, [projects, vacations, role]);
 
   const lastViewMode = useRef<'week' | 'day'>(viewMode);
   useEffect(() => {
@@ -717,7 +707,7 @@ export default function ResourceGanttChart() {
             id: normalizedId 
           };
         });
-        setProjects(prev => dedupeProjects(filterProjectsByRole([...prev, ...normalized])));
+        setProjects(prev => dedupeProjects((role === 'member' ? [...prev, ...normalized].map(p => ({ ...p, vacations: [] })) : [...prev, ...normalized])));
         setProjectName(''); setSelectedAssignees([]); setProjectAttachments([makeAttachment()]); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([{ id: `${Date.now()}`, label: '', date: '', color: getRandomHexColor() }]); setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
         showBanner('프로젝트가 추가되었습니다.', 'success');
         setRecentlyAddedProject(targetName);
@@ -877,10 +867,10 @@ export default function ResourceGanttChart() {
         }
       }
 
-      setProjects(prev => dedupeProjects(filterProjectsByRole(prev.filter(p => {
+      setProjects(prev => dedupeProjects((role === 'member' ? prev.map(p => ({ ...p, vacations: [] })) : prev).filter(p => {
         const key = typeof p._id === 'string' ? p._id : (typeof p.id === 'string' ? p.id : String(p.id));
         return !idsToDelete.includes(key);
-      }))));
+      })));
 
       try {
         const res = await fetch('/api/projects');

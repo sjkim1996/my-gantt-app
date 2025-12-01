@@ -18,15 +18,7 @@ export async function GET(req: Request) {
     const projects = await Project.find({});
 
     const normalized = projects.map((p) => (typeof (p as any).toObject === 'function' ? (p as any).toObject() : p));
-    const visible =
-      session.role === 'member'
-        ? normalized
-            .filter((p: any) => (p.person || '').toLowerCase() === session.id.toLowerCase())
-            .map((p: any) => ({
-              ...p,
-              vacations: [],
-            }))
-        : normalized;
+    const visible = normalized;
 
     return NextResponse.json({ success: true, data: visible });
   } catch (error) {
