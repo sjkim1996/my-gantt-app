@@ -254,7 +254,7 @@ export default function ResourceGanttChart() {
     };
 
     bootstrap();
-  }, [router]);
+  }, [router, applyProjects]);
 
   const timeline = useMemo<TimelineBlock[]>(() => {
     const blocks = viewMode === 'week'
@@ -1274,7 +1274,7 @@ export default function ResourceGanttChart() {
             <div className={pageStyles.headerButtons}>
                 <button
                   onClick={() => openVacationModal('create', 'global')}
-                  className={`${pageStyles.teamButton}`}
+                  className={`${pageStyles.teamButton} ${pageStyles.vacationAccent}`}
                   disabled={!canEdit}
                   title={!canEdit ? '팀원 계정은 휴가 입력이 제한됩니다.' : '휴가 일정을 추가합니다.'}
                 >
@@ -1282,7 +1282,7 @@ export default function ResourceGanttChart() {
                 </button>
                 <button
                   onClick={openTeamModal}
-                  className={`${pageStyles.teamButton} ${!canEdit ? pageStyles.disabledButton : ''}`}
+                  className={`${pageStyles.teamButton} ${pageStyles.teamAccent} ${!canEdit ? pageStyles.disabledButton : ''}`}
                   disabled={!canEdit}
                   title={!canEdit ? '팀원 계정은 팀 설정을 변경할 수 없습니다.' : undefined}
                 >
@@ -1331,7 +1331,6 @@ export default function ResourceGanttChart() {
             addProjectMilestone={addProjectMilestone}
             updateProjectMilestone={updateProjectMilestone}
             removeProjectMilestone={removeProjectMilestone}
-            onOpenVacationModal={() => openVacationModal('create', 'global')}
           />
         ) : (
           <div className={pageStyles.readOnlyCard}>

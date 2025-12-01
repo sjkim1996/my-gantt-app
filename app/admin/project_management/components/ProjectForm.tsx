@@ -33,7 +33,6 @@ type Props = {
   addProjectMilestone: () => void;
   updateProjectMilestone: (id: string, field: 'label' | 'date', value: string) => void;
   removeProjectMilestone: (id: string) => void;
-  onOpenVacationModal: () => void;
 };
 
 const ProjectForm: React.FC<Props> = ({
@@ -66,11 +65,13 @@ const ProjectForm: React.FC<Props> = ({
   addProjectMilestone,
   updateProjectMilestone,
   removeProjectMilestone,
-  onOpenVacationModal,
 }) => {
   return (
     <div className={styles.container}>
-      <h2 className={styles.title}>프로젝트 추가</h2>
+      <div className={styles.titleRow}>
+        <h2 className={styles.title}>프로젝트 추가</h2>
+        <span className={styles.titleBadge}>신규 등록</span>
+      </div>
       <div className={styles.grid}>
         <div className={styles.col3}>
           <label className={styles.label}>프로젝트명</label>
@@ -169,65 +170,70 @@ const ProjectForm: React.FC<Props> = ({
             className={styles.notesInput}
           />
         </div>
-        <div className={`${styles.gridFull} flex flex-col gap-2`}>
+        <div className={`${styles.gridFull} flex flex-col gap-3`}>
           <label className={styles.label}>프로젝트 문서 (첨부 파일)</label>
-          <div className="space-y-2">
-            {attachments.map((att) => (
-              <div key={att.id} className="flex flex-wrap items-center gap-2">
-                <div className="flex-1 min-w-[200px]">
-                  <input
-                    type="text"
-                    value={att.name}
-                    readOnly
-                    placeholder="파일을 업로드하면 이름이 표시됩니다"
-                    className={`${styles.textInput} bg-gray-50 cursor-not-allowed`}
-                  />
+          <div className={styles.attachmentCard}>
+            <p className={styles.attachmentHint}>파일이 등록되면 여기에서 확인할 수 있습니다.</p>
+            <div className="space-y-2 opacity-70 pointer-events-none">
+              {attachments.map((att) => (
+                <div key={att.id} className="flex flex-wrap items-center gap-2">
+                  <div className="flex-1 min-w-[200px]">
+                    <input
+                      type="text"
+                      value={att.name}
+                      readOnly
+                      placeholder="파일을 업로드하면 이름이 표시됩니다"
+                      className={`${styles.textInput} bg-gray-50 cursor-not-allowed`}
+                    />
+                  </div>
+                  <label className="px-3 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-bold cursor-not-allowed">
+                    파일 선택/교체
+                    <input
+                      type="file"
+                      accept="*/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => uploadAttachment(att.id, e.target.files)}
+                    />
+                  </label>
+                  {(att.key || att.url) && (
+                    <span className="text-xs text-gray-600 truncate max-w-[180px]">{att.key || att.url}</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => onOpenAttachment(att)}
+                    className="px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-bold"
+                    disabled
+                  >
+                    열기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => clearAttachment(att.id)}
+                    className="px-2 py-1 bg-white text-gray-500 border border-gray-200 rounded text-xs font-bold"
+                    disabled
+                  >
+                    초기화
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeAttachment(att.id)}
+                    className={`${styles.milestoneRemove} text-sm ${attachments.length === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled
+                  >
+                    -
+                  </button>
                 </div>
-                <label className="px-3 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-bold cursor-pointer hover:bg-indigo-100">
-                  파일 선택/교체
-                  <input
-                    type="file"
-                    accept="*/*"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => uploadAttachment(att.id, e.target.files)}
-                  />
-                </label>
-                {(att.key || att.url) && (
-                  <span className="text-xs text-gray-600 truncate max-w-[180px]">{att.key || att.url}</span>
-                )}
-                <button
-                  type="button"
-                  onClick={() => onOpenAttachment(att)}
-                  className="px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded hover:bg-indigo-100 text-xs font-bold disabled:opacity-50"
-                  disabled={!att.key && !att.url}
-                >
-                  열기
-                </button>
-                <button
-                  type="button"
-                  onClick={() => clearAttachment(att.id)}
-                  className="px-2 py-1 bg-white text-gray-500 border border-gray-200 rounded hover:bg-gray-50 text-xs font-bold"
-                >
-                  초기화
-                </button>
-                <button
-                  type="button"
-                  onClick={() => removeAttachment(att.id)}
-                  className={`${styles.milestoneRemove} text-sm ${attachments.length === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={attachments.length === 1}
-                >
-                  -
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={addAttachment}
-              className="px-3 py-2 bg-white border border-dashed border-gray-300 rounded text-sm text-gray-600 hover:border-gray-400 hover:text-gray-800"
-            >
-              + 파일 추가
-            </button>
+              ))}
+              <button
+                type="button"
+                onClick={addAttachment}
+                className="px-3 py-2 bg-white border border-dashed border-gray-300 rounded text-sm text-gray-600"
+                disabled
+              >
+                + 파일 추가
+              </button>
+            </div>
           </div>
         </div>
         <div className={styles.gridFull + ' space-y-2'}>
@@ -264,15 +270,6 @@ const ProjectForm: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className={styles.gridFull}>
-          <button
-            type="button"
-            onClick={onOpenVacationModal}
-            className={styles.vacationButton}
-          >
-            구성원 휴가 등록
-          </button>
-        </div>
         <div className={styles.actionsRow}>
           <button
             type="button"

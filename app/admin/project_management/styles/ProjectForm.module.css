@@ -4,8 +4,16 @@
   @apply bg-white p-5 rounded-xl shadow-sm border border-gray-200 w-full;
 }
 
+.titleRow {
+  @apply flex items-center justify-between mb-3;
+}
+
 .title {
-  @apply text-xs font-bold text-gray-500 mb-3 uppercase tracking-wider;
+  @apply text-base font-bold text-gray-800;
+}
+
+.titleBadge {
+  @apply px-3 py-1 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-full border border-indigo-100;
 }
 
 .grid {
@@ -89,14 +97,6 @@
   @apply px-3 py-2 bg-gray-100 text-gray-500 text-xs font-bold rounded hover:bg-gray-200;
 }
 
-.vacationButton {
-  @apply px-3 py-2 bg-gray-100 text-gray-700 text-xs font-bold rounded hover:bg-gray-200 border border-gray-300;
-}
-
-.addButton {
-  @apply h-10 w-10 bg-indigo-600 text-white rounded flex items-center justify-center hover:bg-indigo-700 transition-all shadow-sm flex-shrink-0;
-}
-
 .gridFull {
   @apply md:col-span-12;
 }
@@ -107,6 +107,14 @@
 
 .submitButton {
   @apply px-5 py-3 bg-indigo-600 text-white font-bold rounded shadow-sm hover:bg-indigo-700 transition-all text-sm;
+}
+
+.attachmentCard {
+  @apply border-2 border-dashed border-gray-300 bg-gray-50 rounded-lg p-4;
+}
+
+.attachmentHint {
+  @apply text-sm text-gray-500 mb-2;
 }
 
 .col3 {

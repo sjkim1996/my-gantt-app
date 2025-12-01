@@ -17,7 +17,14 @@ export async function GET(req: Request) {
     await dbConnect();
     const projects = await Project.find({});
 
-    const normalized = projects.map((p) => (typeof (p as any).toObject === 'function' ? (p as any).toObject() : p));
+    type ProjectDoc = IncomingProject & { _id?: string; toObject?: () => IncomingProject & { _id?: string } };
+    const normalized = projects.map((p) => {
+      const doc = p as ProjectDoc;
+      if (typeof doc.toObject === 'function') {
+        return doc.toObject();
+      }
+      return doc;
+    });
     const visible = normalized;
 
     return NextResponse.json({ success: true, data: visible });

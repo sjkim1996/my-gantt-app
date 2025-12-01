@@ -430,7 +430,7 @@
 }
 
 .teamButton {
-  @apply h-10 text-sm font-bold text-gray-700 hover:text-indigo-600 flex items-center gap-2 transition-all bg-white px-5 rounded-lg border border-gray-300 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:shadow-md active:scale-95 transform;
+  @apply h-10 text-sm font-bold flex items-center gap-2 transition-all px-5 rounded-lg border shadow-sm active:scale-95 transform;
 }
 
 .logoutButton {
@@ -471,6 +471,14 @@
 
 .disabledButton {
   @apply opacity-60 cursor-not-allowed;
+}
+
+.vacationAccent {
+  @apply bg-lime-100 text-lime-800 border-lime-200 hover:bg-lime-200 hover:border-lime-300;
+}
+
+.teamAccent {
+  @apply bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 hover:border-orange-300;
 }
 
 .readOnlyCard {
