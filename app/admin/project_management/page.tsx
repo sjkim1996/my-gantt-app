@@ -511,7 +511,9 @@ export default function ResourceGanttChart() {
             next.push(makeAttachment({ name: res.name, key: res.key, url: res.url }));
           }
         });
-        if (!next.length) next.push(makeAttachment());
+        if (!next.some((a) => !a.name && !a.key && !a.url)) {
+          next.push(makeAttachment());
+        }
         return next;
       });
       showBanner('파일이 업로드되었습니다.', 'success');
@@ -522,11 +524,14 @@ export default function ResourceGanttChart() {
     }
   };
 
-  const addProjectAttachment = () => setProjectAttachments((prev) => [...prev, makeAttachment()]);
+  const addProjectAttachment = () => {
+    const att = makeAttachment();
+    setProjectAttachments((prev) => [...prev, att]);
+    return att.id;
+  };
   const removeProjectAttachment = (id: string) => setProjectAttachments((prev) => (prev.length === 1 ? prev : prev.filter((a) => a.id !== id)));
   const uploadProjectAttachment = (id: string, files: FileList | null) => uploadAttachmentsToState(id, files, setProjectAttachments);
 
-  const addMasterAttachment = () => setMasterAttachments((prev) => [...prev, makeAttachment()]);
   const removeMasterAttachment = (id: string) => setMasterAttachments((prev) => (prev.length === 1 ? prev : prev.filter((a) => a.id !== id)));
   const uploadMasterAttachment = (id: string, files: FileList | null) => uploadAttachmentsToState(id, files, setMasterAttachments);
   const clearMasterAttachment = (id: string) => setMasterAttachments((prev) => prev.map((a) => a.id === id ? makeAttachment({ id }) : a));

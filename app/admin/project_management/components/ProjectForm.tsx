@@ -24,7 +24,7 @@ type Props = {
   projectNotes: string;
   setProjectNotes: (v: string) => void;
   attachments: (Attachment & { id: string })[];
-  addAttachment: () => void;
+  addAttachment: () => string;
   removeAttachment: (id: string) => void;
   uploadAttachment: (id: string, files: FileList | null) => void;
   onOpenAttachment: (att: Attachment) => void;
@@ -66,17 +66,25 @@ const ProjectForm: React.FC<Props> = ({
 }) => {
   const dropInputRef = useRef<HTMLInputElement | null>(null);
 
+  const getEmptyAttachmentId = () => {
+    const empty = attachments.find((a) => !a.name && !a.key && !a.url);
+    if (empty) return empty.id;
+    return addAttachment();
+  };
+
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const files = e.dataTransfer?.files;
-    if (files && files.length > 0 && attachments[0]?.id) {
-      uploadAttachment(attachments[0].id, files);
+    if (files && files.length > 0) {
+      const targetId = getEmptyAttachmentId();
+      uploadAttachment(targetId, files);
     }
   };
 
   const handleFileSelect = (files: FileList | null) => {
-    if (files && files.length > 0 && attachments[0]?.id) {
-      uploadAttachment(attachments[0].id, files);
+    if (files && files.length > 0) {
+      const targetId = getEmptyAttachmentId();
+      uploadAttachment(targetId, files);
     }
   };
 
