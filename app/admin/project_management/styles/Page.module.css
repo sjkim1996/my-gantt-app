@@ -13,20 +13,20 @@
 }
 
 .overlay {
-  @apply fixed inset-0 flex items-center justify-center backdrop-blur-sm p-4;
+  @apply fixed inset-0 flex items-center justify-center backdrop-blur-sm p-4 z-[300];
   background-color: rgba(0, 0, 0, 0.5);
 }
 
 .overlayHigh {
-  @apply z-[120];
+  @apply z-[420];
 }
 
 .overlayMid {
-  @apply z-[60];
+  @apply z-[340];
 }
 
 .overlayMax {
-  @apply z-[100];
+  @apply z-[380];
 }
 
 .ambiguousCard {

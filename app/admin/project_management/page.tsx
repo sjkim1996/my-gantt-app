@@ -156,17 +156,14 @@ export default function ResourceGanttChart() {
     return [...vacations, ...fromProjects];
   }, [projects, vacations, role]);
 
-  const lastViewMode = useRef<'week' | 'day'>(viewMode);
-  useEffect(() => {
-    if (viewMode !== lastViewMode.current) {
-      lastViewMode.current = viewMode;
-    }
-  }, [viewMode]);
-
   useEffect(() => {
     const base = viewMode === 'week' ? getStartOfWeek(anchorDate) : anchorDate;
     setChartStartDate(formatDate(base));
   }, [anchorDate, viewMode]);
+
+  useEffect(() => {
+    setAnchorDate(parseDate(chartStartDate));
+  }, [viewMode]);
 
   useEffect(() => {
     const lockScroll = isModalOpen || isTeamModalOpen || isVacationModalOpen;
@@ -359,25 +356,25 @@ export default function ResourceGanttChart() {
   };
 
   const handlePrevMonth = () => {
+    const currentStart = parseDate(chartStartDate);
     if (viewMode === 'week') {
-      const next = new Date(anchorDate);
-      next.setDate(next.getDate() - 7);
-      setAnchorDate(next);
+      const base = getStartOfWeek(currentStart);
+      base.setDate(base.getDate() - 7);
+      setAnchorDate(base);
     } else {
-      const next = new Date(anchorDate);
-      next.setDate(next.getDate() - 14);
-      setAnchorDate(next);
+      currentStart.setDate(currentStart.getDate() - 14);
+      setAnchorDate(currentStart);
     }
   };
   const handleNextMonth = () => {
+    const currentStart = parseDate(chartStartDate);
     if (viewMode === 'week') {
-      const next = new Date(anchorDate);
-      next.setDate(next.getDate() + 7);
-      setAnchorDate(next);
+      const base = getStartOfWeek(currentStart);
+      base.setDate(base.getDate() + 7);
+      setAnchorDate(base);
     } else {
-      const next = new Date(anchorDate);
-      next.setDate(next.getDate() + 14);
-      setAnchorDate(next);
+      currentStart.setDate(currentStart.getDate() + 14);
+      setAnchorDate(currentStart);
     }
   };
   const handleJumpToToday = () => {
