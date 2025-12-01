@@ -234,11 +234,11 @@ const GanttTable: React.FC<Props> = ({
                                 const baseColor = proj.customColor || colorSet.barHex;
                                 const milestoneColor = baseColor ? darkenColor(baseColor, 0.18) : '#4b5563';
                                 const milestoneBorder = baseColor ? darkenColor(baseColor, 0.32) : '#374151';
-                                return (
-                                  <div
-                                    key={m.id}
-                                    className={styles.milestoneBlock}
-                                    style={{
+                              return (
+                                <div
+                                  key={m.id}
+                                  className={styles.milestoneBlock}
+                                  style={{
                                       left: `${leftPos}%`,
                                       width: `${blockWidth}%`,
                                       minWidth: `${blockWidth}%`,
@@ -252,6 +252,9 @@ const GanttTable: React.FC<Props> = ({
                                     }}
                                     title={`${m.label} (${m.date})`}
                                   >
+                                    {viewMode === 'day' && (
+                                      <span className={styles.milestoneLabel}>{m.label}</span>
+                                    )}
                                     <span className={styles.milestoneTooltip}>
                                       <strong>{m.label}</strong>
                                       <span>{m.date}</span>
