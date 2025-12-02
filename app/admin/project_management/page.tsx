@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, Trash2, RefreshCw, Search, AlertCircle, Settings, X, Check, Briefcase, LogOut } from 'lucide-react';
 import { Project, Team, Assignee, GroupedProject, EditingMember, ApiProjectsResponse, Milestone, Attachment } from './types';
 import { parseDate, formatDate, getDaysDiff, getStartOfWeek, generateWeeks, generateDays } from './utils/date';
-import { BAR_COLORS, getRandomHexColor } from './utils/colors';
+import { BAR_COLORS, getRandomHexColor, lightenColor } from './utils/colors';
 import { mergeMilestones, mergeVacations, dedupeProjects } from './utils/gantt';
 import GanttTable, { TimelineBlock } from './components/GanttTable';
 import ChartControls from './components/ChartControls';
@@ -1201,9 +1201,21 @@ export default function ResourceGanttChart() {
                         <div className={pageStyles.colorCol}>
                             <label className={pageStyles.inputLabel}>색상 태그</label>
                             <div className={pageStyles.colorPickerRow}>
-                                {BAR_COLORS.map((color, idx) => (
-                                    <button key={idx} onClick={() => setMasterColorIdx(idx)} className={`${pageStyles.colorSwatch} ${color.bg} ${color.border} ${masterColorIdx === idx ? pageStyles.colorSwatchActive : ''}`}/>
-                                ))}
+                                {BAR_COLORS.map((color, idx) => {
+                                  const swatchStyle = {
+                                    backgroundColor: lightenColor(color.barHex, 0.82),
+                                    borderColor: lightenColor(color.barHex, 0.72),
+                                  };
+                                  return (
+                                    <button
+                                      key={idx}
+                                      onClick={() => setMasterColorIdx(idx)}
+                                      className={`${pageStyles.colorSwatch} ${masterColorIdx === idx ? pageStyles.colorSwatchActive : ''}`}
+                                      style={swatchStyle}
+                                      aria-label={`색상 ${idx + 1}`}
+                                    />
+                                  );
+                                })}
                             </div>
                         </div>
                         <button onClick={syncDatesToAll} className={pageStyles.syncButton}><RefreshCw className="w-3.5 h-3.5"/> 일정 동기화</button>
