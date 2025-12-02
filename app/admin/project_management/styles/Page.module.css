@@ -174,7 +174,7 @@
 }
 
 .settingsRow {
-  @apply flex flex-wrap items-end gap-6;
+  @apply flex flex-wrap items-start gap-6;
 }
 
 .settingsCol {
@@ -182,7 +182,7 @@
 }
 
 .colorCol {
-  @apply min-w-[120px];
+  @apply flex-1 min-w-[240px];
 }
 
 .cardTitle {
