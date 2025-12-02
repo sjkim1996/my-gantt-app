@@ -12,7 +12,7 @@ export type AuthUser = {
 };
 
 export const AUTH_USERS: AuthUser[] = [
-  { id: 'capra_admin', password: 'admin0093!', role: 'admin', label: '최고관리자' },
+  { id: 'capra_admin', password: 'capra_admin0311!!', role: 'admin', label: '최고관리자' },
   { id: 'capra_leads', password: 'Capra230311!', role: 'lead', label: '팀장' },
   {
     id: 'capra',
