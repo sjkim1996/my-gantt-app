@@ -973,19 +973,19 @@ export default function ResourceGanttChart() {
 
   const openTeamModal = () => { if (!guardEdit()) return; setEditingTeams(JSON.parse(JSON.stringify(teams))); setIsTeamModalOpen(true); };
 
-  const syncProjectsToTeams = async (updatedTeams: Team[]) => {
+  const syncProjectsToTeams = async (updatedTeams: Team[], renamedTeams?: Map<string, string>) => {
     const personTeamMap = new Map<string, string>();
     updatedTeams.forEach((t) => t.members.forEach((m) => { if (!personTeamMap.has(m)) personTeamMap.set(m, t.name); }));
 
     const targets = projects.filter((p) => {
-      const nextTeam = personTeamMap.get(p.person);
+      const nextTeam = personTeamMap.get(p.person) || renamedTeams?.get(p.team);
       return nextTeam && nextTeam !== p.team && typeof p._id === 'string';
     });
     if (!targets.length) return;
 
     let syncFailed = false;
     for (const proj of targets) {
-      const nextTeam = personTeamMap.get(proj.person);
+      const nextTeam = personTeamMap.get(proj.person) || renamedTeams?.get(proj.team);
       if (!nextTeam) continue;
       try {
         await apiUpdateProject({
@@ -1002,7 +1002,7 @@ export default function ResourceGanttChart() {
     setProjects((prev) =>
       dedupeProjects(
         prev.map((p) => {
-          const nextTeam = personTeamMap.get(p.person);
+          const nextTeam = personTeamMap.get(p.person) || renamedTeams?.get(p.team);
           return nextTeam && nextTeam !== p.team ? { ...p, team: nextTeam } : p;
         })
       )
@@ -1018,6 +1018,14 @@ export default function ResourceGanttChart() {
   const saveTeams = async () => {
     if (!guardEdit()) return;
     try {
+      const renameMap = new Map<string, string>();
+      teams.forEach((t) => {
+        const updated = editingTeams.find((et) => et.id === t.id);
+        if (updated && updated.name && updated.name !== t.name) {
+          renameMap.set(t.name, updated.name);
+        }
+      });
+
       const payload = editingTeams.map(({ name, members }) => ({ name, members }));
       const res = await fetch('/api/teams', {
         method: 'PUT',
@@ -1030,7 +1038,7 @@ export default function ResourceGanttChart() {
       }
       const stored = (data.data as Team[]).map((t, idx) => ({ ...t, id: t._id || `t${idx}` }));
       setTeams(stored);
-      await syncProjectsToTeams(stored);
+      await syncProjectsToTeams(stored, renameMap);
       setIsTeamModalOpen(false);
       showBanner('팀 정보가 저장되었습니다.', 'success');
     } catch (error) {
