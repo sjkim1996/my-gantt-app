@@ -202,14 +202,6 @@ export default function ResourceGanttChart() {
   }, [viewMode, chartStartDate]);
 
   useEffect(() => {
-    if (autoTeamSyncRef.current) return;
-    if (!canEdit) return;
-    if (!projects.length || !teams.length) return;
-    autoTeamSyncRef.current = true;
-    void syncProjectsToTeams(teams);
-  }, [canEdit, projects, teams, syncProjectsToTeams]);
-
-  useEffect(() => {
     const lockScroll = isModalOpen || isTeamModalOpen || isVacationModalOpen;
     if (lockScroll) {
       const original = document.body.style.overflow;
@@ -1088,6 +1080,14 @@ export default function ResourceGanttChart() {
     if (e.key === 'Enter' && modalAssigneeInput.trim()) { e.preventDefault(); if (modalSuggestions.length === 1) { addMemberInModal(modalSuggestions[0]); return; } const exact = allMembers.filter(m => m.name === modalAssigneeInput.trim()); if (exact.length === 1) { addMemberInModal(exact[0]); return; } let newName = modalAssigneeInput.trim(); let newTeam = '미배정'; if (newName.includes('-')) { const parts = newName.split('-'); newTeam = parts[0].trim(); newName = parts[1].trim(); } addMemberInModal({ name: newName, team: newTeam, isNew: true }); }
   };
   useEffect(() => { if (isModalOpen) setDeleteConfirmMode(false); }, [isModalOpen]);
+
+  useEffect(() => {
+    if (autoTeamSyncRef.current) return;
+    if (!canEdit) return;
+    if (!projects.length || !teams.length) return;
+    autoTeamSyncRef.current = true;
+    void syncProjectsToTeams(teams);
+  }, [canEdit, projects, teams, syncProjectsToTeams]);
 
   const handleLogout = async () => { 
     try {
