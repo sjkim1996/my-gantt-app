@@ -115,6 +115,10 @@ export default function ResourceGanttChart() {
   const role = effectiveSession?.role ?? null;
   const canEdit = isEditRole(role);
   const initialScrolledRef = useRef(false);
+  const colorForNameRef = useRef<Map<string, number>>(new Map());
+  const colorCursorRef = useRef(0);
+  const paletteSize = BAR_COLORS.length;
+  const autoTeamSyncRef = useRef(false);
 
   useEffect(() => {
     if (banner) {
@@ -134,13 +138,30 @@ export default function ResourceGanttChart() {
     return false;
   };
 
+  const getColorIdxForName = useCallback((name: string) => {
+    const existing = colorForNameRef.current.get(name);
+    if (typeof existing === 'number') return existing;
+    const idx = colorCursorRef.current % paletteSize;
+    colorCursorRef.current += 1;
+    colorForNameRef.current.set(name, idx);
+    return idx;
+  }, [paletteSize]);
+
   const applyProjects = useCallback((list: Project[]) => {
     const sanitized =
       role === 'member'
         ? list.map((p) => ({ ...p, vacations: [] }))
         : list;
-    setProjects(dedupeProjects(sanitized));
-  }, [role]);
+    const colored = sanitized.map((p) => {
+      const hasValidColor = typeof p.colorIdx === 'number' && !Number.isNaN(p.colorIdx);
+      const colorIdx = hasValidColor ? p.colorIdx : getColorIdxForName(p.name);
+      if (!colorForNameRef.current.has(p.name)) {
+        colorForNameRef.current.set(p.name, colorIdx);
+      }
+      return { ...p, colorIdx };
+    });
+    setProjects(dedupeProjects(colored));
+  }, [role, getColorIdxForName]);
 
   const refreshProjects = useCallback(async () => {
     try {
@@ -179,6 +200,14 @@ export default function ResourceGanttChart() {
   useEffect(() => {
     setAnchorDate(parseDate(chartStartDate));
   }, [viewMode, chartStartDate]);
+
+  useEffect(() => {
+    if (autoTeamSyncRef.current) return;
+    if (!canEdit) return;
+    if (!projects.length || !teams.length) return;
+    autoTeamSyncRef.current = true;
+    void syncProjectsToTeams(teams);
+  }, [canEdit, projects, teams, syncProjectsToTeams]);
 
   useEffect(() => {
     const lockScroll = isModalOpen || isTeamModalOpen || isVacationModalOpen;
@@ -683,7 +712,7 @@ export default function ResourceGanttChart() {
 
     let targetName = projectName;
     let assigneesToAdd = [...selectedAssignees];
-    const colorIdx = existingGroup ? existingGroup.colorIdx : Math.floor(Math.random() * BAR_COLORS.length);
+    const colorIdx = getColorIdxForName(targetName);
     const cleanedAttachments = toAttachmentPayload(projectAttachments);
     const finalAttachments = cleanedAttachments.length
       ? cleanedAttachments

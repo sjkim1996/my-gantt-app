@@ -10,6 +10,15 @@ export const BAR_COLORS = [
   { bg: 'bg-indigo-100', border: 'border-indigo-200', text: 'text-indigo-800', bar: 'bg-indigo-500', barHex: '#6366f1' },
   { bg: 'bg-yellow-100', border: 'border-yellow-200', text: 'text-yellow-800', bar: 'bg-yellow-500', barHex: '#eab308' },
   { bg: 'bg-gray-100', border: 'border-gray-200', text: 'text-gray-800', bar: 'bg-gray-500', barHex: '#6b7280' },
+  { bg: 'bg-amber-100', border: 'border-amber-200', text: 'text-amber-800', bar: 'bg-amber-500', barHex: '#f59e0b' },
+  { bg: 'bg-lime-100', border: 'border-lime-200', text: 'text-lime-800', bar: 'bg-lime-500', barHex: '#84cc16' },
+  { bg: 'bg-emerald-100', border: 'border-emerald-200', text: 'text-emerald-800', bar: 'bg-emerald-500', barHex: '#10b981' },
+  { bg: 'bg-teal-100', border: 'border-teal-200', text: 'text-teal-800', bar: 'bg-teal-500', barHex: '#14b8a6' },
+  { bg: 'bg-cyan-100', border: 'border-cyan-200', text: 'text-cyan-800', bar: 'bg-cyan-500', barHex: '#06b6d4' },
+  { bg: 'bg-sky-100', border: 'border-sky-200', text: 'text-sky-800', bar: 'bg-sky-500', barHex: '#0ea5e9' },
+  { bg: 'bg-rose-100', border: 'border-rose-200', text: 'text-rose-800', bar: 'bg-rose-500', barHex: '#f43f5e' },
+  { bg: 'bg-stone-100', border: 'border-stone-200', text: 'text-stone-800', bar: 'bg-stone-500', barHex: '#78716c' },
+  { bg: 'bg-slate-100', border: 'border-slate-200', text: 'text-slate-800', bar: 'bg-slate-500', barHex: '#64748b' },
 ];
 
 export const hexToRgb = (hex: string) => {
@@ -44,8 +53,9 @@ export const getReadableTextColor = (hex: string) => {
   return luminance > 0.6 ? '#111827' : '#f8fafc';
 };
 export const getRandomHexColor = () => {
-  const colors = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#f43f5e'];
-  return colors[Math.floor(Math.random() * colors.length)];
+  const colors = BAR_COLORS.map((c) => c.barHex).filter(Boolean) as string[];
+  const idx = Math.floor(Math.random() * colors.length);
+  return colors[idx] || '#3b82f6';
 };
 
 export const getColorSet = (proj: Project | GroupedProject | (Project & { row: number })) => {
