@@ -142,6 +142,30 @@ export default function ResourceGanttChart() {
     setProjects(dedupeProjects(sanitized));
   }, [role]);
 
+  const refreshProjects = useCallback(async () => {
+    try {
+      const res = await fetch('/api/projects', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json().catch(() => null);
+      if (data?.success && Array.isArray(data.data)) {
+        const normalized = (data.data as Project[]).map((p, idx) => {
+          const docId = (p as Project & { _id?: string | number })._id;
+          const normalizedId = typeof docId === 'string'
+            ? docId
+            : docId
+            ? String(docId)
+            : typeof p.id === 'string'
+            ? p.id
+            : `reload-${idx}`;
+          return { ...p, _id: normalizedId, id: normalizedId };
+        });
+        applyProjects(normalized);
+      }
+    } catch (err) {
+      console.error('[PROJECT REFRESH] failed', err);
+    }
+  }, [applyProjects]);
+
   const combinedVacations = useMemo(() => {
     if (role === 'member') return [];
     return vacations;
@@ -984,7 +1008,11 @@ export default function ResourceGanttChart() {
       )
     );
 
-    if (syncFailed) showBanner('팀은 저장됐지만 일부 프로젝트 팀 동기화에 실패했습니다. 새로고침 후 확인하세요.', 'error');
+    await refreshProjects();
+
+    if (syncFailed) {
+      showBanner('팀은 저장됐지만 일부 프로젝트 팀 동기화에 실패했습니다. 새로고침 후 확인하세요.', 'error');
+    }
   };
 
   const saveTeams = async () => {
