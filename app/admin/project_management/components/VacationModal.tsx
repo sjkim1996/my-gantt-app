@@ -13,6 +13,7 @@ type Props = {
   onRemove: (id: string) => void;
   onSave: (v: Vacation[]) => void;
   allAssignees: Assignee[];
+  defaultTab?: 'create' | 'list';
 };
 
 const VacationModal: React.FC<Props> = ({
@@ -25,9 +26,14 @@ const VacationModal: React.FC<Props> = ({
   onRemove,
   onSave,
   allAssignees,
+  defaultTab = 'create',
 }) => {
   const [openSuggestId, setOpenSuggestId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'create' | 'list'>('create');
+  const [activeTab, setActiveTab] = useState<'create' | 'list'>(defaultTab);
+
+  React.useEffect(() => {
+    setActiveTab(defaultTab);
+  }, [defaultTab, isOpen]);
 
   if (!isOpen) return null;
   return (

@@ -110,6 +110,7 @@ export default function ResourceGanttChart() {
   const [isVacationModalOpen, setIsVacationModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
   const [vacations, setVacations] = useState<Vacation[]>([]);
+  const [vacationModalDefaultTab, setVacationModalDefaultTab] = useState<'create' | 'list'>('create');
   const effectiveSession = sessionUser || sessionRef.current;
   const role = effectiveSession?.role ?? null;
   const canEdit = isEditRole(role);
@@ -546,11 +547,30 @@ export default function ResourceGanttChart() {
 
   const vacationSnapshotRef = useRef<Vacation[]>([]);
 
-  const openVacationModal = () => {
+  const fetchLatestVacations = async (): Promise<Vacation[]> => {
+    try {
+      const vacRes = await fetch('/api/vacations', { cache: 'no-store' });
+      if (vacRes.ok) {
+        const vacJson = await vacRes.json();
+        if (vacJson?.success && Array.isArray(vacJson.data)) {
+          const loadedVac = (vacJson.data as Vacation[]).map((v, idx) => ({ ...v, id: v._id || `vac-${idx}` }));
+          setVacations(loadedVac);
+          return loadedVac;
+        }
+      }
+    } catch (err) {
+      console.error('[VACATION] fetch failed', err);
+    }
+    return vacations;
+  };
+
+  const openVacationModal = async (options?: { tab?: 'create' | 'list' }) => {
     if (!guardEdit()) return;
-    vacationSnapshotRef.current = vacations;
-    const seed = vacations.length ? vacations.map(v => ({ ...v, id: v.id || v._id || `${v.person}-${v.start}` })) : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#0f172a' }];
+    const latest = await fetchLatestVacations();
+    vacationSnapshotRef.current = latest;
+    const seed = latest.length ? latest.map(v => ({ ...v, id: v.id || v._id || `${v.person}-${v.start}` })) : [{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#0f172a' }];
     setProjectVacations(seed);
+    setVacationModalDefaultTab(options?.tab ?? 'create');
     setIsVacationModalOpen(true);
   };
 
@@ -599,15 +619,8 @@ export default function ResourceGanttChart() {
       }
 
       // Refresh
-      const vacRes = await fetch('/api/vacations', { cache: 'no-store' });
-      const vacJson = await vacRes.json();
-      if (vacRes.ok && vacJson?.success) {
-        const loadedVac = (vacJson.data as Vacation[]).map((v, idx) => ({ ...v, id: v._id || `vac-${idx}` }));
-        setVacations(loadedVac);
-        showBanner('휴가가 저장되었습니다.', 'success');
-      } else {
-        showBanner('휴가를 새로고침하는 데 실패했습니다.', 'error');
-      }
+      await fetchLatestVacations();
+      showBanner('휴가가 저장되었습니다.', 'success');
     } catch (error) {
       console.error('[VACATION] save failed', error);
       showBanner('휴가 저장에 실패했습니다.', 'error');
@@ -936,6 +949,44 @@ export default function ResourceGanttChart() {
 
   const openTeamModal = () => { if (!guardEdit()) return; setEditingTeams(JSON.parse(JSON.stringify(teams))); setIsTeamModalOpen(true); };
 
+  const syncProjectsToTeams = async (updatedTeams: Team[]) => {
+    const personTeamMap = new Map<string, string>();
+    updatedTeams.forEach((t) => t.members.forEach((m) => { if (!personTeamMap.has(m)) personTeamMap.set(m, t.name); }));
+
+    const targets = projects.filter((p) => {
+      const nextTeam = personTeamMap.get(p.person);
+      return nextTeam && nextTeam !== p.team && typeof p._id === 'string';
+    });
+    if (!targets.length) return;
+
+    let syncFailed = false;
+    for (const proj of targets) {
+      const nextTeam = personTeamMap.get(proj.person);
+      if (!nextTeam) continue;
+      try {
+        await apiUpdateProject({
+          ...proj,
+          team: nextTeam,
+          _id: proj._id,
+        });
+      } catch (err) {
+        syncFailed = true;
+        console.error('[TEAM SYNC] project update failed', err);
+      }
+    }
+
+    setProjects((prev) =>
+      dedupeProjects(
+        prev.map((p) => {
+          const nextTeam = personTeamMap.get(p.person);
+          return nextTeam && nextTeam !== p.team ? { ...p, team: nextTeam } : p;
+        })
+      )
+    );
+
+    if (syncFailed) showBanner('팀은 저장됐지만 일부 프로젝트 팀 동기화에 실패했습니다. 새로고침 후 확인하세요.', 'error');
+  };
+
   const saveTeams = async () => {
     if (!guardEdit()) return;
     try {
@@ -951,6 +1002,7 @@ export default function ResourceGanttChart() {
       }
       const stored = (data.data as Team[]).map((t, idx) => ({ ...t, id: t._id || `t${idx}` }));
       setTeams(stored);
+      await syncProjectsToTeams(stored);
       setIsTeamModalOpen(false);
       showBanner('팀 정보가 저장되었습니다.', 'success');
     } catch (error) {
@@ -1180,7 +1232,7 @@ export default function ResourceGanttChart() {
         <div className={pageStyles.cardTight}>
                   <div className={pageStyles.vacationHeader}>
                     <h4 className={pageStyles.subTitle}>구성원 휴가</h4>
-                    <button onClick={() => openVacationModal()} className={pageStyles.vacationButton}>휴가 관리</button>
+                    <button onClick={() => { void openVacationModal(); }} className={pageStyles.vacationButton}>휴가 관리</button>
                   </div>
                   {editingMembers.some(m => m.vacations && m.vacations.length) || vacations.length ? (
                     <div className={pageStyles.vacationList}>
@@ -1279,7 +1331,7 @@ export default function ResourceGanttChart() {
                 {canEdit && (
                   <>
                     <button
-                      onClick={() => openVacationModal()}
+                      onClick={() => { void openVacationModal(); }}
                       className={`${pageStyles.teamButton} ${pageStyles.vacationAccent}`}
                       title="휴가 일정을 추가합니다."
                     >
@@ -1355,6 +1407,7 @@ export default function ResourceGanttChart() {
           onRemove={handleVacationRemove}
           onSave={handleVacationSave}
           allAssignees={allMembers}
+          defaultTab={vacationModalDefaultTab}
         />
 
         {/* Dashboard Grid */}
@@ -1397,8 +1450,7 @@ export default function ResourceGanttChart() {
           chartTotalDays={chartTotalDays}
           onVacationClick={(vac) => {
             if (!canEdit) return;
-            setProjectVacations([{ ...vac, id: vac.id || vac._id || `${vac.person}-${vac.start}` }]);
-            setIsVacationModalOpen(true);
+            void openVacationModal({ tab: 'list' });
           }}
         />
       </div>
