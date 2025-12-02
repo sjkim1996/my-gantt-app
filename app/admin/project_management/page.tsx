@@ -119,19 +119,6 @@ export default function ResourceGanttChart() {
   const colorCursorRef = useRef(0);
   const paletteSize = BAR_COLORS.length;
   const autoTeamSyncRef = useRef(false);
-  const resolvedMasterColor = useMemo(() => {
-    const base = masterCustomColor || BAR_COLORS[masterColorIdx % BAR_COLORS.length].barHex;
-    return base || '#3b82f6';
-  }, [masterCustomColor, masterColorIdx]);
-  const resolvedMasterRGB = useMemo(() => {
-    const clean = resolvedMasterColor.replace('#', '');
-    if (clean.length !== 6) return { r: 59, g: 130, b: 246 };
-    return {
-      r: parseInt(clean.slice(0, 2), 16),
-      g: parseInt(clean.slice(2, 4), 16),
-      b: parseInt(clean.slice(4, 6), 16),
-    };
-  }, [resolvedMasterColor]);
 
   useEffect(() => {
     if (banner) {
@@ -1212,55 +1199,6 @@ export default function ResourceGanttChart() {
                             </div>
                         </div>
                         <button onClick={syncDatesToAll} className={pageStyles.syncButton}><RefreshCw className="w-3.5 h-3.5"/> 일정 동기화</button>
-                    </div>
-
-                    <div className={pageStyles.colorBlock}>
-                      <label className={pageStyles.inputLabel}>색상 변경</label>
-                      <div className={pageStyles.colorPanel}>
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-full border shadow-sm" style={{ background: resolvedMasterColor, borderColor: lightenColor(resolvedMasterColor, 0.7) }}></div>
-                          <div className="text-sm text-gray-700 font-mono">{resolvedMasterColor.toUpperCase()}</div>
-                        </div>
-                        <div className="flex flex-col gap-3 mt-3">
-                          {(['r', 'g', 'b'] as const).map((channel) => {
-                            const label = channel === 'r' ? 'R' : channel === 'g' ? 'G' : 'B';
-                            const value = resolvedMasterRGB[channel];
-                            return (
-                              <div key={channel} className="flex flex-col gap-1">
-                                <div className="flex items-center justify-between text-xs text-gray-600">
-                                  <span className="font-semibold">{label}</span>
-                                  <span className="font-mono text-gray-500">{value.toString().padStart(3, '0')}</span>
-                                </div>
-                                <input
-                                  type="range"
-                                  min={0}
-                                  max={255}
-                                  value={value}
-                                  onChange={(e) => {
-                                    const next = { ...resolvedMasterRGB, [channel]: Number(e.target.value) };
-                                    const hex = ['r', 'g', 'b'].map((c) => next[c as 'r' | 'g' | 'b'].toString(16).padStart(2, '0')).join('');
-                                    setMasterCustomColor(`#${hex}`);
-                                  }}
-                                  className="w-full accent-indigo-500"
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-3 flex-wrap">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMasterCustomColor('');
-                              setMasterColorIdx((prev) => (prev + 1) % BAR_COLORS.length);
-                            }}
-                            className="px-3 py-1 border border-gray-200 rounded hover:bg-gray-50 font-semibold text-gray-700"
-                          >
-                            랜덤
-                          </button>
-                          <span>슬라이더로 조정하거나 랜덤을 눌러주세요.</span>
-                        </div>
-                      </div>
                     </div>
                     <div className={pageStyles.docRow}>
                       <div className="md:col-span-12 flex flex-col gap-2">
