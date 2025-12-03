@@ -110,6 +110,10 @@ export default function ResourceGanttChart() {
   const [, setRecentlyAddedProject] = useState<string | null>(null);
   const [isVacationModalOpen, setIsVacationModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [currentPw, setCurrentPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
   const [vacations, setVacations] = useState<Vacation[]>([]);
   const [vacationModalDefaultTab, setVacationModalDefaultTab] = useState<'create' | 'list'>('create');
   const effectiveSession = sessionUser || sessionRef.current;
@@ -280,13 +284,13 @@ export default function ResourceGanttChart() {
   }, [viewMode, chartStartDate]);
 
   useEffect(() => {
-    const lockScroll = isModalOpen || isTeamModalOpen || isVacationModalOpen;
+    const lockScroll = isModalOpen || isTeamModalOpen || isVacationModalOpen || isPasswordModalOpen;
     if (lockScroll) {
       const original = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       return () => { document.body.style.overflow = original; };
     }
-  }, [isModalOpen, isTeamModalOpen, isVacationModalOpen]);
+  }, [isModalOpen, isTeamModalOpen, isVacationModalOpen, isPasswordModalOpen]);
 
   // --- Auth & Data Fetch ---
   useEffect(() => {
@@ -1179,6 +1183,41 @@ export default function ResourceGanttChart() {
     router.push('/login'); 
   };
 
+  const handlePasswordChange = async () => {
+    if (!currentPw || !newPw || !confirmPw) {
+      showBanner('모든 비밀번호 입력란을 채워주세요.', 'error');
+      return;
+    }
+    if (newPw !== confirmPw) {
+      showBanner('새 비밀번호가 일치하지 않습니다.', 'error');
+      return;
+    }
+    if (!newPw.trim()) {
+      showBanner('비밀번호는 공백일 수 없습니다.', 'error');
+      return;
+    }
+    try {
+      const res = await fetch('/api/accounts/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.success) {
+        showBanner(data?.error || '비밀번호 변경에 실패했습니다.', 'error');
+        return;
+      }
+      showBanner('비밀번호가 변경되었습니다.', 'success');
+      setIsPasswordModalOpen(false);
+      setCurrentPw('');
+      setNewPw('');
+      setConfirmPw('');
+    } catch (error) {
+      console.error('[ACCOUNT] change password', error);
+      showBanner('비밀번호 변경에 실패했습니다.', 'error');
+    }
+  };
+
   if (!authChecked) return <div className={pageStyles.fullPageMessage}>Access 확인 중...</div>;
   if (!isAuthorized) return <div className={pageStyles.fullPageMessage}>로그인이 필요합니다. 이동 중...</div>;
   if (isLoading) return <div className={pageStyles.fullPageMessage}>Loading Projects...</div>;
@@ -1247,6 +1286,49 @@ export default function ResourceGanttChart() {
             <div className={pageStyles.teamModalFooter}>
               <button onClick={() => setIsTeamModalOpen(false)} className={pageStyles.footerCancel}>취소</button>
               <button onClick={saveTeams} className={pageStyles.footerSave}>저장하기</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isPasswordModalOpen && (
+        <div className={`${pageStyles.overlay} ${pageStyles.overlayHigh}`}>
+          <div className={pageStyles.teamModal}>
+            <div className={pageStyles.teamModalHeader}>
+              <h3 className={pageStyles.teamModalTitle}>비밀번호 변경</h3>
+              <button onClick={() => setIsPasswordModalOpen(false)} className={pageStyles.iconButton}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-3 p-1">
+              <label className={pageStyles.inputLabel}>현재 비밀번호</label>
+              <input
+                type="password"
+                value={currentPw}
+                onChange={(e) => setCurrentPw(e.target.value)}
+                className={pageStyles.teamInput}
+                placeholder="현재 비밀번호"
+              />
+              <label className={pageStyles.inputLabel}>새 비밀번호</label>
+              <input
+                type="password"
+                value={newPw}
+                onChange={(e) => setNewPw(e.target.value)}
+                className={pageStyles.teamInput}
+                placeholder="새 비밀번호"
+              />
+              <label className={pageStyles.inputLabel}>새 비밀번호 확인</label>
+              <input
+                type="password"
+                value={confirmPw}
+                onChange={(e) => setConfirmPw(e.target.value)}
+                className={pageStyles.teamInput}
+                placeholder="새 비밀번호 확인"
+              />
+            </div>
+            <div className={pageStyles.teamModalFooter}>
+              <button onClick={() => setIsPasswordModalOpen(false)} className={pageStyles.footerCancel}>취소</button>
+              <button onClick={handlePasswordChange} className={pageStyles.footerSave}>변경하기</button>
             </div>
           </div>
         </div>
@@ -1480,6 +1562,12 @@ export default function ResourceGanttChart() {
                     </button>
                   </>
                 )}
+                <button
+                  onClick={() => setIsPasswordModalOpen(true)}
+                  className={`${pageStyles.teamButton} ${pageStyles.passwordAccent}`}
+                >
+                  비밀번호 변경
+                </button>
                 {role === 'admin' && (
                   <Link href="/admin/accounts" className={`${pageStyles.teamButton} ${pageStyles.accountAccent}`}>
                     계정 관리

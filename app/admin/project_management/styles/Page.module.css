@@ -481,6 +481,10 @@
   @apply bg-slate-900 text-white border-slate-900 hover:bg-slate-800 hover:border-slate-800;
 }
 
+.passwordAccent {
+  @apply bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200 hover:border-gray-300;
+}
+
 .readOnlyCard {
   @apply w-full max-w-[1400px] mx-auto px-3 md:px-6 lg:px-8 py-4 bg-gray-50 border border-dashed border-gray-300 rounded-lg text-gray-700;
 }
