@@ -175,6 +175,56 @@ export default function AccountsPage() {
     }
   };
 
+  const handleSaveAll = async () => {
+    const changed = accounts.filter((acc) => {
+      const draft = drafts[acc._id];
+      if (!draft) return false;
+      return (
+        draft.userId !== acc.userId ||
+        draft.password !== acc.password ||
+        draft.team !== acc.team ||
+        draft.role !== acc.role
+      );
+    });
+
+    if (!changed.length) {
+      showBanner('변동된 항목이 없습니다.', 'error');
+      return;
+    }
+
+    for (const acc of changed) {
+      const draft = drafts[acc._id];
+      if (!draft.userId.trim() || !draft.password.trim()) {
+        showBanner('ID와 비밀번호를 비워둘 수 없습니다.', 'error');
+        return;
+      }
+    }
+
+    try {
+      await Promise.all(
+        changed.map((acc) =>
+          fetch('/api/accounts', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...drafts[acc._id], _id: acc._id }),
+          }).then(async (res) => {
+            if (!res.ok) {
+              const data = await res.json().catch(() => null);
+              throw new Error(data?.error || '업데이트 실패');
+            }
+            return res;
+          })
+        )
+      );
+      showBanner('변동사항을 모두 저장했습니다.');
+      await fetchAccounts();
+    } catch (err) {
+      console.error('[ACCOUNT] bulk save', err);
+      const message = err instanceof Error ? err.message : '저장에 실패했습니다.';
+      showBanner(message, 'error');
+    }
+  };
+
   const handleDelete = async (id: string, userId: string) => {
     const confirmed = window.confirm(`${userId} 계정을 삭제할까요?`);
     if (!confirmed) return;
@@ -387,6 +437,11 @@ export default function AccountsPage() {
                 })}
               </tbody>
             </table>
+            <div className={styles.bulkSaveBar}>
+              <button onClick={handleSaveAll} className={styles.primaryButton}>
+                변동사항 모두 저장
+              </button>
+            </div>
           </div>
         )}
       </div>

@@ -301,6 +301,14 @@
   color: #64748b;
 }
 
+.bulkSaveBar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
 .errorText {
   color: #b91c1c;
   font-weight: 700;
