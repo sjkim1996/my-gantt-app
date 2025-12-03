@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation'; 
+import Link from 'next/link';
 import { Plus, Trash2, RefreshCw, Search, AlertCircle, Settings, X, Check, Briefcase, LogOut } from 'lucide-react';
 import { Project, Team, Assignee, GroupedProject, EditingMember, ApiProjectsResponse, Milestone, Attachment } from './types';
 import { parseDate, formatDate, getDaysDiff, getStartOfWeek, generateWeeks, generateDays } from './utils/date';
@@ -37,7 +38,7 @@ const MOCK_PROJECTS_2025: Project[] = [
 // --- 4. 메인 컴포넌트 ---
 export default function ResourceGanttChart() {
   const router = useRouter();
-  const sessionRef = useRef<{ id: string; role: UserRole; label?: string } | null>(null);
+  const sessionRef = useRef<{ id: string; role: UserRole; label?: string; team?: string } | null>(null);
   const [anchorDate, setAnchorDate] = useState<Date>(new Date());
   const [chartStartDate, setChartStartDate] = useState(formatDate(getStartOfWeek(new Date())));
   type AttachmentItem = Attachment & { id: string };
@@ -60,7 +61,7 @@ export default function ResourceGanttChart() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
-  const [sessionUser, setSessionUser] = useState<{ id: string; role: UserRole; label?: string } | null>(null);
+  const [sessionUser, setSessionUser] = useState<{ id: string; role: UserRole; label?: string; team?: string } | null>(null);
   
   const [masterProjectName, setMasterProjectName] = useState('');
   const [masterColorIdx, setMasterColorIdx] = useState(0);
@@ -148,9 +149,18 @@ export default function ResourceGanttChart() {
   }, [paletteSize]);
 
   const applyProjects = useCallback((list: Project[]) => {
+    const viewerId = (effectiveSession?.id || '').toLowerCase();
+    const viewerLabel = (effectiveSession?.label || '').toLowerCase();
+    const filterVacations = (items?: Vacation[]) => {
+      if (role !== 'member') return items || [];
+      return (items || []).filter((v) => {
+        const name = (v.person || '').toLowerCase();
+        return name === viewerId || (!!viewerLabel && name === viewerLabel);
+      });
+    };
     const sanitized =
       role === 'member'
-        ? list.map((p) => ({ ...p, vacations: [] }))
+        ? list.map((p) => ({ ...p, vacations: filterVacations(p.vacations) }))
         : list;
     const colored = sanitized.map((p) => {
       const hasValidColor = typeof p.colorIdx === 'number' && !Number.isNaN(p.colorIdx);
@@ -161,7 +171,7 @@ export default function ResourceGanttChart() {
       return { ...p, colorIdx };
     });
     setProjects(dedupeProjects(colored));
-  }, [role, getColorIdxForName]);
+  }, [role, getColorIdxForName, effectiveSession?.id, effectiveSession?.label]);
 
   const refreshProjects = useCallback(async () => {
     try {
@@ -188,9 +198,16 @@ export default function ResourceGanttChart() {
   }, [applyProjects]);
 
   const combinedVacations = useMemo(() => {
-    if (role === 'member') return [];
+    if (role === 'member') {
+      const viewerId = (effectiveSession?.id || '').toLowerCase();
+      const viewerLabel = (effectiveSession?.label || '').toLowerCase();
+      return vacations.filter((v) => {
+        const name = (v.person || '').toLowerCase();
+        return name === viewerId || (!!viewerLabel && name === viewerLabel);
+      });
+    }
     return vacations;
-  }, [vacations, role]);
+  }, [vacations, role, effectiveSession?.id, effectiveSession?.label]);
 
   useEffect(() => {
     const base = viewMode === 'week' ? getStartOfWeek(anchorDate) : anchorDate;
@@ -219,7 +236,7 @@ export default function ResourceGanttChart() {
         if (!sessionRes.ok || !sessionJson?.success) {
           throw new Error('unauthorized');
         }
-        const sessionData = sessionJson.data as { id: string; role: UserRole; label?: string };
+        const sessionData = sessionJson.data as { id: string; role: UserRole; label?: string; team?: string };
         sessionRef.current = sessionData;
         setSessionUser(sessionData);
         setIsAuthorized(true);
@@ -1401,6 +1418,11 @@ export default function ResourceGanttChart() {
                       <Settings className="w-4 h-4" /> 팀 설정
                     </button>
                   </>
+                )}
+                {role === 'admin' && (
+                  <Link href="/admin/accounts" className={`${pageStyles.teamButton} ${pageStyles.accountAccent}`}>
+                    계정 관리
+                  </Link>
                 )}
                 <button onClick={handleLogout} className={pageStyles.logoutButton}><LogOut className="w-4 h-4" /></button>
             </div>

@@ -8,11 +8,14 @@ import {
   UserRole,
   isEditRole,
 } from './authConfig';
+import dbConnect from './db';
+import Account from '@/models/Account';
 
 export type SessionUser = {
   id: string;
   role: UserRole;
   label?: string;
+  team?: string;
 };
 
 const parseCookies = (cookieHeader: string | null): Record<string, string> => {
@@ -58,8 +61,56 @@ const decodeToken = (token: string): SessionUser | null => {
   }
 };
 
-export const findUserByCredentials = (id: string, password: string) =>
-  AUTH_USERS.find((u) => u.id === id && u.password === password) || null;
+const normalizeAccount = (account: { userId: string; password: string; role: UserRole; label?: string; team?: string }) => ({
+  id: account.userId,
+  password: account.password,
+  role: account.role,
+  label: account.label || account.userId,
+  team: account.team || '',
+});
+
+const seedDefaultsIfEmpty = async (): Promise<boolean> => {
+  try {
+    await dbConnect();
+  } catch (error) {
+    console.error('[AUTH] DB unavailable, falling back to static users', error);
+    return false;
+  }
+
+  const count = await Account.countDocuments({});
+  if (count > 0) return true;
+  try {
+    await Account.insertMany(
+      AUTH_USERS.map((u) => ({
+        userId: u.id,
+        password: u.password,
+        role: u.role,
+        label: u.label,
+        team: '',
+      }))
+    );
+  } catch (error) {
+    console.error('[AUTH] seed failed', error);
+  }
+  return true;
+};
+
+export const ensureAccountsSeeded = seedDefaultsIfEmpty;
+
+export const findUserByCredentials = async (id: string, password: string) => {
+  const seeded = await seedDefaultsIfEmpty();
+  if (seeded) {
+    try {
+      const account = await Account.findOne({ userId: id, password }).lean();
+      if (account)
+        return normalizeAccount(account as unknown as { userId: string; password: string; role: UserRole; label?: string; team?: string });
+    } catch (error) {
+      console.error('[AUTH] account lookup failed', error);
+    }
+  }
+  const fallback = AUTH_USERS.find((u) => u.id === id && u.password === password) || null;
+  return fallback ? { ...fallback } : null;
+};
 
 export const writeSessionCookie = (res: NextResponse, session: SessionUser) => {
   res.cookies.set(SESSION_COOKIE_NAME, buildToken(session), {
@@ -100,6 +151,18 @@ export const requireEditor = (req: Request): { session: SessionUser | null; resp
     return {
       session,
       response: NextResponse.json({ success: false, error: '권한이 없습니다.' }, { status: 403 }),
+    };
+  }
+  return { session };
+};
+
+export const requireAdmin = (req: Request): { session: SessionUser | null; response?: NextResponse } => {
+  const { session, response } = requireAuth(req);
+  if (!session) return { session: null, response };
+  if (session.role !== 'admin') {
+    return {
+      session,
+      response: NextResponse.json({ success: false, error: '관리자 권한이 필요합니다.' }, { status: 403 }),
     };
   }
   return { session };

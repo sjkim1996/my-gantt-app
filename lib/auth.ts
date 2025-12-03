@@ -6,12 +6,13 @@ import { UserRole } from './authShared';
 export const LOGIN_TOKEN_KEY = 'loginToken';
 export const LOGIN_TOKEN_VALUE = 'capra-login';
 
-export const setLoginToken = (session?: { id: string; role: UserRole }) => {
+export const setLoginToken = (session?: { id: string; role: UserRole; team?: string }) => {
   if (typeof window === 'undefined') return;
   sessionStorage.setItem(LOGIN_TOKEN_KEY, LOGIN_TOKEN_VALUE);
   sessionStorage.setItem('isLoggedIn', 'true');
   if (session?.id) sessionStorage.setItem('userId', session.id);
   if (session?.role) sessionStorage.setItem('userRole', session.role);
+  if (session?.team) sessionStorage.setItem('userTeam', session.team);
 };
 
 export const clearLoginToken = () => {
@@ -20,6 +21,7 @@ export const clearLoginToken = () => {
   sessionStorage.removeItem('isLoggedIn');
   sessionStorage.removeItem('userId');
   sessionStorage.removeItem('userRole');
+  sessionStorage.removeItem('userTeam');
 };
 
 export const hasValidLoginToken = () => {
@@ -33,5 +35,6 @@ export const getStoredSession = () => {
   if (!loggedIn) return null;
   const id = sessionStorage.getItem('userId') || '';
   const role = (sessionStorage.getItem('userRole') as UserRole | null) || null;
-  return role ? { id, role } : null;
+  const team = sessionStorage.getItem('userTeam') || '';
+  return role ? { id, role, team } : null;
 };

@@ -1,7 +1,7 @@
 import dbConnect from '@/lib/db';
 import Vacation from '@/models/Vacation';
 import { NextResponse } from 'next/server';
-import { requireEditor } from '@/lib/serverAuth';
+import { requireAuth, requireEditor } from '@/lib/serverAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -34,12 +34,22 @@ const sanitizeVacation = (v: IncomingVacation | null) => {
 };
 
 export async function GET(req: Request) {
-  const { session: _session, response } = requireEditor(req);
+  const { session: _session, response } = requireAuth(req);
   if (!_session) return response!;
 
   try {
     await dbConnect();
-    const vacations = await Vacation.find({}).sort({ start: 1 });
+    const query = (() => {
+      if (_session.role !== 'member') return {};
+      const conditions = [
+        _session.id ? { person: _session.id } : null,
+        _session.label && _session.label !== _session.id ? { person: _session.label } : null,
+      ].filter(Boolean) as Record<string, string>[];
+      if (!conditions.length) return { person: _session.id };
+      if (conditions.length === 1) return conditions[0];
+      return { $or: conditions };
+    })();
+    const vacations = await Vacation.find(query).sort({ start: 1 });
     return NextResponse.json({ success: true, data: vacations });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

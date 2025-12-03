@@ -29,7 +29,7 @@ export default function LoginPage() {
         return;
       }
 
-      setLoginToken({ id: data.data.id, role: data.data.role });
+      setLoginToken({ id: data.data.id, role: data.data.role, team: data.data.team });
       router.push('/admin/project_management');
     } catch (err) {
       console.error('[LOGIN]', err);
