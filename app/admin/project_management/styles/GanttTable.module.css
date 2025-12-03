@@ -56,6 +56,26 @@
   @apply text-[9px] text-gray-400 font-medium;
 }
 
+.dayLabelWrap {
+  @apply flex flex-col items-center justify-center;
+}
+
+.dayCompact {
+  @apply flex flex-col w-full h-full;
+}
+
+.dayCompactTop {
+  @apply text-[11px] font-bold text-left leading-tight;
+}
+
+.dayCompactBottom {
+  @apply text-[11px] font-semibold text-right leading-tight flex items-center justify-end gap-0.5;
+}
+
+.daySlash {
+  @apply text-[9px] text-gray-400;
+}
+
 .row {
   @apply hover:bg-gray-50/50 transition-colors;
 }

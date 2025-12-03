@@ -8,9 +8,25 @@ type Props = {
   onNext: () => void;
   onToday: () => void;
   onViewChange: (mode: 'week' | 'day') => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  canZoomIn: boolean;
+  canZoomOut: boolean;
+  zoomLabel: string;
 };
 
-const ChartControls: React.FC<Props> = ({ viewMode, onPrev, onNext, onToday, onViewChange }) => {
+const ChartControls: React.FC<Props> = ({
+  viewMode,
+  onPrev,
+  onNext,
+  onToday,
+  onViewChange,
+  onZoomIn,
+  onZoomOut,
+  canZoomIn,
+  canZoomOut,
+  zoomLabel,
+}) => {
   return (
     <div className={styles.controls}>
       <div className={styles.buttonGroup}>
@@ -36,6 +52,25 @@ const ChartControls: React.FC<Props> = ({ viewMode, onPrev, onNext, onToday, onV
           className={`${styles.viewButton} ${viewMode === 'day' ? styles.viewActive : styles.viewInactive}`}
         >
           일간
+        </button>
+      </div>
+      <div className={styles.zoomGroup}>
+        <button
+          onClick={onZoomIn}
+          className={`${styles.zoomButton} ${!canZoomIn ? styles.zoomDisabled : ''}`}
+          disabled={!canZoomIn}
+          title="확대"
+        >
+          +
+        </button>
+        <div className={styles.zoomLabel}>{zoomLabel}</div>
+        <button
+          onClick={onZoomOut}
+          className={`${styles.zoomButton} ${!canZoomOut ? styles.zoomDisabled : ''}`}
+          disabled={!canZoomOut}
+          title="축소"
+        >
+          −
         </button>
       </div>
       <div className={styles.legend}>

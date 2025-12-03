@@ -120,6 +120,67 @@ export default function ResourceGanttChart() {
   const colorCursorRef = useRef(0);
   const paletteSize = BAR_COLORS.length;
   const autoTeamSyncRef = useRef(false);
+  const WEEK_SPANS = [4, 6, 8, 10, 12] as const;
+  const DAY_SPANS: number[] = WEEK_SPANS.map((w) => w * 7);
+  const [weekSpan, setWeekSpan] = useState<number>(8);
+  const [daySpan, setDaySpan] = useState<number>(56);
+  const weekCellWidth = useMemo(() => {
+    if (weekSpan <= 4) return 160;
+    if (weekSpan <= 6) return 140;
+    if (weekSpan <= 8) return 120;
+    if (weekSpan <= 10) return 105;
+    return 92;
+  }, [weekSpan]);
+  const dayCellWidth = useMemo(() => {
+    if (daySpan <= 28) return 72;
+    if (daySpan <= 42) return 60;
+    if (daySpan <= 56) return 52;
+    if (daySpan <= 70) return 44;
+    return 38;
+  }, [daySpan]);
+  const zoomLabel = useMemo(() => (viewMode === 'week' ? `${weekSpan}주` : `${daySpan}일`), [viewMode, weekSpan, daySpan]);
+
+  const findNearest = (value: number, pool: number[]) => pool.reduce((prev, cur) => (Math.abs(cur - value) < Math.abs(prev - value) ? cur : prev), pool[0]);
+
+  const handleViewChange = (mode: 'week' | 'day') => {
+    setViewMode(mode);
+    if (mode === 'day') {
+      const derived = weekSpan * 7;
+      const nearest = findNearest(derived, DAY_SPANS);
+      if (nearest !== daySpan) setDaySpan(nearest);
+    } else {
+      const derivedWeek = Math.round(daySpan / 7);
+      const nearest = findNearest(derivedWeek, [...WEEK_SPANS]);
+      if (nearest !== weekSpan) setWeekSpan(nearest);
+    }
+  };
+
+  const handleZoomIn = () => {
+    if (viewMode === 'week') {
+      const idx = WEEK_SPANS.findIndex((v) => v === weekSpan);
+      const next = idx > 0 ? WEEK_SPANS[idx - 1] : WEEK_SPANS[0];
+      setWeekSpan(next);
+    } else {
+      const idx = DAY_SPANS.findIndex((v) => v === daySpan);
+      const next = idx > 0 ? DAY_SPANS[idx - 1] : DAY_SPANS[0];
+      setDaySpan(next);
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (viewMode === 'week') {
+      const idx = WEEK_SPANS.findIndex((v) => v === weekSpan);
+      const next = idx < WEEK_SPANS.length - 1 ? WEEK_SPANS[idx + 1] : WEEK_SPANS[WEEK_SPANS.length - 1];
+      setWeekSpan(next);
+    } else {
+      const idx = DAY_SPANS.findIndex((v) => v === daySpan);
+      const next = idx < DAY_SPANS.length - 1 ? DAY_SPANS[idx + 1] : DAY_SPANS[DAY_SPANS.length - 1];
+      setDaySpan(next);
+    }
+  };
+
+  const canZoomIn = viewMode === 'week' ? weekSpan > WEEK_SPANS[0] : daySpan > DAY_SPANS[0];
+  const canZoomOut = viewMode === 'week' ? weekSpan < WEEK_SPANS[WEEK_SPANS.length - 1] : daySpan < DAY_SPANS[DAY_SPANS.length - 1];
 
   useEffect(() => {
     if (banner) {
@@ -309,13 +370,13 @@ export default function ResourceGanttChart() {
 
   const timeline = useMemo<TimelineBlock[]>(() => {
     const blocks = viewMode === 'week'
-      ? generateWeeks(chartStartDate, 60, todayDate)
-      : generateDays(chartStartDate, 120, todayDate);
+      ? generateWeeks(chartStartDate, weekSpan, todayDate)
+      : generateDays(chartStartDate, daySpan, todayDate);
     return blocks.map(b => ({
       ...b,
       isToday: b.isTodayWeek || (formatDate(b.start) === formatDate(todayDate))
     }));
-  }, [chartStartDate, todayDate, viewMode]);
+  }, [chartStartDate, todayDate, viewMode, weekSpan, daySpan]);
 
   const chartTotalDays = useMemo(() => {
     if (timeline.length === 0) return 0;
@@ -1508,7 +1569,12 @@ export default function ResourceGanttChart() {
           onPrev={handlePrevMonth}
           onNext={handleNextMonth}
           onToday={handleJumpToToday}
-          onViewChange={setViewMode}
+          onViewChange={handleViewChange}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          canZoomIn={canZoomIn}
+          canZoomOut={canZoomOut}
+          zoomLabel={zoomLabel}
         />
       </div>
 
@@ -1527,6 +1593,8 @@ export default function ResourceGanttChart() {
           setHoveredProjectName={setHoveredProjectName}
           handleProjectClick={handleProjectClick}
           chartTotalDays={chartTotalDays}
+          weekCellWidth={weekCellWidth}
+          dayCellWidth={dayCellWidth}
           onVacationClick={(vac) => {
             if (!canEdit) return;
             void openVacationModal({ tab: 'list' });

@@ -9,6 +9,10 @@ export type TimelineBlock = {
   id: number;
   label: string;
   subLabel: string;
+  compactLabel?: string;
+  month?: number;
+  day?: number;
+  weekNum?: number;
   start: Date;
   end: Date;
   isTodayWeek: boolean;
@@ -29,6 +33,8 @@ type Props = {
   handleProjectClick: (project: Project) => void;
   chartTotalDays: number;
   onVacationClick: (vacation: Vacation) => void;
+  weekCellWidth: number;
+  dayCellWidth: number;
 };
 
 const GanttTable: React.FC<Props> = ({
@@ -45,6 +51,8 @@ const GanttTable: React.FC<Props> = ({
   handleProjectClick,
   chartTotalDays,
   onVacationClick,
+  weekCellWidth,
+  dayCellWidth,
 }) => {
   const [hoveredBlockKey, setHoveredBlockKey] = useState<string | null>(null);
   const chartStart = timeline.length > 0 ? parseDate(formatDate(timeline[0].start)) : null;
@@ -73,22 +81,51 @@ const GanttTable: React.FC<Props> = ({
                 Member
               </th>
 
-              {timeline.map((w) => (
-                <th
-                  key={w.id}
-                  ref={w.isTodayWeek ? todayColumnRef : null}
-                  style={{ minWidth: viewMode === 'week' ? 140 : 80 }}
-                  className={`${styles.timelineHead} ${
-                    w.isTodayWeek ? styles.timelineToday : blockHasEvent[w.id] ? styles.timelineEvent : styles.timelineDefault
-                  }`}
-                >
-                  <div className={`${styles.timelineLabel} ${w.isTodayWeek ? styles.timelineLabelToday : styles.timelineLabelDefault}`}>
-                    {w.label}{' '}
-                    {w.isTodayWeek && <span className="inline-block w-1.5 h-1.5 bg-indigo-500 rounded-full ml-1 align-middle mb-0.5"></span>}
-                  </div>
-                  <div className={styles.timelineSublabel}>{w.subLabel}</div>
-                </th>
-              ))}
+              {timeline.map((w) => {
+                const cellWidth = viewMode === 'week' ? weekCellWidth : dayCellWidth;
+                const showCompactWeekLabel = viewMode === 'week' && cellWidth < 120;
+                const isTightDay = viewMode === 'day' && cellWidth < 60;
+                return (
+                  <th
+                    key={w.id}
+                    ref={w.isTodayWeek ? todayColumnRef : null}
+                    style={{ minWidth: cellWidth }}
+                    className={`${styles.timelineHead} ${
+                      w.isTodayWeek ? styles.timelineToday : blockHasEvent[w.id] ? styles.timelineEvent : styles.timelineDefault
+                    }`}
+                  >
+                    {viewMode === 'week' ? (
+                      <>
+                        <div className={`${styles.timelineLabel} ${w.isTodayWeek ? styles.timelineLabelToday : styles.timelineLabelDefault}`}>
+                          {showCompactWeekLabel ? w.compactLabel || w.label : w.label}
+                          {w.isTodayWeek && <span className="inline-block w-1.5 h-1.5 bg-indigo-500 rounded-full ml-1 align-middle mb-0.5"></span>}
+                        </div>
+                        <div className={styles.timelineSublabel}>{w.subLabel}</div>
+                      </>
+                    ) : (
+                      <div className={styles.dayLabelWrap}>
+                        {!isTightDay ? (
+                          <>
+                            <div className={`${styles.timelineLabel} ${w.isTodayWeek ? styles.timelineLabelToday : styles.timelineLabelDefault}`}>
+                              {w.label}
+                              {w.isTodayWeek && <span className="inline-block w-1.5 h-1.5 bg-indigo-500 rounded-full ml-1 align-middle mb-0.5"></span>}
+                            </div>
+                            <div className={styles.timelineSublabel}>{w.subLabel}</div>
+                          </>
+                        ) : (
+                          <div className={styles.dayCompact}>
+                            <div className={styles.dayCompactTop}>{w.month}</div>
+                            <div className={styles.dayCompactBottom}>
+                              <span className={styles.daySlash}>/</span>
+                              <span>{w.day}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>

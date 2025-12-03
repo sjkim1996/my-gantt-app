@@ -16,12 +16,17 @@ export const getDaysDiff = (start: Date, end: Date) => {
   return Math.round((end.getTime() - start.getTime()) / oneDay);
 };
 
-export const getWeekLabel = (date: Date) => {
+export const getWeekMeta = (date: Date) => {
   const month = date.getMonth() + 1;
   const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
   const offsetDate = date.getDate() + firstDayOfMonth.getDay() - 1;
   const weekNum = Math.floor(offsetDate / 7) + 1;
-  return `${month}월 ${weekNum}주`;
+  return {
+    month,
+    weekNum,
+    label: `${month}월 ${weekNum}주`,
+    compactLabel: `${month}-${weekNum}`,
+  };
 };
 
 export const getStartOfWeek = (date: Date) => {
@@ -45,9 +50,13 @@ export const generateWeeks = (startDateStr: string, numWeeks = 60, today: Date) 
     const startTime = start.getTime();
     const endTime = end.getTime();
     const isTodayWeek = todayTime >= startTime && todayTime <= endTime;
+    const meta = getWeekMeta(start);
     weeks.push({
       id: i,
-      label: getWeekLabel(start),
+      label: meta.label,
+      compactLabel: meta.compactLabel,
+      month: meta.month,
+      weekNum: meta.weekNum,
       subLabel: `${start.getMonth()+1}.${start.getDate()} ~ ${end.getMonth()+1}.${end.getDate()}`,
       start,
       end,
@@ -69,6 +78,8 @@ export const generateDays = (startDateStr: string, numDays = 120, today: Date) =
     days.push({
       id: i,
       label: `${start.getMonth() + 1}/${start.getDate()}`,
+      month: start.getMonth() + 1,
+      day: start.getDate(),
       subLabel: ['일', '월', '화', '수', '목', '금', '토'][start.getDay()],
       start,
       end,
