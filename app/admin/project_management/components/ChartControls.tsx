@@ -12,7 +12,6 @@ type Props = {
   onZoomOut: () => void;
   canZoomIn: boolean;
   canZoomOut: boolean;
-  zoomLabel: string;
 };
 
 const ChartControls: React.FC<Props> = ({
@@ -25,7 +24,6 @@ const ChartControls: React.FC<Props> = ({
   onZoomOut,
   canZoomIn,
   canZoomOut,
-  zoomLabel,
 }) => {
   return (
     <div className={styles.controls}>
@@ -63,7 +61,6 @@ const ChartControls: React.FC<Props> = ({
         >
           +
         </button>
-        <div className={styles.zoomLabel}>{zoomLabel}</div>
         <button
           onClick={onZoomOut}
           className={`${styles.zoomButton} ${!canZoomOut ? styles.zoomDisabled : ''}`}

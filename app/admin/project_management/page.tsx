@@ -124,25 +124,26 @@ export default function ResourceGanttChart() {
   const colorCursorRef = useRef(0);
   const paletteSize = BAR_COLORS.length;
   const autoTeamSyncRef = useRef(false);
-  const WEEK_SPANS = [4, 6, 8, 10, 12] as const;
-  const DAY_SPANS: number[] = WEEK_SPANS.map((w) => w * 7);
+  const WEEK_SPANS = [4, 6, 8, 10, 12, 16, 20] as const;
+  const DAY_SPANS: number[] = [7, 14, 21, 28, 31];
   const [weekSpan, setWeekSpan] = useState<number>(8);
-  const [daySpan, setDaySpan] = useState<number>(56);
+  const [daySpan, setDaySpan] = useState<number>(28);
   const weekCellWidth = useMemo(() => {
     if (weekSpan <= 4) return 160;
     if (weekSpan <= 6) return 140;
     if (weekSpan <= 8) return 120;
     if (weekSpan <= 10) return 105;
-    return 92;
+    if (weekSpan <= 12) return 96;
+    if (weekSpan <= 16) return 90;
+    return 84;
   }, [weekSpan]);
   const dayCellWidth = useMemo(() => {
-    if (daySpan <= 28) return 72;
-    if (daySpan <= 42) return 60;
-    if (daySpan <= 56) return 52;
-    if (daySpan <= 70) return 44;
-    return 38;
+    if (daySpan <= 7) return 80;
+    if (daySpan <= 14) return 70;
+    if (daySpan <= 21) return 60;
+    if (daySpan <= 28) return 46;
+    return 40;
   }, [daySpan]);
-  const zoomLabel = useMemo(() => (viewMode === 'week' ? `${weekSpan}주` : `${daySpan}일`), [viewMode, weekSpan, daySpan]);
 
   const findNearest = (value: number, pool: number[]) => pool.reduce((prev, cur) => (Math.abs(cur - value) < Math.abs(prev - value) ? cur : prev), pool[0]);
 
@@ -150,7 +151,7 @@ export default function ResourceGanttChart() {
     setViewMode(mode);
     if (mode === 'day') {
       const derived = weekSpan * 7;
-      const nearest = findNearest(derived, DAY_SPANS);
+      const nearest = findNearest(Math.min(derived, DAY_SPANS[DAY_SPANS.length - 1]), DAY_SPANS);
       if (nearest !== daySpan) setDaySpan(nearest);
     } else {
       const derivedWeek = Math.round(daySpan / 7);
@@ -1662,7 +1663,6 @@ export default function ResourceGanttChart() {
           onZoomOut={handleZoomOut}
           canZoomIn={canZoomIn}
           canZoomOut={canZoomOut}
-          zoomLabel={zoomLabel}
         />
       </div>
 
