@@ -302,6 +302,18 @@ const CalendarView: React.FC<Props> = ({
     return map;
   }, [days, groupedProjects, vacations, selectedSet]);
 
+  const shouldHideSegment = (weekIdx: number, seg: Segment) => {
+    const weekStart = new Date(startOfGrid);
+    weekStart.setDate(startOfGrid.getDate() + weekIdx * 7 + seg.startIdx);
+    for (let i = 0; i < seg.span; i++) {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + i);
+      const count = dayOverlaps.get(formatDate(d)) || 0;
+      if (count >= 3) return true;
+    }
+    return false;
+  };
+
   const maxVacLanes = useMemo(() => Math.max(...vacationLanesByWeek.map((l) => l.length), 0), [vacationLanesByWeek]);
 
   const handleMonthOffset = (delta: number) => {
@@ -570,14 +582,3 @@ const CalendarView: React.FC<Props> = ({
 };
 
 export default CalendarView;
-  const shouldHideSegment = (weekIdx: number, seg: Segment) => {
-    const weekStart = new Date(startOfGrid);
-    weekStart.setDate(startOfGrid.getDate() + weekIdx * 7 + seg.startIdx);
-    for (let i = 0; i < seg.span; i++) {
-      const d = new Date(weekStart);
-      d.setDate(weekStart.getDate() + i);
-      const count = dayOverlaps.get(formatDate(d)) || 0;
-      if (count >= 3) return true;
-    }
-    return false;
-  };
