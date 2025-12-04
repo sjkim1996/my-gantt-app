@@ -1180,6 +1180,7 @@ export default function ResourceGanttChart() {
       <button
         className={`${pageStyles.tabButton} ${activeTab === 'gantt' ? pageStyles.tabActive : pageStyles.tabInactive}`}
         onClick={() => setActiveTab('gantt')}
+      >
         간트 뷰
       </button>
       <button
