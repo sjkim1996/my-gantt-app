@@ -410,8 +410,6 @@ const CalendarView: React.FC<Props> = ({
               {days.map((day) => {
                 const overlapCount = dayOverlaps.get(day.key) || 0;
                 const showMore = overlapCount > 3;
-                const dayMilestones = groupedProjects
-                  .flatMap((g) => g.milestones.filter((m) => formatDate(m.date) === day.key).map((m) => ({ ...m, project: g.name })));
                 return (
                   <div
                     key={day.key}
@@ -428,14 +426,6 @@ const CalendarView: React.FC<Props> = ({
                       {showMore && (
                         <button className={styles.moreBadge} onClick={() => openDayModal(day.key)}>+more</button>
                       )}
-                    </div>
-                    <div className={styles.miniMilestones}>
-                      {dayMilestones.slice(0, 3).map((m) => (
-                        <span key={m.id} className={styles.miniMilestone} title={`${m.project} · ${m.label}`}>
-                          <Flag className="w-3 h-3" />
-                          <span className={styles.miniLabel}>{m.project}</span>
-                        </span>
-                      ))}
                     </div>
                   </div>
                 );
@@ -514,7 +504,7 @@ const CalendarView: React.FC<Props> = ({
                                     key={m.id}
                                     className={styles.milestoneDot}
                                     style={{ left: `${pct}%`, backgroundColor: milestoneColor, color: milestoneText, borderColor: darkenColor(base, 0.35) }}
-                                    title={`${m.label} · ${seg.name}`}
+                                    title={`${seg.name} · ${m.label}`}
                                   >
                                     <span className={styles.milestoneFlag}>
                                       <Flag className="w-3 h-3" />
