@@ -89,7 +89,7 @@
 }
 
 .calendar {
-  --day-gap: 8px;
+  --day-gap: 0px;
   --col-width: calc((100% - var(--day-gap) * 6) / 7);
   @apply relative space-y-3;
 }
@@ -107,17 +107,17 @@
 }
 
 .dayCell {
-  @apply border border-gray-100 rounded-xl p-2 relative overflow-visible transition bg-white;
-  min-height: 120px;
+  @apply border border-gray-100 p-2 relative overflow-visible transition bg-transparent;
+  min-height: 110px;
   z-index: 2;
 }
 
 .dayMuted {
-  @apply bg-gray-50 text-gray-400;
+  @apply text-gray-400;
 }
 
 .dayToday {
-  @apply ring-2 ring-indigo-400 ring-offset-2;
+  @apply ring-2 ring-indigo-300;
 }
 
 .dayNumberRow {
@@ -145,7 +145,7 @@
 }
 
 .barLayer {
-  @apply absolute left-0 right-0 top-[34px] pointer-events-none z-0 px-[6px];
+  @apply absolute left-0 right-0 top-[34px] pointer-events-none z-10 px-[2px];
 }
 
 .bar {

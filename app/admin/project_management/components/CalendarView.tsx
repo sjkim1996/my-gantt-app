@@ -66,6 +66,7 @@ const CalendarView: React.FC<Props> = ({
     d.setHours(0, 0, 0, 0);
     return d;
   }, [month]);
+  const monthLabel = useMemo(() => `${month.getFullYear()}년 ${month.getMonth() + 1}월`, [month]);
 
   const startOfGrid = useMemo(() => {
     const base = new Date(startOfMonth);

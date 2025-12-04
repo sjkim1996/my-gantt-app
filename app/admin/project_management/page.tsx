@@ -359,9 +359,12 @@ export default function ResourceGanttChart() {
     return list;
   }, [teams]);
 
+  const calendarSeededRef = useRef(false);
   useEffect(() => {
+    if (calendarSeededRef.current) return;
     if (calendarSelectedMembers.length === 0 && allMembers.length > 0) {
       setCalendarSelectedMembers(allMembers);
+      calendarSeededRef.current = true;
     }
   }, [allMembers, calendarSelectedMembers.length]);
 
@@ -392,8 +395,14 @@ export default function ResourceGanttChart() {
     });
   };
 
-  const selectAllCalendarMembers = () => setCalendarSelectedMembers(allMembers);
-  const clearCalendarMembers = () => setCalendarSelectedMembers([]);
+  const selectAllCalendarMembers = () => {
+    setCalendarSelectedMembers(allMembers);
+    calendarSeededRef.current = true;
+  };
+  const clearCalendarMembers = () => {
+    setCalendarSelectedMembers([]);
+    calendarSeededRef.current = true;
+  };
 
   // Initial Scroll to Today (run once)
   useEffect(() => {
