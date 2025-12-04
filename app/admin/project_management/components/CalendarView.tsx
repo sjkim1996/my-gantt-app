@@ -309,7 +309,7 @@ const CalendarView: React.FC<Props> = ({
       const d = new Date(weekStart);
       d.setDate(weekStart.getDate() + i);
       const count = dayOverlaps.get(formatDate(d)) || 0;
-      if (count >= 3) return true;
+      if (count >= 4) return true;
     }
     return false;
   };
@@ -421,7 +421,7 @@ const CalendarView: React.FC<Props> = ({
             <div className={styles.calendarGrid} style={{ minHeight: GRID_OFFSET + 6 * (DAY_HEIGHT + DAY_GAP) }}>
               {days.map((day) => {
                 const overlapCount = dayOverlaps.get(day.key) || 0;
-                const showMore = overlapCount > 2;
+                const showMore = overlapCount > 3;
                 return (
                   <div
                     key={day.key}
