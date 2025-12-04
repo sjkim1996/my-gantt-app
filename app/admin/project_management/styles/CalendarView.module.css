@@ -120,6 +120,14 @@
   @apply ring-2 ring-indigo-300;
 }
 
+.daySunday {
+  @apply text-red-500;
+}
+
+.daySaturday {
+  @apply text-blue-500;
+}
+
 .dayNumberRow {
   @apply flex items-center justify-between mb-1;
 }
@@ -145,7 +153,7 @@
 }
 
 .barLayer {
-  @apply absolute left-0 right-0 top-[34px] pointer-events-none z-10 px-[2px];
+  @apply absolute left-0 right-0 top-[34px] pointer-events-none z-10 px-[0px];
 }
 
 .bar {
@@ -168,6 +176,10 @@
 
 .milestoneDot {
   @apply absolute -top-2 translate-x-1/2 text-orange-600 drop-shadow pointer-events-auto flex items-center gap-1 bg-orange-50 border border-orange-200 rounded px-1 py-[2px];
+}
+
+.milestoneLabel {
+  @apply text-[11px] font-semibold text-orange-800;
 }
 
 .vacBar {

@@ -152,9 +152,9 @@ const CalendarView: React.FC<Props> = ({
 
   const BAR_HEIGHT = 22;
   const BAR_GAP = 6;
-  const VAC_HEIGHT = 8;
-  const VAC_GAP = 2;
   const DAY_HEIGHT = 126;
+  const VAC_HEIGHT = DAY_HEIGHT - 16;
+  const VAC_GAP = 4;
   const DAY_GAP = 8;
   const GRID_OFFSET = 32;
 
@@ -419,7 +419,13 @@ const CalendarView: React.FC<Props> = ({
                     className={`${styles.dayCell} ${!day.inMonth ? styles.dayMuted : ''} ${day.isToday ? styles.dayToday : ''}`}
                   >
                     <div className={styles.dayNumberRow}>
-                      <span className={styles.dayNumber}>{day.date.getDate()}</span>
+                      <span
+                        className={`${styles.dayNumber} ${
+                          day.colIndex === 0 ? styles.daySunday : day.colIndex === 6 ? styles.daySaturday : ''
+                        }`}
+                      >
+                        {day.date.getDate()}
+                      </span>
                       {showMore && (
                         <button className={styles.moreBadge} onClick={() => openDayModal(day.key)}>+more</button>
                       )}
@@ -451,7 +457,7 @@ const CalendarView: React.FC<Props> = ({
                             left: `calc((var(--col-width) + var(--day-gap)) * ${left})`,
                             width: `calc(var(--col-width) * ${width} + var(--day-gap) * ${width - 1})`,
                             height: VAC_HEIGHT,
-                            backgroundColor: 'rgba(0,0,0,0.6)',
+                            backgroundColor: 'rgba(55, 65, 81, 0.35)',
                             color: '#fff',
                           }}
                           title={`${seg.name} · ${seg.members.map((m) => m.name).join(', ')}`}
@@ -500,7 +506,7 @@ const CalendarView: React.FC<Props> = ({
                                 weekStart.setDate(startOfGrid.getDate() + weekIdx * 7);
                                 const offset = m.date.getDay();
                                 if (offset < seg.startIdx || offset >= seg.startIdx + seg.span) return null;
-                                const pct = ((offset - seg.startIdx + 0.1) / seg.span) * 100;
+                                const pct = ((offset - seg.startIdx) / seg.span) * 100;
                                 return (
                                   <span
                                     key={m.id}
@@ -509,6 +515,7 @@ const CalendarView: React.FC<Props> = ({
                                     title={`${m.label} · ${seg.name}`}
                                   >
                                     <Flag className="w-3 h-3" />
+                                    <span className={styles.milestoneLabel}>{m.label}</span>
                                   </span>
                                 );
                               })}
