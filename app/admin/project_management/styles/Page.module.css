@@ -422,7 +422,7 @@
 }
 
 .tabNav {
-  @apply flex items-center gap-2;
+  @apply flex items-center gap-2 mt-2;
 }
 
 .tabButton {
@@ -478,7 +478,7 @@
 }
 
 .calendarShell {
-  @apply w-full max-w-[1400px] mx-auto px-3 md:px-6 lg:px-8 pb-8;
+  @apply w-full max-w-[1480px] mx-auto px-2 md:px-6 lg:px-8 pb-8;
 }
 
 .roleBadge {

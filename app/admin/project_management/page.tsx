@@ -1454,20 +1454,6 @@ export default function ResourceGanttChart() {
                   </p>
                 )}
             </div>
-            <div className={pageStyles.tabNav}>
-              <button
-                className={`${pageStyles.tabButton} ${activeTab === 'gantt' ? pageStyles.tabActive : pageStyles.tabInactive}`}
-                onClick={() => setActiveTab('gantt')}
-              >
-                간트 뷰
-              </button>
-              <button
-                className={`${pageStyles.tabButton} ${activeTab === 'calendar' ? pageStyles.tabActive : pageStyles.tabInactive}`}
-                onClick={() => setActiveTab('calendar')}
-              >
-                월력 뷰
-              </button>
-            </div>
             <div className={pageStyles.headerButtons}>
                 {canEdit && (
                   <>
@@ -1501,6 +1487,21 @@ export default function ResourceGanttChart() {
             <span className={pageStyles.bannerText}>{banner.text}</span>
           </div>
         )}
+        
+        <div className={pageStyles.tabNav}>
+          <button
+            className={`${pageStyles.tabButton} ${activeTab === 'gantt' ? pageStyles.tabActive : pageStyles.tabInactive}`}
+            onClick={() => setActiveTab('gantt')}
+          >
+            간트 뷰
+          </button>
+          <button
+            className={`${pageStyles.tabButton} ${activeTab === 'calendar' ? pageStyles.tabActive : pageStyles.tabInactive}`}
+            onClick={() => setActiveTab('calendar')}
+          >
+            캘린더 뷰
+          </button>
+        </div>
         
         {/* Input Row */}
         {canEdit ? (
