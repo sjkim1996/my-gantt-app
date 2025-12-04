@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Flag, Users, X } from 'lucide-react';
 import { Assignee, Project, Team, Vacation } from '../types';
 import { formatDate, parseDate } from '../utils/date';
-import { getColorSet, getReadableTextColor, lightenColor } from '../utils/colors';
+import { getColorSet, getReadableTextColor, lightenColor, darkenColor } from '../utils/colors';
 import styles from '../styles/CalendarView.module.css';
 
 type Props = {
