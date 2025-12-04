@@ -142,7 +142,7 @@
 
 
 .barLayer {
-  @apply absolute left-0 right-0 top-[34px] pointer-events-none z-10 px-[0px];
+  @apply absolute left-0 right-0 top-[26px] pointer-events-none z-10 px-[0px];
 }
 
 .bar {

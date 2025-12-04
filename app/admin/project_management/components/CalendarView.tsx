@@ -155,7 +155,7 @@ const CalendarView: React.FC<Props> = ({
   const VAC_HEIGHT = DAY_HEIGHT - 16;
   const VAC_GAP = 4;
   const DAY_GAP = 8;
-  const GRID_OFFSET = 32;
+  const GRID_OFFSET = 26;
 
   const weeklySegments = useMemo<Segment[][]>(() => {
     const segsByWeek: Segment[][] = Array.from({ length: 6 }).map(() => []);
@@ -409,7 +409,7 @@ const CalendarView: React.FC<Props> = ({
             <div className={styles.calendarGrid} style={{ minHeight: GRID_OFFSET + 6 * (DAY_HEIGHT + DAY_GAP) }}>
               {days.map((day) => {
                 const overlapCount = dayOverlaps.get(day.key) || 0;
-                const showMore = overlapCount > 3;
+                const showMore = overlapCount > 2;
                 return (
                   <div
                     key={day.key}
@@ -437,6 +437,7 @@ const CalendarView: React.FC<Props> = ({
                     lane.map((seg) => {
                       const left = seg.startIdx;
                       const width = seg.span;
+                      if (shouldHideSegment(weekIdx, seg)) return null;
                       return (
                         <div
                           key={`${seg.projectKey}-vac-${weekIdx}-${laneIdx}-${left}`}
@@ -462,6 +463,7 @@ const CalendarView: React.FC<Props> = ({
                       const left = seg.startIdx;
                       const width = seg.span;
                       const project = projectMap.get(seg.projectKey);
+                      if (shouldHideSegment(weekIdx, seg)) return null;
                       return (
                         <div
                           key={`${seg.projectKey}-${weekIdx}-${laneIdx}-${left}`}
@@ -568,3 +570,14 @@ const CalendarView: React.FC<Props> = ({
 };
 
 export default CalendarView;
+  const shouldHideSegment = (weekIdx: number, seg: Segment) => {
+    const weekStart = new Date(startOfGrid);
+    weekStart.setDate(startOfGrid.getDate() + weekIdx * 7 + seg.startIdx);
+    for (let i = 0; i < seg.span; i++) {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + i);
+      const count = dayOverlaps.get(formatDate(d)) || 0;
+      if (count >= 3) return true;
+    }
+    return false;
+  };
