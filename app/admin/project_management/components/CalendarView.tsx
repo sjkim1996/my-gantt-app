@@ -26,6 +26,7 @@ type ProjectGroup = {
   members: Assignee[];
   color: string;
   textColor: string;
+  barHex: string;
   milestones: { id: string; date: Date; label: string }[];
 };
 
@@ -118,6 +119,7 @@ const CalendarView: React.FC<Props> = ({
           members: [{ name: p.person, team: p.team }],
           color: soft,
           textColor,
+          barHex: barColor,
           milestones: milestoneList,
         });
       } else {
@@ -127,10 +129,7 @@ const CalendarView: React.FC<Props> = ({
         if (!g.members.find((m) => m.name === p.person && m.team === p.team)) {
           g.members.push({ name: p.person, team: p.team });
         }
-        g.milestones = [
-          ...g.milestones,
-          ...milestoneList,
-        ];
+        g.milestones = [...g.milestones, ...milestoneList];
       }
     });
 
@@ -507,14 +506,19 @@ const CalendarView: React.FC<Props> = ({
                                 const offset = m.date.getDay();
                                 if (offset < seg.startIdx || offset >= seg.startIdx + seg.span) return null;
                                 const pct = ((offset - seg.startIdx) / seg.span) * 100;
+                                const base = project?.barHex || '#3b82f6';
+                                const milestoneColor = darkenColor(base, 0.25);
+                                const milestoneText = getReadableTextColor(milestoneColor);
                                 return (
                                   <span
                                     key={m.id}
                                     className={styles.milestoneDot}
-                                    style={{ left: `${pct}%` }}
+                                    style={{ left: `${pct}%`, backgroundColor: milestoneColor, color: milestoneText, borderColor: darkenColor(base, 0.35) }}
                                     title={`${m.label} · ${seg.name}`}
                                   >
-                                    <Flag className="w-3 h-3" />
+                                    <span className={styles.milestoneFlag}>
+                                      <Flag className="w-3 h-3" />
+                                    </span>
                                     <span className={styles.milestoneLabel}>{m.label}</span>
                                   </span>
                                 );

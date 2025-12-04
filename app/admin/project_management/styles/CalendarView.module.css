@@ -175,11 +175,15 @@
 }
 
 .milestoneDot {
-  @apply absolute -top-2 translate-x-1/2 text-orange-600 drop-shadow pointer-events-auto flex items-center gap-1 bg-orange-50 border border-orange-200 rounded px-1 py-[2px];
+  @apply absolute -top-2 translate-x-1/2 drop-shadow pointer-events-auto flex items-center gap-1 rounded px-2 py-[2px] text-[11px] font-semibold border shadow-sm;
 }
 
 .milestoneLabel {
-  @apply text-[11px] font-semibold text-orange-800;
+  @apply text-[11px] font-semibold;
+}
+
+.milestoneFlag {
+  @apply flex items-center;
 }
 
 .vacBar {
