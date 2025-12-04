@@ -312,8 +312,6 @@ const CalendarView: React.FC<Props> = ({
     onMonthChange(next);
   };
 
-  const monthLabel = `${month.getFullYear()}년 ${month.getMonth() + 1}월`;
-
   const handleMonthInput = (value: string) => {
     if (!value) return;
     const [y, m] = value.split('-').map(Number);
