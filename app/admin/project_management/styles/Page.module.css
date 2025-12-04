@@ -421,6 +421,22 @@
   @apply text-sm text-gray-500 font-medium;
 }
 
+.tabNav {
+  @apply flex items-center gap-2;
+}
+
+.tabButton {
+  @apply px-4 py-2 text-sm font-bold rounded-lg border transition;
+}
+
+.tabActive {
+  @apply bg-indigo-600 text-white border-indigo-600 shadow-sm;
+}
+
+.tabInactive {
+  @apply bg-white text-gray-600 border-gray-200 hover:text-gray-800;
+}
+
 .headerButtons {
   @apply flex items-center gap-2;
 }
@@ -459,6 +475,10 @@
 
 .ganttShell {
   @apply w-full max-w-[1400px] mx-auto px-3 md:px-6 lg:px-8;
+}
+
+.calendarShell {
+  @apply w-full max-w-[1400px] mx-auto px-3 md:px-6 lg:px-8 pb-8;
 }
 
 .roleBadge {

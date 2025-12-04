@@ -6,13 +6,14 @@ import Link from 'next/link';
 import { Plus, Trash2, RefreshCw, Search, AlertCircle, Settings, X, Check, Briefcase, LogOut } from 'lucide-react';
 import { Project, Team, Assignee, GroupedProject, EditingMember, ApiProjectsResponse, Milestone, Attachment } from './types';
 import { parseDate, formatDate, getDaysDiff, getStartOfWeek, generateWeeks, generateDays } from './utils/date';
-import { BAR_COLORS, getRandomHexColor, lightenColor } from './utils/colors';
+import { BAR_COLORS, getRandomHexColor } from './utils/colors';
 import { mergeMilestones, mergeVacations, dedupeProjects } from './utils/gantt';
 import GanttTable, { TimelineBlock } from './components/GanttTable';
 import ChartControls from './components/ChartControls';
 import Dashboard from './components/Dashboard';
 import ProjectForm from './components/ProjectForm';
 import VacationModal from './components/VacationModal';
+import CalendarView from './components/CalendarView';
 import { Vacation } from './types';
 import pageStyles from './styles/Page.module.css';
 import { uploadPdf, getPresignedViewUrl } from '@/lib/pdfUpload';
@@ -112,6 +113,13 @@ export default function ResourceGanttChart() {
   const [viewMode, setViewMode] = useState<'week' | 'day'>('week');
   const [vacations, setVacations] = useState<Vacation[]>([]);
   const [vacationModalDefaultTab, setVacationModalDefaultTab] = useState<'create' | 'list'>('create');
+  const [activeTab, setActiveTab] = useState<'gantt' | 'calendar'>('gantt');
+  const [calendarSelectedMembers, setCalendarSelectedMembers] = useState<Assignee[]>([]);
+  const [calendarMonth, setCalendarMonth] = useState<Date>(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d;
+  });
   const effectiveSession = sessionUser || sessionRef.current;
   const role = effectiveSession?.role ?? null;
   const canEdit = isEditRole(role);
@@ -129,9 +137,9 @@ export default function ResourceGanttChart() {
     return () => { if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current); };
   }, [banner]);
 
-  const showBanner = (text: string, tone: 'success' | 'error' | 'info' = 'success') => {
+  const showBanner = useCallback((text: string, tone: 'success' | 'error' | 'info' = 'success') => {
     setBanner({ text, tone });
-  };
+  }, []);
 
   const guardEdit = () => {
     if (canEdit) return true;
@@ -351,6 +359,42 @@ export default function ResourceGanttChart() {
     return list;
   }, [teams]);
 
+  useEffect(() => {
+    if (calendarSelectedMembers.length === 0 && allMembers.length > 0) {
+      setCalendarSelectedMembers(allMembers);
+    }
+  }, [allMembers, calendarSelectedMembers.length]);
+
+  const normalizeKey = (team: string, name: string) => `${team.toLowerCase()}__${name.toLowerCase()}`;
+  const toggleCalendarTeam = (teamName: string) => {
+    const team = teams.find((t) => t.name === teamName);
+    if (!team) return;
+    const members = team.members || [];
+    setCalendarSelectedMembers((prev) => {
+      const set = new Set(prev.map((m) => normalizeKey(m.team, m.name)));
+      const allChecked = members.every((m) => set.has(normalizeKey(teamName, m)));
+      if (allChecked) {
+        return prev.filter((m) => m.team !== teamName);
+      }
+      const filtered = prev.filter((m) => m.team !== teamName);
+      members.forEach((m) => filtered.push({ name: m, team: teamName }));
+      return filtered;
+    });
+  };
+
+  const toggleCalendarMember = (teamName: string, memberName: string) => {
+    setCalendarSelectedMembers((prev) => {
+      const key = normalizeKey(teamName, memberName);
+      if (prev.some((m) => normalizeKey(m.team, m.name) === key)) {
+        return prev.filter((m) => normalizeKey(m.team, m.name) !== key);
+      }
+      return [...prev, { name: memberName, team: teamName }];
+    });
+  };
+
+  const selectAllCalendarMembers = () => setCalendarSelectedMembers(allMembers);
+  const clearCalendarMembers = () => setCalendarSelectedMembers([]);
+
   // Initial Scroll to Today (run once)
   useEffect(() => {
     if (initialScrolledRef.current) return;
@@ -384,7 +428,7 @@ export default function ResourceGanttChart() {
     }
   };
 
-  const apiUpdateProject = async (project: ProjectPayload): Promise<ApiResponse<ProjectPayload>> => {
+  const apiUpdateProject = useCallback(async (project: ProjectPayload): Promise<ApiResponse<ProjectPayload>> => {
     try {
       const res = await fetch('/api/projects', {
         method: 'PUT',
@@ -400,7 +444,7 @@ export default function ResourceGanttChart() {
       console.error('[API] update project failed', error);
       return { success: false, error: '네트워크 오류로 업데이트하지 못했습니다.' };
     }
-  };
+  }, []);
 
   const apiDeleteProject = async (id: string) => {
     const res = await fetch(`/api/projects?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
@@ -473,7 +517,7 @@ export default function ResourceGanttChart() {
     }, 100);
 
     return () => clearTimeout(timeout);
-  }, [pendingScrollTarget, chartStartDate, chartTotalDays, timeline]);
+  }, [pendingScrollTarget, chartStartDate, chartTotalDays, timeline, showBanner]);
 
   const groupedProjects = useMemo(() => {
     const map = new Map<string, GroupedProject>();
@@ -1011,7 +1055,7 @@ export default function ResourceGanttChart() {
 
   const openTeamModal = () => { if (!guardEdit()) return; setEditingTeams(JSON.parse(JSON.stringify(teams))); setIsTeamModalOpen(true); };
 
-  const syncProjectsToTeams = async (updatedTeams: Team[], renamedTeams?: Map<string, string>) => {
+  const syncProjectsToTeams = useCallback(async (updatedTeams: Team[], renamedTeams?: Map<string, string>) => {
     const personTeamMap = new Map<string, string>();
     updatedTeams.forEach((t) => t.members.forEach((m) => { if (!personTeamMap.has(m)) personTeamMap.set(m, t.name); }));
 
@@ -1051,7 +1095,7 @@ export default function ResourceGanttChart() {
     if (syncFailed) {
       showBanner('팀은 저장됐지만 일부 프로젝트 팀 동기화에 실패했습니다. 새로고침 후 확인하세요.', 'error');
     }
-  };
+  }, [projects, apiUpdateProject, refreshProjects, showBanner]);
 
   const saveTeams = async () => {
     if (!guardEdit()) return;
@@ -1401,6 +1445,20 @@ export default function ResourceGanttChart() {
                   </p>
                 )}
             </div>
+            <div className={pageStyles.tabNav}>
+              <button
+                className={`${pageStyles.tabButton} ${activeTab === 'gantt' ? pageStyles.tabActive : pageStyles.tabInactive}`}
+                onClick={() => setActiveTab('gantt')}
+              >
+                간트 뷰
+              </button>
+              <button
+                className={`${pageStyles.tabButton} ${activeTab === 'calendar' ? pageStyles.tabActive : pageStyles.tabInactive}`}
+                onClick={() => setActiveTab('calendar')}
+              >
+                월력 뷰
+              </button>
+            </div>
             <div className={pageStyles.headerButtons}>
                 {canEdit && (
                   <>
@@ -1489,50 +1547,70 @@ export default function ResourceGanttChart() {
           defaultTab={vacationModalDefaultTab}
         />
 
-        {/* Dashboard Grid */}
-        <div className={pageStyles.dashboardShell}>
-          <Dashboard
-            todayDate={todayDate}
-            activeProjectsToday={activeProjectsToday}
-            groupedProjects={groupedProjects}
-            hoveredProjectName={hoveredProjectName}
-            onShortcutClick={handleShortcutClick}
-            onProjectClick={handleProjectClick}
-            setHoveredProjectName={setHoveredProjectName}
-          />
-        </div>
+        {activeTab === 'gantt' ? (
+          <>
+            {/* Dashboard Grid */}
+            <div className={pageStyles.dashboardShell}>
+              <Dashboard
+                todayDate={todayDate}
+                activeProjectsToday={activeProjectsToday}
+                groupedProjects={groupedProjects}
+                hoveredProjectName={hoveredProjectName}
+                onShortcutClick={handleShortcutClick}
+                onProjectClick={handleProjectClick}
+                setHoveredProjectName={setHoveredProjectName}
+              />
+            </div>
 
-        {/* Chart Controls */}
-        <ChartControls
-          viewMode={viewMode}
-          onPrev={handlePrevMonth}
-          onNext={handleNextMonth}
-          onToday={handleJumpToToday}
-          onViewChange={setViewMode}
-        />
+            {/* Chart Controls */}
+            <ChartControls
+              viewMode={viewMode}
+              onPrev={handlePrevMonth}
+              onNext={handleNextMonth}
+              onToday={handleJumpToToday}
+              onViewChange={setViewMode}
+            />
+          </>
+        ) : (
+          <div className={pageStyles.calendarShell}>
+            <CalendarView
+              month={calendarMonth}
+              onMonthChange={setCalendarMonth}
+              teams={teams}
+              selectedMembers={calendarSelectedMembers}
+              onToggleTeam={toggleCalendarTeam}
+              onToggleMember={toggleCalendarMember}
+              onSelectAll={selectAllCalendarMembers}
+              onClearAll={clearCalendarMembers}
+              projects={projects}
+              vacations={combinedVacations}
+            />
+          </div>
+        )}
       </div>
 
-      {/* --- Main Gantt Table (Scrollable) --- */}
-      <div className={pageStyles.ganttShell}>
-        <GanttTable
-          timeline={timeline}
-          teams={teams}
-          projects={projects}
-          vacations={combinedVacations}
-          viewMode={viewMode}
-          chartContainerRef={chartContainerRef}
-          todayColumnRef={todayColumnRef}
-          rowRefs={rowRefs}
-          hoveredProjectName={hoveredProjectName}
-          setHoveredProjectName={setHoveredProjectName}
-          handleProjectClick={handleProjectClick}
-          chartTotalDays={chartTotalDays}
-          onVacationClick={(vac) => {
+      {activeTab === 'gantt' ? (
+        <div className={pageStyles.ganttShell}>
+          <GanttTable
+            timeline={timeline}
+            teams={teams}
+            projects={projects}
+            vacations={combinedVacations}
+            viewMode={viewMode}
+            chartContainerRef={chartContainerRef}
+            todayColumnRef={todayColumnRef}
+            rowRefs={rowRefs}
+            hoveredProjectName={hoveredProjectName}
+            setHoveredProjectName={setHoveredProjectName}
+            handleProjectClick={handleProjectClick}
+            chartTotalDays={chartTotalDays}
+          onVacationClick={() => {
             if (!canEdit) return;
             void openVacationModal({ tab: 'list' });
           }}
         />
       </div>
+      ) : null}
     </div>
   );
 }
