@@ -1488,21 +1488,6 @@ export default function ResourceGanttChart() {
           </div>
         )}
         
-        <div className={pageStyles.tabNav}>
-          <button
-            className={`${pageStyles.tabButton} ${activeTab === 'gantt' ? pageStyles.tabActive : pageStyles.tabInactive}`}
-            onClick={() => setActiveTab('gantt')}
-          >
-            간트 뷰
-          </button>
-          <button
-            className={`${pageStyles.tabButton} ${activeTab === 'calendar' ? pageStyles.tabActive : pageStyles.tabInactive}`}
-            onClick={() => setActiveTab('calendar')}
-          >
-            캘린더 뷰
-          </button>
-        </div>
-        
         {/* Input Row */}
         {canEdit ? (
           <ProjectForm
@@ -1557,32 +1542,61 @@ export default function ResourceGanttChart() {
           defaultTab={vacationModalDefaultTab}
         />
 
-        {activeTab === 'gantt' ? (
-          <>
-            {/* Dashboard Grid */}
-            <div className={pageStyles.dashboardShell}>
-              <Dashboard
+      {activeTab === 'gantt' ? (
+        <>
+          {/* Dashboard Grid */}
+          <div className={pageStyles.dashboardShell}>
+            <Dashboard
                 todayDate={todayDate}
                 activeProjectsToday={activeProjectsToday}
                 groupedProjects={groupedProjects}
                 hoveredProjectName={hoveredProjectName}
                 onShortcutClick={handleShortcutClick}
                 onProjectClick={handleProjectClick}
-                setHoveredProjectName={setHoveredProjectName}
-              />
-            </div>
+              setHoveredProjectName={setHoveredProjectName}
+            />
+          </div>
 
-            {/* Chart Controls */}
-            <ChartControls
-              viewMode={viewMode}
-              onPrev={handlePrevMonth}
-              onNext={handleNextMonth}
+          <div className={pageStyles.tabBar}>
+            <button
+              className={`${pageStyles.tabButton} ${activeTab === 'gantt' ? pageStyles.tabActive : pageStyles.tabInactive}`}
+              onClick={() => setActiveTab('gantt')}
+            >
+              간트 뷰
+            </button>
+            <button
+              className={`${pageStyles.tabButton} ${activeTab === 'calendar' ? pageStyles.tabActive : pageStyles.tabInactive}`}
+              onClick={() => setActiveTab('calendar')}
+            >
+              캘린더 뷰
+            </button>
+          </div>
+
+          {/* Chart Controls */}
+          <ChartControls
+            viewMode={viewMode}
+            onPrev={handlePrevMonth}
+            onNext={handleNextMonth}
               onToday={handleJumpToToday}
               onViewChange={setViewMode}
             />
           </>
         ) : (
           <div className={pageStyles.calendarShell}>
+            <div className={pageStyles.tabBar}>
+              <button
+                className={`${pageStyles.tabButton} ${activeTab === 'gantt' ? pageStyles.tabActive : pageStyles.tabInactive}`}
+                onClick={() => setActiveTab('gantt')}
+              >
+                간트 뷰
+              </button>
+              <button
+                className={`${pageStyles.tabButton} ${activeTab === 'calendar' ? pageStyles.tabActive : pageStyles.tabInactive}`}
+                onClick={() => setActiveTab('calendar')}
+              >
+                캘린더 뷰
+              </button>
+            </div>
             <CalendarView
               month={calendarMonth}
               onMonthChange={setCalendarMonth}

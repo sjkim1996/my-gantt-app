@@ -425,6 +425,10 @@
   @apply flex items-center gap-2 mt-2;
 }
 
+.tabBar {
+  @apply w-full max-w-[1400px] mx-auto px-3 md:px-6 lg:px-8 flex justify-end gap-2 mb-2;
+}
+
 .tabButton {
   @apply px-4 py-2 text-sm font-bold rounded-lg border transition;
 }
@@ -478,7 +482,7 @@
 }
 
 .calendarShell {
-  @apply w-full max-w-[1480px] mx-auto px-2 md:px-6 lg:px-8 pb-8;
+  @apply w-full max-w-[1400px] mx-auto px-3 md:px-6 lg:px-8 pb-8;
 }
 
 .roleBadge {

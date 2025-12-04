@@ -5,7 +5,7 @@
 }
 
 .layout {
-  @apply grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6;
+  @apply grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6 w-full;
 }
 
 .sidebar {
