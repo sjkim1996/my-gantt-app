@@ -1587,6 +1587,17 @@ export default function ResourceGanttChart() {
           </>
         ) : (
           <div className={pageStyles.calendarShell}>
+            <div className={pageStyles.dashboardShell}>
+              <Dashboard
+                todayDate={todayDate}
+                activeProjectsToday={activeProjectsToday}
+                groupedProjects={groupedProjects}
+                hoveredProjectName={hoveredProjectName}
+                onShortcutClick={handleShortcutClick}
+                onProjectClick={handleProjectClick}
+                setHoveredProjectName={setHoveredProjectName}
+              />
+            </div>
             {tabButtons}
             <CalendarView
               month={calendarMonth}
