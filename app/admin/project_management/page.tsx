@@ -1175,6 +1175,22 @@ export default function ResourceGanttChart() {
   if (!isAuthorized) return <div className={pageStyles.fullPageMessage}>로그인이 필요합니다. 이동 중...</div>;
   if (isLoading) return <div className={pageStyles.fullPageMessage}>Loading Projects...</div>;
 
+  const tabButtons = (
+    <div className={pageStyles.tabBar}>
+      <button
+        className={`${pageStyles.tabButton} ${activeTab === 'gantt' ? pageStyles.tabActive : pageStyles.tabInactive}`}
+        onClick={() => setActiveTab('gantt')}
+        간트 뷰
+      </button>
+      <button
+        className={`${pageStyles.tabButton} ${activeTab === 'calendar' ? pageStyles.tabActive : pageStyles.tabInactive}`}
+        onClick={() => setActiveTab('calendar')}
+      >
+        캘린더 뷰
+      </button>
+    </div>
+  );
+
   return (
     <div
       className={`${pageStyles.page} ${(isModalOpen || isTeamModalOpen) ? pageStyles.pageModalOpen : ''}`}
@@ -1557,20 +1573,7 @@ export default function ResourceGanttChart() {
             />
           </div>
 
-          <div className={pageStyles.tabBar}>
-            <button
-              className={`${pageStyles.tabButton} ${activeTab === 'gantt' ? pageStyles.tabActive : pageStyles.tabInactive}`}
-              onClick={() => setActiveTab('gantt')}
-            >
-              간트 뷰
-            </button>
-            <button
-              className={`${pageStyles.tabButton} ${activeTab === 'calendar' ? pageStyles.tabActive : pageStyles.tabInactive}`}
-              onClick={() => setActiveTab('calendar')}
-            >
-              캘린더 뷰
-            </button>
-          </div>
+          {tabButtons}
 
           {/* Chart Controls */}
           <ChartControls
@@ -1583,20 +1586,7 @@ export default function ResourceGanttChart() {
           </>
         ) : (
           <div className={pageStyles.calendarShell}>
-            <div className={pageStyles.tabBar}>
-              <button
-                className={`${pageStyles.tabButton} ${activeTab === 'gantt' ? pageStyles.tabActive : pageStyles.tabInactive}`}
-                onClick={() => setActiveTab('gantt')}
-              >
-                간트 뷰
-              </button>
-              <button
-                className={`${pageStyles.tabButton} ${activeTab === 'calendar' ? pageStyles.tabActive : pageStyles.tabInactive}`}
-                onClick={() => setActiveTab('calendar')}
-              >
-                캘린더 뷰
-              </button>
-            </div>
+            {tabButtons}
             <CalendarView
               month={calendarMonth}
               onMonthChange={setCalendarMonth}
