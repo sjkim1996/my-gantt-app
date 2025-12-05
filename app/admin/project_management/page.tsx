@@ -117,6 +117,12 @@ export default function ResourceGanttChart() {
   const [confirmPw, setConfirmPw] = useState('');
   const [vacations, setVacations] = useState<Vacation[]>([]);
   const [vacationModalDefaultTab, setVacationModalDefaultTab] = useState<'create' | 'list'>('create');
+  const [calendarSelectedMembers, setCalendarSelectedMembers] = useState<Assignee[]>([]);
+  const [calendarMonth, setCalendarMonth] = useState<Date>(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d;
+  });
   const effectiveSession = sessionUser || sessionRef.current;
   const role = effectiveSession?.role ?? null;
   const canEdit = isEditRole(role);
@@ -417,6 +423,51 @@ export default function ResourceGanttChart() {
     teams.forEach(t => Array.from(new Set(t.members)).forEach(m => list.push({ name: m, team: t.name })));
     return list;
   }, [teams]);
+
+  const calendarSeededRef = useRef(false);
+  useEffect(() => {
+    if (calendarSeededRef.current) return;
+    if (calendarSelectedMembers.length === 0 && allMembers.length > 0) {
+      setCalendarSelectedMembers(allMembers);
+      calendarSeededRef.current = true;
+    }
+  }, [allMembers, calendarSelectedMembers.length]);
+
+  const normalizeKey = (team: string, name: string) => `${team.toLowerCase()}__${name.toLowerCase()}`;
+  const toggleCalendarTeam = (teamName: string) => {
+    const team = teams.find((t) => t.name === teamName);
+    if (!team) return;
+    const members = team.members || [];
+    setCalendarSelectedMembers((prev) => {
+      const set = new Set(prev.map((m) => normalizeKey(m.team, m.name)));
+      const allChecked = members.every((m) => set.has(normalizeKey(teamName, m)));
+      if (allChecked) {
+        return prev.filter((m) => m.team !== teamName);
+      }
+      const filtered = prev.filter((m) => m.team !== teamName);
+      members.forEach((m) => filtered.push({ name: m, team: teamName }));
+      return filtered;
+    });
+  };
+
+  const toggleCalendarMember = (teamName: string, memberName: string) => {
+    setCalendarSelectedMembers((prev) => {
+      const key = normalizeKey(teamName, memberName);
+      if (prev.some((m) => normalizeKey(m.team, m.name) === key)) {
+        return prev.filter((m) => normalizeKey(m.team, m.name) !== key);
+      }
+      return [...prev, { name: memberName, team: teamName }];
+    });
+  };
+
+  const selectAllCalendarMembers = () => {
+    setCalendarSelectedMembers(allMembers);
+    calendarSeededRef.current = true;
+  };
+  const clearCalendarMembers = () => {
+    setCalendarSelectedMembers([]);
+    calendarSeededRef.current = true;
+  };
 
   // Initial Scroll to Today (run once)
   useEffect(() => {
@@ -1658,9 +1709,16 @@ export default function ResourceGanttChart() {
 
         <div className={pageStyles.calendarShell}>
           <CalendarView
-            timeline={timeline}
+            month={calendarMonth}
+            onMonthChange={setCalendarMonth}
+            teams={teams}
+            selectedMembers={calendarSelectedMembers}
+            onToggleTeam={toggleCalendarTeam}
+            onToggleMember={toggleCalendarMember}
+            onSelectAll={selectAllCalendarMembers}
+            onClearAll={clearCalendarMembers}
             projects={projects}
-            onProjectClick={handleProjectClick}
+            vacations={combinedVacations}
           />
         </div>
 
