@@ -33,7 +33,7 @@ const Dashboard: React.FC<Props> = ({
         <div className={styles.todayList}>
           {activeProjectsToday.length === 0 ? (
             <div className={styles.emptyState}>
-              <Clock className="w-4 h-4 mb-1 opacity-50" /> 
+              <Clock size={16} className={styles.emptyIcon} /> 
               진행 중인 프로젝트가 없습니다.
             </div>
           ) : (
@@ -62,8 +62,8 @@ const Dashboard: React.FC<Props> = ({
                       {p.start} ~ {p.end}
                     </span>
                     {upcoming.length > 0 && (
-                      <span className="flex items-center gap-1 text-red-600 font-semibold">
-                        <Flag className="w-3 h-3" />
+                      <span className={styles.upcoming}>
+                        <Flag size={12} className={styles.upcomingIcon} />
                         {upcoming[0]}
                       </span>
                     )}
@@ -77,7 +77,7 @@ const Dashboard: React.FC<Props> = ({
 
       <div className={styles.allCard}>
         <h2 className={styles.allHeader}>
-          <Target className="w-3.5 h-3.5" /> All Projects <span className={styles.allHint}>(click to jump)</span>
+          <Target size={14} /> All Projects <span className={styles.allHint}>(click to jump)</span>
         </h2>
         <div className={styles.allList}>
           <div className={styles.allGrid}>
@@ -87,9 +87,12 @@ const Dashboard: React.FC<Props> = ({
                 onClick={() => onShortcutClick(group)}
                 onMouseEnter={() => setHoveredProjectName(group.name)}
                 onMouseLeave={() => setHoveredProjectName(null)}
-                className={`${styles.projectCard} group ${hoveredProjectName === group.name ? styles.projectActive : ''}`}
+                className={`${styles.projectCard} ${hoveredProjectName === group.name ? styles.projectActive : ''}`}
               >
-                <div className={`${styles.projectBar} ${BAR_COLORS[group.colorIdx % BAR_COLORS.length].bar}`}></div>
+                <div
+                  className={styles.projectBar}
+                  style={{ backgroundColor: BAR_COLORS[group.colorIdx % BAR_COLORS.length].barHex }}
+                ></div>
                 <div className={styles.projectBody}>
                   <div className={styles.projectName} title={group.name}>
                     {group.name}
@@ -110,15 +113,15 @@ const Dashboard: React.FC<Props> = ({
                   onClick={(e) => {
                     e.stopPropagation();
                     onProjectClick(group);
-                  }}
-                  aria-label="프로젝트 수정"
-                >
-                  <div className={styles.editButtonInner}>
-                    <Edit3 className="w-3 h-3" />
-                  </div>
-                </button>
-              </div>
-            ))}
+                    }}
+                    aria-label="프로젝트 수정"
+                  >
+                    <div className={styles.editButtonInner}>
+                      <Edit3 size={12} />
+                    </div>
+                  </button>
+                </div>
+              ))}
             {groupedProjects.length === 0 && (
               <div className={styles.emptyProjects}>
                 아직 프로젝트가 없습니다.

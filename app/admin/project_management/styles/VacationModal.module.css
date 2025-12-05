@@ -1,85 +1,372 @@
-@reference "../../../globals.css";
+@import "./tokens.css";
 
 .overlay {
-  @apply fixed inset-0 z-[500] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4;
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+  padding: 1rem;
 }
 
 .modal {
-  @apply bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[80vh];
+  background: #fff;
+  border-radius: 0.85rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  width: 100%;
+  max-width: 960px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
 }
 
 .header {
-  @apply flex items-center justify-between px-5 py-3 border-b border-gray-100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid var(--gray-100);
 }
 
 .title {
-  @apply text-lg font-bold text-gray-800;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gray-800);
 }
 
 .iconButton {
-  @apply text-gray-400 hover:text-gray-600;
+  color: var(--gray-400);
+  background: transparent;
+  border: 0;
+  transition: color 0.15s ease;
 }
 
-.body {
-  @apply p-5 overflow-y-auto space-y-3;
+.iconButton:hover {
+  color: var(--gray-600);
 }
 
 .tabBar {
-  @apply px-5 pt-4 flex gap-2 border-b border-gray-100;
+  padding: 1rem 1.25rem 0;
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--gray-100);
 }
 
 .tabButton {
-  @apply px-3 py-2 text-sm font-bold rounded-t-md border border-b-0 border-transparent text-gray-500 hover:text-gray-800;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-radius: 0.5rem 0.5rem 0 0;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--gray-500);
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .tabActive {
-  @apply border-gray-200 bg-white text-gray-900;
+  border-color: var(--gray-200);
+  border-bottom-color: #fff;
+  background: #fff;
+  color: var(--gray-900);
+}
+
+.body {
+  padding: 1.25rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .gridHeader {
-  @apply grid grid-cols-12 text-xs font-bold text-gray-500 px-2;
-}
-
-.row {
-  @apply grid grid-cols-12 gap-2 items-center bg-gray-50 p-2 rounded border border-gray-100;
-}
-
-.input {
-  @apply text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gray-500);
+  padding: 0 0.5rem;
 }
 
 .col3 {
-  @apply col-span-3;
+  grid-column: span 3;
 }
 
 .col2 {
-  @apply col-span-2;
+  grid-column: span 2;
 }
 
-.col1 {
-  @apply col-span-1;
+.input {
+  font-size: 0.9rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  width: 100%;
+}
+
+.input:focus {
+  border-color: var(--indigo-500);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.5rem;
+  align-items: center;
+  background: var(--gray-50);
+  padding: 0.6rem;
+  border-radius: 0.6rem;
+  border: 1px solid var(--gray-100);
 }
 
 .noteInput {
-  @apply flex-1 text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500;
+  flex: 1;
+  font-size: 0.9rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  outline: none;
+}
+
+.noteInput:focus {
+  border-color: var(--indigo-500);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
 }
 
 .removeButton {
-  @apply text-gray-400 hover:text-red-500;
+  color: var(--gray-400);
+  background: transparent;
+  border: 0;
 }
 
 .addButton {
-  @apply w-full py-2 border-2 border-dashed border-gray-300 rounded text-sm text-gray-500 hover:border-indigo-300 hover:text-indigo-600;
+  width: 100%;
+  padding: 0.65rem;
+  border: 2px dashed var(--gray-300);
+  border-radius: 0.65rem;
+  font-size: 0.9rem;
+  color: var(--gray-500);
+  background: transparent;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.addButton:hover {
+  border-color: var(--indigo-300);
+  color: var(--indigo-600);
 }
 
 .footer {
-  @apply p-4 border-t border-gray-100 flex justify-end gap-2;
+  padding: 1rem;
+  border-top: 1px solid var(--gray-100);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .cancel {
-  @apply px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-100 rounded;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--gray-500);
+  background: transparent;
+  border: 0;
+  border-radius: 0.55rem;
+}
+
+.cancel:hover {
+  background: var(--gray-100);
 }
 
 .save {
-  @apply px-4 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded shadow-sm;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--indigo-600);
+  border: 0;
+  border-radius: 0.6rem;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
+}
+
+.save:hover {
+  background: var(--indigo-700);
+}
+
+.listWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.listScroller {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 16rem;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.listRow {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--gray-100);
+  font-size: 0.9rem;
+}
+
+.listCellStrong {
+  font-weight: 700;
+  color: var(--gray-800);
+}
+
+.listCell {
+  color: var(--gray-600);
+}
+
+.listCellMuted {
+  color: var(--gray-500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listEmpty {
+  font-size: 0.9rem;
+  color: var(--gray-500);
+}
+
+.listGrid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.listCol3 {
+  grid-column: span 3;
+}
+
+.listCol2 {
+  grid-column: span 2;
+}
+
+.relativeWrap {
+  position: relative;
+}
+
+.suggestionMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.25rem;
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: 0.65rem;
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.25);
+  padding: 0.35rem 0;
+  z-index: 95;
+  max-height: 10rem;
+  overflow-y: auto;
+}
+
+.suggestionItem {
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.9rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: 0;
+  transition: background-color 0.15s ease;
+}
+
+.suggestionItem:hover {
+  background: var(--gray-50);
+}
+
+.suggestionName {
+  font-weight: 700;
+  color: var(--gray-700);
+}
+
+.suggestionTeam {
+  font-size: 0.78rem;
+  color: var(--gray-400);
+}
+
+.rowCard {
+  background: var(--gray-50);
+  padding: 0.75rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--gray-100);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.rowGrid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.colSpan2 {
+  grid-column: span 2;
+}
+
+.colSpan3 {
+  grid-column: span 3;
+}
+
+.colSpan12 {
+  grid-column: span 12;
+}
+
+.rowButtonRemove {
+  grid-column: span 2;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--red-600);
+  border: 1px solid var(--red-200);
+  border-radius: 0.55rem;
+  padding: 0.35rem 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  background: var(--red-50);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.rowButtonRemove:hover {
+  color: var(--red-700);
+}
+
+.rowTextarea {
+  width: 100%;
+  font-size: 0.9rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  resize: none;
+  outline: none;
+}
+
+.rowTextarea:focus {
+  border-color: var(--indigo-500);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
 }

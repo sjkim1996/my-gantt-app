@@ -1,170 +1,386 @@
-@reference "../../../globals.css";
+@import "./tokens.css";
 
 .container {
-  @apply flex-1 rounded-xl shadow-sm bg-white border border-gray-200 flex flex-col w-full relative mx-auto max-w-[1400px] mb-8 overflow-x-auto;
+  flex: 1;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  position: relative;
+  margin: 0 auto 2rem;
+  max-width: 1400px;
+  overflow-x: auto;
 }
 
 .tableWrapper {
-  @apply overflow-auto rounded-xl;
+  overflow: auto;
+  border-radius: 1rem;
 }
 
 .table {
-  @apply w-full border-collapse min-w-[1100px];
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1100px;
 }
 
 .header {
-  @apply sticky top-0 z-50 bg-white shadow-sm;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .teamHeader {
-  @apply sticky left-0 z-[200] bg-gray-50 w-24 min-w-[96px] text-left py-3 pl-4 text-xs font-bold text-gray-500 uppercase border-b border-r border-gray-200;
+  position: sticky;
+  left: 0;
+  z-index: 200;
+  background: var(--gray-50);
+  width: 96px;
+  min-width: 96px;
+  text-align: left;
+  padding: 0.75rem 0 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--gray-200);
+  border-right: 1px solid var(--gray-200);
 }
 
 .memberHeader {
-  @apply sticky left-24 z-[200] bg-gray-50 w-28 min-w-[112px] text-left py-3 pl-4 text-xs font-bold text-gray-500 uppercase border-b border-r border-gray-200 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)];
+  position: sticky;
+  left: 96px;
+  z-index: 200;
+  background: var(--gray-50);
+  width: 112px;
+  min-width: 112px;
+  text-align: left;
+  padding: 0.75rem 0 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--gray-200);
+  border-right: 1px solid var(--gray-200);
+  box-shadow: 4px 0 10px -4px rgba(0, 0, 0, 0.05);
 }
 
 .timelineHead {
-  @apply py-2 text-center border-b border-r border-gray-300/70 first:rounded-l-lg last:rounded-r-lg;
+  padding: 0.5rem 0.25rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(209, 213, 219, 0.7);
+  border-right: 1px solid rgba(209, 213, 219, 0.7);
+}
+
+.timelineHead:first-child {
+  border-top-left-radius: 0.75rem;
+}
+
+.timelineHead:last-child {
+  border-top-right-radius: 0.75rem;
+}
+
+.todayDot {
+  display: inline-block;
+  width: 0.35rem;
+  height: 0.35rem;
+  background: var(--indigo-500);
+  border-radius: 9999px;
+  margin-left: 0.25rem;
+  vertical-align: middle;
+  margin-bottom: 0.1rem;
 }
 
 .timelineToday {
-  @apply bg-indigo-50/50;
+  background: rgba(99, 102, 241, 0.12);
 }
 
 .timelineEvent {
-  @apply bg-amber-50;
+  background: var(--amber-50);
 }
 
 .timelineDefault {
-  @apply bg-white;
+  background: #fff;
 }
 
 .timelineLabel {
-  @apply text-xs font-bold;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .timelineLabelToday {
-  @apply text-indigo-600;
+  color: var(--indigo-600);
 }
 
 .timelineLabelDefault {
-  @apply text-gray-700;
+  color: var(--gray-700);
 }
 
 .timelineSublabel {
-  @apply text-[9px] text-gray-400 font-medium;
+  font-size: 0.65rem;
+  color: var(--gray-400);
+  font-weight: 600;
 }
 
 .dayLabelWrap {
-  @apply flex flex-col items-center justify-center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .dayCompact {
-  @apply flex flex-col w-full h-full;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
 }
 
 .dayCompactTop {
-  @apply text-[11px] font-bold text-left leading-tight;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-align: left;
+  line-height: 1.1;
 }
 
 .dayCompactBottom {
-  @apply text-[11px] font-semibold text-right leading-tight flex items-center justify-end gap-0.5;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-align: right;
+  line-height: 1.1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.1rem;
 }
 
 .daySlash {
-  @apply text-[9px] text-gray-400;
+  font-size: 0.6rem;
+  color: var(--gray-400);
 }
 
 .row {
-  @apply hover:bg-gray-50/50 transition-colors;
+  transition: background-color 0.15s ease;
+}
+
+.row:hover {
+  background: rgba(243, 244, 246, 0.5);
 }
 
 .teamCell {
-  @apply sticky left-0 z-[190] bg-white align-top py-3 pl-4 text-xs font-bold text-gray-700 border-r border-gray-200;
+  position: sticky;
+  left: 0;
+  z-index: 190;
+  background: #fff;
+  vertical-align: top;
+  padding: 0.75rem 0 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gray-700);
+  border-right: 1px solid var(--gray-200);
 }
 
 .teamCellBottom {
-  @apply border-b border-gray-200;
+  border-bottom: 1px solid var(--gray-200);
 }
 
 .teamCellSpacer {
-  @apply border-b-transparent;
+  border-bottom: 1px solid transparent;
 }
 
 .memberCell {
-  @apply sticky left-24 z-[190] bg-white align-top py-3 pl-4 text-sm font-medium text-black border-r border-gray-200 border-b border-gray-200 shadow-[4px_0_10px_-4px_rgba(0,0,0,0.05)];
+  position: sticky;
+  left: 96px;
+  z-index: 190;
+  background: #fff;
+  vertical-align: top;
+  padding: 0.75rem 0 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #000;
+  border-right: 1px solid var(--gray-200);
+  border-bottom: 1px solid var(--gray-200);
+  box-shadow: 4px 0 10px -4px rgba(0, 0, 0, 0.05);
 }
 
 .rowBody {
-  @apply relative p-0 align-top border-b border-gray-200;
+  position: relative;
+  padding: 0;
+  vertical-align: top;
+  border-bottom: 1px solid var(--gray-200);
 }
 
 .gridRow {
-  @apply absolute inset-0 w-full h-full flex pointer-events-none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  pointer-events: none;
 }
 
 .gridCell {
-  @apply flex-1 border-r border-gray-300/70 last:border-0;
+  flex: 1;
+  border-right: 1px solid rgba(209, 213, 219, 0.7);
+}
+
+.gridCell:last-child {
+  border-right: 0;
 }
 
 .gridToday {
-  @apply bg-indigo-50/10;
+  background: rgba(99, 102, 241, 0.08);
 }
 
 .gridEvent {
-  @apply bg-amber-50/30;
+  background: rgba(251, 191, 36, 0.3);
 }
 
 .vacation {
-  @apply absolute rounded border border-slate-900 bg-slate-900/90 text-white text-[10px] font-bold flex items-center justify-center z-[120] shadow-lg backdrop-blur-[1px] cursor-pointer;
+  position: absolute;
+  border-radius: 0.5rem;
+  border: 1px solid var(--slate-900);
+  background: rgba(15, 23, 42, 0.9);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 120;
+  box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(1px);
+  cursor: pointer;
 }
 
 .vacationLabel {
-  @apply px-3 py-1 rounded-full bg-black/40 leading-none;
+  padding: 0.4rem 0.75rem;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.4);
+  line-height: 1;
 }
 
 .projectBlock {
-  @apply absolute h-7 rounded shadow-sm cursor-pointer flex items-center px-2 z-20 hover:z-50 focus-within:z-50 transition-all duration-200 border;
+  position: absolute;
+  height: 1.75rem;
+  border-radius: 0.6rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  z-index: 20;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  border: 1px solid transparent;
 }
 
 .projectDimmed {
-  @apply opacity-20 grayscale;
+  opacity: 0.2;
+  filter: grayscale(0.6);
 }
 
 .projectHighlighted {
-  @apply ring-2 ring-indigo-400 ring-offset-1 scale-[1.01] z-30;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4);
+  transform: scale(1.01);
+  z-index: 30;
 }
 
-.projectHover {
-  @apply opacity-100 hover:shadow-md hover:z-50;
+.projectHover:hover {
+  box-shadow: 0 6px 16px -10px rgba(0, 0, 0, 0.25);
+  z-index: 50;
 }
-
 
 .projectBar {
-  @apply absolute left-0 top-0 bottom-0 w-1;
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0.25rem;
 }
 
 .projectText {
-  @apply text-[11px] font-bold truncate ml-1;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: 0.25rem;
 }
 
 .projectNote {
-  @apply absolute left-0 right-0 top-full mt-1 px-2 py-1 bg-white/95 text-[10px] text-gray-600 rounded border border-gray-200 shadow opacity-0 group-hover:opacity-100 transition-all z-60;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin-top: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  font-size: 0.65rem;
+  color: var(--gray-600);
+  border-radius: 0.5rem;
+  border: 1px solid var(--gray-200);
+  box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 60;
+}
+
+.projectBlock:hover .projectNote {
+  opacity: 1;
 }
 
 .milestoneBlock {
-  @apply absolute z-60 rounded-md border bg-gray-700/80 transition-all duration-150 cursor-pointer pointer-events-auto hover:opacity-100 hover:shadow-lg hover:scale-[1.03] overflow-visible;
+  position: absolute;
+  z-index: 60;
+  border-radius: 0.4rem;
+  border: 1px solid var(--gray-700);
+  background: rgba(55, 65, 81, 0.8);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  cursor: pointer;
+  overflow: visible;
+}
+
+.milestoneBlock:hover {
+  opacity: 1;
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.35);
+  transform: scale(1.03);
 }
 
 .milestoneLabel {
-  @apply text-[10px] font-bold text-white px-2 py-1 whitespace-nowrap;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+  padding: 0.25rem 0.5rem;
+  white-space: nowrap;
 }
 
 .milestoneTooltip {
-  @apply absolute left-1/2 -translate-x-1/2 -top-9 whitespace-nowrap bg-gray-900 text-white text-[10px] font-semibold px-2 py-1 rounded shadow opacity-0 pointer-events-none transition-opacity duration-150 z-[70] flex flex-col gap-0.5 leading-tight;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: -2.2rem;
+  white-space: nowrap;
+  background: #111827;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.45rem;
+  box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  line-height: 1.2;
+  z-index: 70;
 }
 
 .milestoneBlock:hover .milestoneTooltip {
-  @apply opacity-100;
+  opacity: 1;
 }

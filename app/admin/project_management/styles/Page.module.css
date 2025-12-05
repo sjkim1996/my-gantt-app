@@ -1,498 +1,1404 @@
-@reference "../../../globals.css";
+@import "./tokens.css";
 
 .page {
-  @apply flex flex-col min-h-screen bg-gray-50 font-sans relative text-gray-900 px-3 md:px-6 lg:px-8;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+  background-color: var(--gray-50);
+  color: var(--gray-900);
+  font-family: var(--font-sans, "Inter", system-ui, -apple-system, sans-serif);
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .page {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
 }
 
 .pageModalOpen {
-  @apply overflow-hidden;
+  overflow: hidden;
 }
 
 .fullPageMessage {
-  @apply min-h-screen flex items-center justify-center font-bold text-xl text-gray-500;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--gray-500);
 }
 
 .overlay {
-  @apply fixed inset-0 flex items-center justify-center backdrop-blur-sm p-4 z-[300];
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+  padding: 1rem;
+  z-index: 300;
   background-color: rgba(0, 0, 0, 0.5);
 }
 
 .overlayHigh {
-  @apply z-[420];
-}
-
-.overlayMid {
-  @apply z-[340];
+  z-index: 420;
 }
 
 .overlayMax {
-  @apply z-[380];
+  z-index: 380;
 }
 
 .ambiguousCard {
-  @apply bg-white rounded-xl shadow-2xl border border-gray-100 w-full max-w-sm overflow-hidden;
+  background: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--gray-100);
+  width: 100%;
+  max-width: 420px;
+  overflow: hidden;
 }
 
 .ambiguousHeader {
-  @apply p-5 border-b border-gray-100 bg-orange-50;
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--gray-100);
+  background: var(--orange-50);
 }
 
 .ambiguousTitle {
-  @apply font-bold text-orange-800 flex items-center gap-2 text-sm;
+  font-weight: 700;
+  color: #7c2d12;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
 }
 
 .ambiguousDesc {
-  @apply text-xs text-orange-600 mt-1;
+  font-size: 0.8rem;
+  color: #ea580c;
+  margin-top: 0.25rem;
 }
 
 .ambiguousList {
-  @apply p-2 space-y-1;
+  padding: 0.5rem;
 }
 
 .ambiguousButton {
-  @apply w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition text-left text-sm;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  text-align: left;
+  transition: background-color 0.15s ease;
+  font-size: 0.9rem;
+  color: var(--gray-700);
+}
+
+.ambiguousButton:hover {
+  background-color: var(--gray-50);
 }
 
 .ambiguousButtonIcon {
-  @apply w-4 h-4 text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity;
+  width: 1rem;
+  height: 1rem;
+  color: var(--indigo-600);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.ambiguousButton:hover .ambiguousButtonIcon {
+  opacity: 1;
 }
 
 .ambiguousFooter {
-  @apply p-3 border-t border-gray-100 text-center;
+  padding: 0.75rem;
+  border-top: 1px solid var(--gray-100);
+  text-align: center;
 }
 
 .ambiguousCancel {
-  @apply text-xs text-gray-400 hover:text-gray-600 underline;
+  font-size: 0.75rem;
+  color: var(--gray-400);
+  text-decoration: underline;
 }
 
 .teamModal {
-  @apply bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[80vh];
+  background: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 640px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
 }
 
 .teamModalHeader {
-  @apply bg-white px-6 py-4 flex justify-between items-center border-b border-gray-100;
+  background: #fff;
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--gray-100);
 }
 
 .teamModalTitle {
-  @apply font-bold text-lg text-gray-800;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--gray-800);
 }
 
 .iconButton {
-  @apply text-gray-400 hover:text-gray-600 transition-colors;
+  color: var(--gray-400);
+  transition: color 0.15s ease;
+}
+
+.iconButton:hover {
+  color: var(--gray-600);
 }
 
 .teamModalBody {
-  @apply p-6 overflow-y-auto flex-1 space-y-6 bg-gray-50;
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  background: var(--gray-50);
 }
 
 .teamCard {
-  @apply bg-white border border-gray-200 rounded-lg p-4 shadow-sm;
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .teamRow {
-  @apply flex items-center gap-3 mb-3;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
 .teamLabel {
-  @apply text-xs font-bold text-gray-500 uppercase tracking-wider bg-gray-100 px-2 py-1 rounded;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--gray-100);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.4rem;
 }
 
 .teamInput {
-  @apply font-bold text-gray-800 bg-transparent border-b border-gray-200 focus:border-indigo-500 outline-none flex-1 pb-1 transition-colors;
+  font-weight: 700;
+  color: var(--gray-800);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--gray-200);
+  outline: none;
+  flex: 1;
+  padding-bottom: 0.3rem;
+  transition: border-color 0.15s ease;
+}
+
+.teamInput:focus {
+  border-color: var(--indigo-500);
 }
 
 .teamAddMember {
-  @apply text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded hover:bg-gray-200 transition-colors font-medium;
+  font-size: 0.75rem;
+  background: var(--gray-100);
+  color: var(--gray-600);
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.4rem;
+  border: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.teamAddMember:hover {
+  background: var(--gray-200);
+  color: var(--gray-700);
 }
 
 .memberList {
-  @apply flex flex-wrap gap-2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .memberChip {
-  @apply flex items-center gap-2 bg-gray-50 px-2 py-1 rounded border border-gray-200 text-sm text-gray-700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--gray-50);
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--gray-200);
+  font-size: 0.9rem;
+  color: var(--gray-700);
 }
 
 .memberRemove {
-  @apply text-gray-400 hover:text-red-500 transition-colors;
+  color: var(--gray-400);
+  transition: color 0.15s ease;
+}
+
+.memberRemove:hover {
+  color: var(--red-600);
 }
 
 .emptyMembers {
-  @apply text-xs text-gray-400 pl-1;
+  font-size: 0.75rem;
+  color: var(--gray-400);
+  padding-left: 0.25rem;
 }
 
 .addTeamButton {
-  @apply w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 hover:bg-white hover:border-gray-400 hover:text-gray-600 flex items-center justify-center gap-2 font-medium text-sm;
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px dashed var(--gray-300);
+  border-radius: 0.75rem;
+  color: var(--gray-400);
+  background: transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  font-weight: 600;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.addTeamButton:hover {
+  background: #fff;
+  border-color: var(--gray-400);
+  color: var(--gray-600);
 }
 
 .teamModalFooter {
-  @apply p-4 border-t border-gray-100 flex justify-end gap-2 bg-white flex-shrink-0;
+  padding: 1rem;
+  border-top: 1px solid var(--gray-100);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  background: #fff;
+  flex-shrink: 0;
 }
 
 .footerCancel {
-  @apply px-4 py-2 text-gray-500 hover:bg-gray-100 rounded-lg text-sm font-medium transition-colors;
+  padding: 0.5rem 1rem;
+  color: var(--gray-500);
+  background: transparent;
+  border: 0;
+  border-radius: 0.6rem;
+  font-weight: 600;
+  transition: background-color 0.15s ease;
+}
+
+.footerCancel:hover {
+  background: var(--gray-100);
 }
 
 .footerSave {
-  @apply px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg text-sm font-bold shadow-sm transition-all;
+  padding: 0.5rem 1rem;
+  background: var(--indigo-600);
+  color: #fff;
+  border: 0;
+  border-radius: 0.6rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.footerSave:hover {
+  background: var(--indigo-700);
 }
 
 .editModal {
-  @apply bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] border border-indigo-100;
+  background: #fff;
+  border-radius: 0.9rem;
+  box-shadow: 0 30px 60px -30px rgba(59, 61, 126, 0.35);
+  width: 100%;
+  max-width: 960px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  border: 1px solid rgba(99, 102, 241, 0.2);
 }
 
 .editHeader {
-  @apply bg-indigo-600 px-6 py-4 text-white flex justify-between items-start flex-shrink-0;
+  background: var(--indigo-600);
+  padding: 1rem 1.5rem;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-shrink: 0;
 }
 
 .editHeaderMeta {
-  @apply flex-1;
+  flex: 1;
 }
 
 .editHeaderLabel {
-  @apply text-[11px] font-semibold text-indigo-200 mb-1 uppercase tracking-[0.08em];
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--indigo-200);
+  margin-bottom: 0.25rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .editTitleInput {
-  @apply bg-transparent border-b border-indigo-400 focus:border-white outline-none p-0 text-xl font-bold w-full placeholder-indigo-300 text-white;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--indigo-400);
+  outline: none;
+  padding: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  width: 100%;
+  color: #fff;
+}
+
+.editTitleInput:focus {
+  border-color: #fff;
 }
 
 .editClose {
-  @apply p-1 -mr-2 text-indigo-100 hover:text-white transition-colors;
+  padding: 0.25rem;
+  margin-right: -0.5rem;
+  color: #c7d2fe;
+  background: transparent;
+  border: 0;
+  transition: color 0.15s ease;
+}
+
+.editClose:hover {
+  color: #fff;
 }
 
 .editBody {
-  @apply flex-1 overflow-y-auto p-6 bg-gray-50 space-y-5;
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  background: var(--gray-50);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
 .card {
-  @apply bg-white p-5 rounded-xl border border-gray-200 shadow-sm mb-6;
+  background: #fff;
+  padding: 1.25rem;
+  border-radius: 0.9rem;
+  border: 1px solid var(--gray-200);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
 }
 
 .cardTight {
-  @apply bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6;
+  background: #fff;
+  padding: 1rem;
+  border-radius: 0.9rem;
+  border: 1px solid var(--gray-200);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
 }
 
 .settingsRow {
-  @apply flex flex-wrap items-start gap-6;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: flex-start;
 }
 
 .settingsCol {
-  @apply flex-1 min-w-[140px];
+  flex: 1;
+  min-width: 140px;
 }
 
 .cardTitle {
-  @apply text-sm font-bold text-gray-800 mb-3 flex items-center gap-2;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.subTitle {
-  @apply text-sm font-bold text-gray-700 mb-2;
-}
-
+.subTitle,
 .subTitleRow {
-  @apply text-sm font-bold text-gray-700 mb-3;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gray-700);
+  margin-bottom: 0.6rem;
 }
 
 .inputLabel {
-  @apply block text-xs font-bold text-gray-500 mb-2;
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gray-500);
+  margin-bottom: 0.5rem;
 }
 
 .dateRow {
-  @apply flex gap-2 items-center;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .dateInput {
-  @apply w-full p-2 border border-gray-300 rounded bg-white text-sm text-gray-700 focus:border-indigo-500 outline-none transition-all;
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 0.5rem;
+  background: #fff;
+  font-size: 0.9rem;
+  color: var(--gray-700);
+  transition: border-color 0.15s ease;
+}
+
+.dateInput:focus {
+  border-color: var(--indigo-500);
+  outline: none;
 }
 
 .colorPickerRow {
-  @apply flex gap-2 flex-wrap;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .colorSwatch {
-  @apply w-7 h-7 rounded-full border-2 transition-all;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .colorSwatchActive {
-  @apply ring-2 ring-indigo-500 border-white shadow;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.25);
+  border-color: #fff;
 }
 
 .syncButton {
-  @apply px-3 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded hover:bg-indigo-100 text-xs font-bold flex items-center gap-1.5 h-[38px] transition-colors;
+  padding: 0.55rem 0.9rem;
+  background: var(--indigo-50);
+  color: var(--indigo-600);
+  border: 1px solid var(--indigo-100);
+  border-radius: 0.55rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 38px;
+  transition: background-color 0.15s ease;
+}
+
+.syncButton:hover {
+  background: var(--indigo-100);
 }
 
 .docRow {
-  @apply grid grid-cols-1 md:grid-cols-12 gap-3 items-end mt-3;
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+  margin-top: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .docRow {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
 }
 
 .docInput {
-  @apply w-full p-2 border border-gray-300 rounded bg-white text-sm text-gray-700 focus:border-indigo-500 outline-none transition-all;
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 0.5rem;
+  background: #fff;
+  font-size: 0.9rem;
+  color: var(--gray-700);
 }
 
 .docUpload {
-  @apply px-3 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded text-xs font-bold text-center cursor-pointer hover:bg-indigo-100;
+  padding: 0.45rem 0.8rem;
+  background: var(--indigo-50);
+  color: var(--indigo-600);
+  border: 1px solid var(--indigo-100);
+  border-radius: 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.docUpload:hover {
+  background: var(--indigo-100);
 }
 
 .textarea {
-  @apply w-full border border-gray-300 rounded px-3 py-2 text-sm text-gray-800 focus:ring-1 focus:ring-indigo-500 outline-none min-h-[90px];
+  width: 100%;
+  border: 1px solid var(--gray-300);
+  border-radius: 0.6rem;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--gray-800);
+  min-height: 90px;
+  resize: vertical;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.textarea:focus {
+  border-color: var(--indigo-500);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
 }
 
 .inlineInput {
-  @apply flex-1 min-w-[140px] border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none;
+  flex: 1;
+  min-width: 140px;
+  border: 1px solid var(--gray-300);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+  color: var(--gray-800);
 }
 
 .milestoneRow {
-  @apply flex flex-wrap gap-2 items-center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 .primarySmall {
-  @apply px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700;
+  padding: 0.55rem 0.85rem;
+  background: var(--indigo-600);
+  color: #fff;
+  border: 0;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.primarySmall:hover {
+  background: var(--indigo-700);
+}
+
+.milestoneRemove {
+  padding: 0.55rem 0.75rem;
+  background: var(--red-50);
+  color: var(--red-600);
+  border: 2px solid var(--red-200);
+  border-radius: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.milestoneRemove:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .tagList {
-  @apply flex flex-wrap gap-2 mt-3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .tag {
-  @apply px-2 py-1 rounded border border-gray-200 bg-gray-50 text-xs flex items-center gap-2;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--gray-200);
+  background: var(--gray-50);
+  font-size: 0.78rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
 }
 
 .inlineDot {
-  @apply inline-block w-2 h-2 rounded-full;
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
 }
 
 .tagRemove {
-  @apply text-gray-400 hover:text-red-500;
+  color: var(--gray-400);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.tagRemove:hover {
+  color: var(--red-600);
 }
 
 .vacationHeader {
-  @apply flex items-center justify-between mb-3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
 }
 
 .vacationButton {
-  @apply text-xs px-3 py-1 bg-gray-100 text-gray-700 rounded border border-gray-300 hover:bg-gray-200;
+  font-size: 0.8rem;
+  padding: 0.45rem 0.8rem;
+  background: var(--gray-100);
+  color: var(--gray-700);
+  border-radius: 0.5rem;
+  border: 1px solid var(--gray-300);
+  transition: background-color 0.15s ease;
+}
+
+.vacationButton:hover {
+  background: var(--gray-200);
 }
 
 .vacationList {
-  @apply space-y-2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .vacationItem {
-  @apply flex flex-wrap gap-2 text-xs text-gray-700 bg-gray-50 border border-gray-200 rounded px-3 py-2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--gray-700);
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: 0.6rem;
+  padding: 0.5rem 0.75rem;
 }
 
 .vacationEmpty {
-  @apply text-xs text-gray-400;
+  font-size: 0.8rem;
+  color: var(--gray-400);
 }
 
 .memberSection {
-  @apply space-y-3;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .memberTitle {
-  @apply text-sm font-bold text-gray-700 flex items-center gap-2 ml-1;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gray-700);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.25rem;
 }
 
 .memberGroup {
-  @apply bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm;
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .memberGroupHeader {
-  @apply bg-gray-50 px-4 py-2 border-b border-gray-200 flex justify-between items-center;
+  background: var(--gray-50);
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--gray-200);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .memberGroupTitle {
-  @apply text-xs font-bold text-gray-600 tracking-wide;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--gray-600);
+  letter-spacing: 0.05em;
 }
 
 .memberRow {
-  @apply p-3 flex items-center gap-4 hover:bg-gray-50 transition-colors;
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: background-color 0.15s ease;
+}
+
+.memberRow:hover {
+  background: var(--gray-50);
 }
 
 .memberName {
-  @apply w-24 font-medium text-sm text-gray-900;
+  width: 6rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--gray-900);
 }
 
 .memberDateRow {
-  @apply flex-1 flex items-center gap-2;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .memberDateInput {
-  @apply p-1 rounded text-xs border border-transparent focus:border-gray-300;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.35rem;
+  border: 1px solid transparent;
+  font-size: 0.8rem;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .memberDateDefault {
-  @apply text-gray-500 bg-transparent group-hover:bg-white group-hover:border-gray-200;
+  color: var(--gray-500);
+  background: transparent;
+}
+
+.memberRow:hover .memberDateDefault {
+  background: #fff;
+  border-color: var(--gray-200);
 }
 
 .memberDateDiff {
-  @apply text-orange-600 font-bold bg-orange-50;
+  color: var(--orange-700);
+  font-weight: 700;
+  background: var(--orange-50);
 }
 
 .memberDateDivider {
-  @apply text-gray-400 text-xs;
+  color: var(--gray-400);
+  font-size: 0.8rem;
 }
 
 .memberDateAlert {
-  @apply text-[10px] text-orange-500;
+  font-size: 0.65rem;
+  color: var(--orange-500);
 }
 
 .memberRemoveBtn {
-  @apply text-gray-300 hover:text-red-500 transition-colors;
+  color: var(--gray-300);
+  background: transparent;
+  border: 0;
+  transition: color 0.15s ease;
+}
+
+.memberRemoveBtn:hover {
+  color: var(--red-600);
 }
 
 .memberInputWrap {
-  @apply mt-6 relative;
+  margin-top: 1.5rem;
+  position: relative;
 }
 
 .memberSearch {
-  @apply flex items-center gap-3 border border-gray-300 rounded p-2 bg-white focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-colors;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  background: #fff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.memberSearch:focus-within {
+  border-color: var(--indigo-500);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
 }
 
 .memberSearchInput {
-  @apply flex-1 bg-transparent outline-none text-sm placeholder-gray-400 text-gray-900;
+  flex: 1;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font-size: 0.9rem;
+  color: var(--gray-900);
 }
 
 .suggestionList {
-  @apply absolute bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-[60];
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  margin-bottom: 0.25rem;
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.25);
+  max-height: 12rem;
+  overflow-y: auto;
+  z-index: 60;
 }
 
 .suggestionButton {
-  @apply w-full flex items-center gap-3 p-2 hover:bg-gray-50 text-left transition-colors border-b border-gray-50 last:border-0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  transition: background-color 0.15s ease;
+  border-bottom: 1px solid var(--gray-50);
+}
+
+.suggestionButton:last-of-type {
+  border-bottom: 0;
+}
+
+.suggestionButton:hover {
+  background: var(--gray-50);
 }
 
 .suggestionName {
-  @apply text-sm font-bold text-gray-700 ml-1;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--gray-700);
+  margin-left: 0.25rem;
 }
 
 .suggestionTeam {
-  @apply text-xs text-gray-400;
+  font-size: 0.8rem;
+  color: var(--gray-400);
 }
 
 .suggestionEmpty {
-  @apply p-3 text-xs text-center text-gray-400;
+  padding: 0.75rem;
+  font-size: 0.8rem;
+  text-align: center;
+  color: var(--gray-400);
 }
 
 .editFooter {
-  @apply bg-white px-6 py-4 flex justify-between items-center border-t border-gray-100 flex-shrink-0;
+  background: #fff;
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--gray-100);
+  flex-shrink: 0;
 }
 
 .deleteLink {
-  @apply text-gray-400 hover:text-red-600 text-xs font-medium flex items-center gap-1.5 transition-colors;
+  color: var(--gray-400);
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: color 0.15s ease;
+  background: transparent;
+  border: 0;
+}
+
+.deleteLink:hover {
+  color: var(--red-600);
 }
 
 .deleteConfirm {
-  @apply flex items-center gap-3;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .deleteConfirmText {
-  @apply text-xs text-red-600 font-bold;
+  font-size: 0.8rem;
+  color: var(--red-600);
+  font-weight: 700;
+}
+
+.deleteYes,
+.deleteNo {
+  font-size: 0.8rem;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
 }
 
 .deleteYes {
-  @apply text-red-600 text-xs font-bold hover:underline;
+  color: var(--red-600);
+  font-weight: 700;
 }
 
 .deleteNo {
-  @apply text-gray-400 text-xs hover:underline;
+  color: var(--gray-400);
 }
 
 .footerActions {
-  @apply flex gap-2;
+  display: flex;
+  gap: 0.5rem;
 }
 
 .footerPrimary {
-  @apply px-5 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded shadow-sm transition-all;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--indigo-600);
+  border-radius: 0.6rem;
+  border: 0;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);
+  transition: background-color 0.15s ease;
+}
+
+.footerPrimary:hover {
+  background: var(--indigo-700);
 }
 
 .headerWrapper {
-  @apply flex-none space-y-6 mb-4 px-3 md:px-6 lg:px-8 pt-4 w-full max-w-[1400px] mx-auto;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  padding: 1rem 0 0;
+  width: 100%;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .headerRow {
-  @apply flex justify-between items-end;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
 }
 
 .title {
-  @apply text-2xl font-bold text-gray-900 tracking-tight mb-1 flex items-center gap-2;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--gray-900);
+  letter-spacing: -0.01em;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .subtitle {
-  @apply text-sm text-gray-500 font-medium;
+  font-size: 0.95rem;
+  color: var(--gray-500);
+  font-weight: 600;
 }
 
 .headerButtons {
-  @apply flex items-center gap-2;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .teamButton {
-  @apply h-10 text-sm font-bold flex items-center gap-2 transition-all px-5 rounded-lg border shadow-sm active:scale-95 transform;
+  height: 2.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 1.2rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--gray-200);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: transform 0.1s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.teamButton:active {
+  transform: scale(0.98);
 }
 
 .logoutButton {
-  @apply h-10 w-10 bg-gray-200 text-gray-600 rounded-lg flex items-center justify-center hover:bg-red-100 hover:text-red-500 transition;
+  height: 2.5rem;
+  width: 2.5rem;
+  background: var(--gray-200);
+  color: var(--gray-600);
+  border-radius: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.logoutButton:hover {
+  background: var(--red-50);
+  color: var(--red-600);
 }
 
 .banner {
-  @apply flex items-center gap-2 px-3 py-2 rounded-lg border shadow-sm;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.7rem;
+  border: 1px solid transparent;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .bannerSuccess {
-  @apply bg-emerald-50 text-emerald-700 border-emerald-100;
+  background: #ecfdf3;
+  color: #047857;
+  border-color: #bbf7d0;
 }
 
 .bannerError {
-  @apply bg-red-50 text-red-700 border-red-100;
+  background: var(--red-50);
+  color: var(--red-700);
+  border-color: var(--red-100);
 }
 
 .bannerInfo {
-  @apply bg-blue-50 text-blue-700 border-blue-100;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
 }
 
 .bannerText {
-  @apply text-sm font-semibold;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .dashboardShell {
-  @apply w-full h-[240px];
+  width: 100%;
+  height: 240px;
+}
+
+.calendarShell {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .calendarShell {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .calendarShell {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
 }
 
 .ganttShell {
-  @apply w-full max-w-[1400px] mx-auto px-3 md:px-6 lg:px-8;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .ganttShell {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .ganttShell {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
 }
 
 .roleBadge {
-  @apply inline-block mt-1 text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded-md;
+  display: inline-block;
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gray-500);
+  background: var(--gray-100);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
 }
 
 .disabledButton {
-  @apply opacity-60 cursor-not-allowed;
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .vacationAccent {
-  @apply bg-lime-100 text-lime-800 border-lime-200 hover:bg-lime-200 hover:border-lime-300;
+  background: #eaffd5;
+  color: #365314;
+  border-color: #d9f99d;
+}
+
+.vacationAccent:hover {
+  background: #d9f99d;
 }
 
 .teamAccent {
-  @apply bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100 hover:border-orange-300;
+  background: var(--orange-50);
+  color: #c2410c;
+  border-color: var(--orange-100);
+}
+
+.teamAccent:hover {
+  background: #fed7aa;
+  border-color: #fdba74;
 }
 
 .accountAccent {
-  @apply bg-slate-900 text-white border-slate-900 hover:bg-slate-800 hover:border-slate-800;
+  background: var(--slate-900);
+  color: #fff;
+  border-color: var(--slate-900);
+}
+
+.accountAccent:hover {
+  background: #0b1835;
+  border-color: #0b1835;
 }
 
 .passwordAccent {
-  @apply bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200 hover:border-gray-300;
+  background: var(--gray-100);
+  color: var(--gray-800);
+  border-color: var(--gray-200);
+}
+
+.passwordAccent:hover {
+  background: var(--gray-200);
+  border-color: var(--gray-300);
 }
 
 .readOnlyCard {
-  @apply w-full max-w-[1400px] mx-auto px-3 md:px-6 lg:px-8 py-4 bg-gray-50 border border-dashed border-gray-300 rounded-lg text-gray-700;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1rem 0.75rem;
+  background: var(--gray-50);
+  border: 1px dashed var(--gray-300);
+  border-radius: 0.75rem;
+  color: var(--gray-700);
+}
+
+@media (min-width: 768px) {
+  .readOnlyCard {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .readOnlyCard {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
 }
 
 .readOnlyTitle {
-  @apply text-sm font-bold mb-1;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
 }
 
 .readOnlyBody {
-  @apply text-sm text-gray-500 leading-relaxed;
+  font-size: 0.95rem;
+  color: var(--gray-500);
+  line-height: 1.6;
+}
+
+.ambiguousName {
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.ambiguousTeam {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--gray-500);
+  margin-top: 0.15rem;
+}
+
+.teamDeleteButton {
+  font-size: 0.75rem;
+  color: var(--red-500);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.45rem;
+  border: 1px solid var(--red-200);
+  background: #fff;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.teamDeleteButton:hover {
+  color: var(--red-600);
+  border-color: var(--red-300);
+  background: var(--red-50);
+}
+
+.stackCompact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.25rem;
+}
+
+.cardTitleIcon {
+  color: var(--gray-500);
+}
+
+.dashMuted {
+  color: var(--gray-400);
+}
+
+.docInputDisabled {
+  background: var(--gray-50);
+  cursor: not-allowed;
+}
+
+.fullColStack {
+  grid-column: span 12;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.attachmentRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.attachmentTextCol {
+  flex: 1;
+  min-width: 180px;
+}
+
+.attachmentActionRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.attachmentKey {
+  font-size: 0.75rem;
+  color: var(--gray-600);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inlineButtonPrimary {
+  padding: 0.35rem 0.6rem;
+  background: var(--indigo-50);
+  color: var(--indigo-600);
+  border: 1px solid var(--indigo-100);
+  border-radius: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.inlineButtonPrimary:hover {
+  background: var(--indigo-100);
+}
+
+.inlineButtonPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.inlineButtonGhost {
+  padding: 0.35rem 0.6rem;
+  background: #fff;
+  color: var(--gray-500);
+  border: 1px solid var(--gray-200);
+  border-radius: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.inlineButtonGhost:hover {
+  background: var(--gray-50);
+}
+
+.tagLabel {
+  font-weight: 700;
+  color: var(--gray-800);
+}
+
+.tagDate {
+  color: var(--gray-500);
+}
+
+.vacationPerson {
+  font-weight: 700;
+}
+
+.vacationTeam {
+  color: var(--gray-500);
+}
+
+.vacationRange {
+  color: var(--gray-600);
+}
+
+.vacationNote {
+  color: var(--gray-500);
+}
+
+.searchIcon {
+  width: 16px;
+  height: 16px;
+  color: var(--gray-400);
+}
+
+.titleIcon {
+  color: var(--indigo-600);
+}
+
+.bannerIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.rowHighlight {
+  background: #fef9c3 !important;
+}
+
+.hiddenInput {
+  display: none;
 }

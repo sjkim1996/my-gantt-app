@@ -1,185 +1,493 @@
-@reference "../../../globals.css";
+@import "./tokens.css";
 
 .container {
-  @apply bg-white p-5 rounded-xl shadow-sm border border-gray-200 w-full;
+  background: #fff;
+  padding: 1.25rem;
+  border-radius: 0.9rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--gray-200);
+  width: 100%;
 }
 
 .titleRow {
-  @apply flex items-center justify-between mb-3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
 }
 
 .title {
-  @apply text-base font-bold text-gray-800;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gray-800);
 }
 
 .grid {
-  @apply grid grid-cols-1 md:grid-cols-12 gap-3 items-end;
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
 }
 
 .label {
-  @apply block text-xs font-bold text-gray-400 mb-1;
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--gray-400);
+  margin-bottom: 0.25rem;
 }
 
 .inputShell {
-  @apply h-10 flex items-center border border-gray-300 rounded px-3 bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--gray-300);
+  border-radius: 0.6rem;
+  padding: 0 0.75rem;
+  background: #fff;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.inputShell:focus-within {
+  border-color: var(--indigo-500);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
 }
 
 .inputShellTight {
-  @apply h-10 flex items-center border border-gray-300 rounded px-2 bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--gray-300);
+  border-radius: 0.6rem;
+  padding: 0 0.5rem;
+  background: #fff;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
-.textInput {
-  @apply w-full bg-transparent outline-none text-sm text-gray-900;
+.inputShellTight:focus-within {
+  border-color: var(--indigo-500);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
 }
 
+.textInput,
 .dateInput {
-  @apply w-full bg-transparent outline-none text-sm text-gray-700;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font-size: 0.9rem;
+  color: var(--gray-900);
 }
 
 .assigneeShell {
-  @apply h-10 flex flex-wrap gap-1 items-center px-2 border border-gray-300 rounded bg-white focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent transition-all overflow-x-auto;
+  height: 2.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 0.6rem;
+  background: #fff;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  overflow-x: auto;
+}
+
+.assigneeShell:focus-within {
+  border-color: var(--indigo-500);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
 }
 
 .chip {
-  @apply inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold border border-indigo-100 whitespace-nowrap;
-  animation: chip-zoom-in 0.12s ease-out;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--indigo-50);
+  color: var(--indigo-700);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid var(--indigo-100);
 }
 
 .chipRemove {
-  @apply hover:text-indigo-900 transition-colors ml-1;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  transition: color 0.15s ease;
+}
+
+.chipRemove:hover {
+  color: #1e1b4b;
 }
 
 .assigneeInput {
-  @apply flex-1 min-w-[100px] bg-transparent outline-none text-sm placeholder-gray-400 text-gray-900;
+  flex: 1;
+  min-width: 100px;
+  background: transparent;
+  border: 0;
+  outline: none;
+  font-size: 0.9rem;
+  color: var(--gray-900);
 }
 
 .suggestions {
-  @apply absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded shadow-lg py-1 min-w-[200px] w-full z-[60];
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.25rem;
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.25);
+  padding: 0.25rem 0;
+  min-width: 200px;
+  width: 100%;
+  z-index: 60;
 }
 
 .suggestionButton {
-  @apply w-full text-left px-3 py-2 text-sm hover:bg-gray-50 flex justify-between items-center transition-colors;
+  width: 100%;
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: transparent;
+  border: 0;
+  transition: background-color 0.15s ease;
+}
+
+.suggestionButton:hover {
+  background: var(--gray-50);
 }
 
 .suggestionName {
-  @apply font-bold text-gray-700;
+  font-weight: 700;
+  color: var(--gray-700);
 }
 
 .suggestionTeam {
-  @apply text-gray-400 text-xs;
+  font-size: 0.8rem;
+  color: var(--gray-400);
 }
 
 .suggestionEmpty {
-  @apply px-3 py-2 text-xs text-gray-400 text-center;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.8rem;
+  text-align: center;
+  color: var(--gray-400);
 }
 
 .notesInput {
-  @apply w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500 outline-none;
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--gray-300);
+  border-radius: 0.6rem;
+  font-size: 0.9rem;
+  color: var(--gray-800);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.notesInput:focus {
+  border-color: var(--indigo-500);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
 }
 
 .milestoneLabel {
-  @apply flex-1 min-w-[140px] border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none;
+  flex: 1;
+  min-width: 140px;
+  border: 1px solid var(--gray-300);
+  border-radius: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  color: var(--gray-800);
 }
 
 .milestoneDate {
-  @apply border border-gray-300 rounded px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none;
+  border: 1px solid var(--gray-300);
+  border-radius: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  color: var(--gray-800);
 }
 
 .milestoneAdd {
-  @apply px-3 py-2 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700;
+  padding: 0.55rem 0.75rem;
+  background: var(--indigo-600);
+  color: #fff;
+  border: 0;
+  border-radius: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.milestoneAdd:hover {
+  background: var(--indigo-700);
 }
 
 .milestoneRemove {
-  @apply px-3 py-2 bg-red-50 text-red-600 text-xs font-bold rounded border-2 border-red-200 hover:bg-red-100;
+  padding: 0.55rem 0.75rem;
+  background: var(--red-50);
+  color: var(--red-600);
+  border: 2px solid var(--red-200);
+  border-radius: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.milestoneRemove:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .gridFull {
-  @apply md:col-span-12;
+  grid-column: span 1;
+}
+
+@media (min-width: 768px) {
+  .gridFull {
+    grid-column: span 12;
+  }
 }
 
 .actionsRow {
-  @apply md:col-span-12 flex justify-end mt-2;
+  grid-column: span 1;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .actionsRow {
+    grid-column: span 12;
+  }
 }
 
 .submitButton {
-  @apply px-5 py-3 bg-indigo-600 text-white font-bold rounded shadow-sm hover:bg-indigo-700 transition-all text-sm;
+  padding: 0.75rem 1.4rem;
+  background: var(--indigo-600);
+  color: #fff;
+  font-weight: 700;
+  border: 0;
+  border-radius: 0.65rem;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
+  font-size: 0.9rem;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.submitButton:hover {
+  background: var(--indigo-700);
 }
 
 .attachmentHint {
-  @apply text-sm text-gray-600 text-center mb-3;
+  font-size: 0.9rem;
+  color: var(--gray-600);
+  text-align: center;
+  margin-bottom: 0.5rem;
 }
 
 .uploadDrop {
-  @apply border-2 border-dashed border-gray-300 bg-gray-50 rounded-lg p-6 flex flex-col items-center gap-3 text-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition;
+  border: 2px dashed var(--gray-300);
+  background: var(--gray-50);
+  border-radius: 0.85rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.uploadDrop:hover {
+  border-color: var(--indigo-300);
+  background: var(--indigo-50);
 }
 
 .uploadButton {
-  @apply px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded shadow-sm hover:bg-indigo-700 transition;
+  padding: 0.55rem 1rem;
+  background: var(--indigo-600);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border: 0;
+  border-radius: 0.65rem;
+  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2);
 }
 
 .attachmentList {
-  @apply space-y-2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .attachmentItem {
-  @apply flex flex-wrap items-center justify-between gap-3 p-3 bg-white border border-gray-200 rounded-lg shadow-sm;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .attachmentMeta {
-  @apply flex flex-col min-w-[200px] flex-1;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  flex: 1;
 }
 
 .attachmentName {
-  @apply text-sm font-bold text-gray-800 truncate;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--gray-800);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .attachmentSub {
-  @apply text-xs text-gray-500 truncate;
+  font-size: 0.8rem;
+  color: var(--gray-500);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .attachmentActions {
-  @apply flex items-center gap-2;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.attachmentReplace,
+.attachmentOpen,
+.attachmentDelete {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 0.55rem;
+  cursor: pointer;
+  border: 1px solid transparent;
 }
 
 .attachmentReplace {
-  @apply px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded border border-indigo-100 cursor-pointer hover:bg-indigo-100 transition;
+  background: var(--indigo-50);
+  color: var(--indigo-700);
+  border-color: var(--indigo-100);
+}
+
+.attachmentReplace:hover {
+  background: var(--indigo-100);
 }
 
 .attachmentOpen {
-  @apply px-3 py-1 bg-white text-gray-600 text-xs font-bold rounded border border-gray-200 hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed;
+  background: #fff;
+  color: var(--gray-600);
+  border-color: var(--gray-200);
+}
+
+.attachmentOpen:hover {
+  background: var(--gray-50);
 }
 
 .attachmentDelete {
-  @apply px-3 py-1 bg-red-50 text-red-600 text-xs font-bold rounded border border-red-100 hover:bg-red-100 transition disabled:opacity-50 disabled:cursor-not-allowed;
+  background: var(--red-50);
+  color: var(--red-600);
+  border-color: var(--red-100);
 }
 
-.attachmentAdd {
-  @apply px-4 py-2 bg-red-50 text-red-600 text-sm font-bold rounded border border-red-100 hover:bg-red-100 transition;
+.attachmentDelete:hover {
+  background: #fecdd3;
+}
+
+.attachmentDelete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .col3 {
-  @apply md:col-span-3;
+  grid-column: span 1;
 }
 
 .col5 {
-  @apply md:col-span-5;
+  grid-column: span 1;
 }
 
 .col2 {
-  @apply md:col-span-2;
+  grid-column: span 1;
+}
+
+@media (min-width: 768px) {
+  .col3 {
+    grid-column: span 3;
+  }
+  .col5 {
+    grid-column: span 5;
+  }
+  .col2 {
+    grid-column: span 2;
+  }
 }
 
 .footerRow {
-  @apply md:col-span-12 mt-2;
+  grid-column: span 1;
+  margin-top: 0.5rem;
 }
 
-@keyframes chip-zoom-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
+@media (min-width: 768px) {
+  .footerRow {
+    grid-column: span 12;
   }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+}
+
+.relativeLayer {
+  position: relative;
+  z-index: 50;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stackTight {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.wrapRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.wrapRowTight {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.hiddenInput {
+  display: none;
 }

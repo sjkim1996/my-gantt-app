@@ -106,7 +106,7 @@ const ProjectForm: React.FC<Props> = ({
             />
           </div>
         </div>
-        <div className={`${styles.col5} relative z-50`}>
+        <div className={`${styles.col5} ${styles.relativeLayer}`}>
           <label className={styles.label}>담당자</label>
           <div
             className={styles.assigneeShell}
@@ -125,7 +125,7 @@ const ProjectForm: React.FC<Props> = ({
                   }}
                   className={styles.chipRemove}
                 >
-                  <X className="w-3 h-3" />
+                  <X size={12} />
                 </button>
               </span>
             ))}
@@ -191,7 +191,7 @@ const ProjectForm: React.FC<Props> = ({
             className={styles.notesInput}
           />
         </div>
-        <div className={`${styles.gridFull} flex flex-col gap-3`}>
+        <div className={`${styles.gridFull} ${styles.stack}`}>
           <label className={styles.label}>프로젝트 문서 (첨부 파일)</label>
           <div
             className={styles.uploadDrop}
@@ -214,7 +214,7 @@ const ProjectForm: React.FC<Props> = ({
               ref={dropInputRef}
               type="file"
               multiple
-              className="hidden"
+              className={styles.hiddenInput}
               onChange={(e) => handleFileSelect(e.target.files)}
             />
           </div>
@@ -230,7 +230,7 @@ const ProjectForm: React.FC<Props> = ({
                     교체
                     <input
                       type="file"
-                      className="hidden"
+                      className={styles.hiddenInput}
                       onChange={(e) => uploadAttachment(att.id, e.target.files)}
                     />
                   </label>
@@ -245,11 +245,11 @@ const ProjectForm: React.FC<Props> = ({
             ))}
           </div>
         </div>
-        <div className={styles.gridFull + ' space-y-2'}>
+        <div className={`${styles.gridFull} ${styles.stackTight}`}>
           <label className={styles.label}>특이 스케줄 (시사일/PPM 등)</label>
-          <div className="flex flex-col gap-2">
+          <div className={styles.stackTight}>
             {projectMilestones.map((m, idx) => (
-              <div key={m.id} className="flex flex-wrap gap-2 items-center">
+              <div key={m.id} className={styles.wrapRow}>
                 <input
                   type="text"
                   value={m.label}
@@ -263,14 +263,14 @@ const ProjectForm: React.FC<Props> = ({
                   onChange={(e) => updateProjectMilestone(m.id, 'date', e.target.value)}
                   className={styles.milestoneDate}
                 />
-                <button type="button" onClick={addProjectMilestone} className={`${styles.milestoneAdd} text-sm`}>
+                <button type="button" onClick={addProjectMilestone} className={styles.milestoneAdd}>
                   +
                 </button>
                 <button
                   type="button"
                   disabled={projectMilestones.length === 1}
                   onClick={() => removeProjectMilestone(m.id)}
-                  className={`${styles.milestoneRemove} text-sm ${projectMilestones.length === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  className={styles.milestoneRemove}
                 >
                   -
                 </button>

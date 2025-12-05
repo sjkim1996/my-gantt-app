@@ -2,23 +2,23 @@ import { Project, GroupedProject } from '../types';
 import { clamp } from './math';
 
 export const BAR_COLORS = [
-  { bg: 'bg-blue-100', border: 'border-blue-200', text: 'text-blue-800', bar: 'bg-blue-500', barHex: '#3b82f6' },
-  { bg: 'bg-green-100', border: 'border-green-200', text: 'text-green-800', bar: 'bg-green-500', barHex: '#22c55e' },
-  { bg: 'bg-purple-100', border: 'border-purple-200', text: 'text-purple-800', bar: 'bg-purple-500', barHex: '#a855f7' },
-  { bg: 'bg-orange-100', border: 'border-orange-200', text: 'text-orange-800', bar: 'bg-orange-500', barHex: '#f97316' },
-  { bg: 'bg-pink-100', border: 'border-pink-200', text: 'text-pink-800', bar: 'bg-pink-500', barHex: '#ec4899' },
-  { bg: 'bg-indigo-100', border: 'border-indigo-200', text: 'text-indigo-800', bar: 'bg-indigo-500', barHex: '#6366f1' },
-  { bg: 'bg-yellow-100', border: 'border-yellow-200', text: 'text-yellow-800', bar: 'bg-yellow-500', barHex: '#eab308' },
-  { bg: 'bg-gray-100', border: 'border-gray-200', text: 'text-gray-800', bar: 'bg-gray-500', barHex: '#6b7280' },
-  { bg: 'bg-amber-100', border: 'border-amber-200', text: 'text-amber-800', bar: 'bg-amber-500', barHex: '#f59e0b' },
-  { bg: 'bg-lime-100', border: 'border-lime-200', text: 'text-lime-800', bar: 'bg-lime-500', barHex: '#84cc16' },
-  { bg: 'bg-emerald-100', border: 'border-emerald-200', text: 'text-emerald-800', bar: 'bg-emerald-500', barHex: '#10b981' },
-  { bg: 'bg-teal-100', border: 'border-teal-200', text: 'text-teal-800', bar: 'bg-teal-500', barHex: '#14b8a6' },
-  { bg: 'bg-cyan-100', border: 'border-cyan-200', text: 'text-cyan-800', bar: 'bg-cyan-500', barHex: '#06b6d4' },
-  { bg: 'bg-sky-100', border: 'border-sky-200', text: 'text-sky-800', bar: 'bg-sky-500', barHex: '#0ea5e9' },
-  { bg: 'bg-rose-100', border: 'border-rose-200', text: 'text-rose-800', bar: 'bg-rose-500', barHex: '#f43f5e' },
-  { bg: 'bg-stone-100', border: 'border-stone-200', text: 'text-stone-800', bar: 'bg-stone-500', barHex: '#78716c' },
-  { bg: 'bg-slate-100', border: 'border-slate-200', text: 'text-slate-800', bar: 'bg-slate-500', barHex: '#64748b' },
+  { bgHex: '#dbeafe', borderHex: '#bfdbfe', textHex: '#1e3a8a', barHex: '#3b82f6' },
+  { bgHex: '#dcfce7', borderHex: '#bbf7d0', textHex: '#166534', barHex: '#22c55e' },
+  { bgHex: '#f3e8ff', borderHex: '#e9d5ff', textHex: '#6b21a8', barHex: '#a855f7' },
+  { bgHex: '#ffedd5', borderHex: '#fed7aa', textHex: '#9a3412', barHex: '#f97316' },
+  { bgHex: '#fce7f3', borderHex: '#fbcfe8', textHex: '#9d174d', barHex: '#ec4899' },
+  { bgHex: '#e0e7ff', borderHex: '#c7d2fe', textHex: '#3730a3', barHex: '#6366f1' },
+  { bgHex: '#fef9c3', borderHex: '#fde68a', textHex: '#854d0e', barHex: '#eab308' },
+  { bgHex: '#f3f4f6', borderHex: '#e5e7eb', textHex: '#1f2937', barHex: '#6b7280' },
+  { bgHex: '#fef3c7', borderHex: '#fde68a', textHex: '#92400e', barHex: '#f59e0b' },
+  { bgHex: '#ecfccb', borderHex: '#d9f99d', textHex: '#3f6212', barHex: '#84cc16' },
+  { bgHex: '#d1fae5', borderHex: '#a7f3d0', textHex: '#065f46', barHex: '#10b981' },
+  { bgHex: '#ccfbf1', borderHex: '#99f6e4', textHex: '#115e59', barHex: '#14b8a6' },
+  { bgHex: '#cffafe', borderHex: '#a5f3fc', textHex: '#0e7490', barHex: '#06b6d4' },
+  { bgHex: '#e0f2fe', borderHex: '#bae6fd', textHex: '#075985', barHex: '#0ea5e9' },
+  { bgHex: '#ffe4e6', borderHex: '#fecdd3', textHex: '#9f1239', barHex: '#f43f5e' },
+  { bgHex: '#ede9fe', borderHex: '#ddd6fe', textHex: '#43302a', barHex: '#78716c' },
+  { bgHex: '#e2e8f0', borderHex: '#cbd5e1', textHex: '#1e293b', barHex: '#64748b' },
 ];
 
 export const hexToRgb = (hex: string) => {
@@ -64,8 +64,17 @@ export const getColorSet = (proj: Project | GroupedProject | (Project & { row: n
     const bg = lightenColor(base, 0.8);
     const border = lightenColor(base, 0.7);
     const text = getReadableTextColor(base);
-    return { bg: '', border: '', textClass: '', barClass: '', customBg: bg, customBorder: border, customText: text, barColor: base, barHex: base };
+    return {
+      bgHex: bg,
+      borderHex: border,
+      textHex: text,
+      barHex: base,
+      customBg: bg,
+      customBorder: border,
+      customText: text,
+      barColor: base,
+    };
   }
   const set = BAR_COLORS[proj.colorIdx % BAR_COLORS.length];
-  return { ...set, textClass: set.text, barClass: set.bar, customBg: undefined, customBorder: undefined, customText: undefined, barColor: undefined, barHex: set.barHex };
+  return { ...set, customBg: undefined, customBorder: undefined, customText: undefined, barColor: undefined };
 };

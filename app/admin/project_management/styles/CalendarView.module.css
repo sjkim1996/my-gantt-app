@@ -1,0 +1,113 @@
+@import "./tokens.css";
+
+.container {
+  width: 100%;
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  border-radius: 0.9rem;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  color: var(--gray-800);
+}
+
+.subTitle {
+  font-size: 0.85rem;
+  color: var(--gray-500);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.card {
+  border: 1px solid var(--gray-200);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  background: var(--gray-50);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cardDate {
+  font-weight: 700;
+  color: var(--gray-800);
+}
+
+.cardCount {
+  font-size: 0.78rem;
+  color: var(--gray-500);
+}
+
+.projectList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.projectChip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  padding: 0.45rem 0.5rem;
+  background: #fff;
+  border-radius: 0.6rem;
+  border: 1px solid var(--gray-200);
+  font-size: 0.85rem;
+  color: var(--gray-700);
+  text-align: left;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.projectChip:hover {
+  background: var(--indigo-50);
+  border-color: var(--indigo-200);
+}
+
+.projectName {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectPerson {
+  font-size: 0.78rem;
+  color: var(--gray-500);
+}
+
+.empty {
+  font-size: 0.82rem;
+  color: var(--gray-400);
+}
+
+.more {
+  font-size: 0.78rem;
+  color: var(--indigo-600);
+  font-weight: 700;
+}

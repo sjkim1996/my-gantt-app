@@ -29,13 +29,13 @@ const ChartControls: React.FC<Props> = ({
     <div className={styles.controls}>
       <div className={styles.buttonGroup}>
         <button onClick={onPrev} className={styles.navButton}>
-          <ChevronLeft className="w-4 h-4" /> 이전
+          <ChevronLeft size={16} /> 이전
         </button>
         <button onClick={onToday} className={styles.todayButton}>
           오늘 (Today)
         </button>
         <button onClick={onNext} className={styles.navButton}>
-          다음 <ChevronRight className="w-4 h-4" />
+          다음 <ChevronRight size={16} />
         </button>
       </div>
       <div className={styles.buttonGroup}>
@@ -72,13 +72,13 @@ const ChartControls: React.FC<Props> = ({
       </div>
       <div className={styles.legend}>
         <div className={styles.legendItem}>
-          <span className={`${styles.legendDot} bg-gray-200`}></span> 대기
+          <span className={`${styles.legendDot} ${styles.legendDotIdle}`}></span> 대기
         </div>
         <div className={styles.legendItem}>
-          <span className={`${styles.legendDot} bg-blue-500`}></span> 진행
+          <span className={`${styles.legendDot} ${styles.legendDotActive}`}></span> 진행
         </div>
         <div className={styles.legendItem}>
-          <Flag className="w-3 h-3 text-red-500" /> 마일스톤
+          <Flag size={12} className={styles.legendFlag} /> 마일스톤
         </div>
       </div>
     </div>

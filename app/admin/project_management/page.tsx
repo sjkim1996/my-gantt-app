@@ -11,6 +11,7 @@ import { mergeMilestones, mergeVacations, dedupeProjects } from './utils/gantt';
 import GanttTable, { TimelineBlock } from './components/GanttTable';
 import ChartControls from './components/ChartControls';
 import Dashboard from './components/Dashboard';
+import CalendarView from './components/CalendarView';
 import ProjectForm from './components/ProjectForm';
 import VacationModal from './components/VacationModal';
 import { Vacation } from './types';
@@ -530,8 +531,8 @@ export default function ResourceGanttChart() {
       const row = rowRefs.current[rowId];
       if (row) {
         row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        row.classList.add('bg-yellow-100');
-        setTimeout(() => row.classList.remove('bg-yellow-100'), 1500);
+        row.classList.add(pageStyles.rowHighlight);
+        setTimeout(() => row.classList.remove(pageStyles.rowHighlight), 1500);
       } else {
         showBanner('행을 찾을 수 없습니다. 팀/멤버를 확인하세요.', 'info');
       }
@@ -1234,7 +1235,7 @@ export default function ResourceGanttChart() {
         <div className={`${pageStyles.overlay} ${pageStyles.overlayHigh}`}>
           <div className={pageStyles.ambiguousCard}>
               <div className={pageStyles.ambiguousHeader}>
-              <h3 className={pageStyles.ambiguousTitle}><AlertCircle className="w-4 h-4" /> 동명이인 선택</h3>
+              <h3 className={pageStyles.ambiguousTitle}><AlertCircle size={16} /> 동명이인 선택</h3>
               <p className={pageStyles.ambiguousDesc}>&apos;{ambiguousCandidates[0].name}&apos;님이 여러 팀에 존재합니다.</p>
             </div>
             <div className={pageStyles.ambiguousList}>
@@ -1244,7 +1245,10 @@ export default function ResourceGanttChart() {
                   onClick={() => { addAssignee(c); setAmbiguousCandidates([]); }}
                   className={`${pageStyles.ambiguousButton} group`}
                 >
-                  <div><div className="font-bold text-gray-900">{c.name}</div><div className="text-xs text-gray-500 mt-0.5">{c.team}</div></div>
+                  <div>
+                    <div className={pageStyles.ambiguousName}>{c.name}</div>
+                    <span className={pageStyles.ambiguousTeam}>{c.team}</span>
+                  </div>
                   <Check className={pageStyles.ambiguousButtonIcon} />
                 </button>
               ))}
@@ -1259,7 +1263,7 @@ export default function ResourceGanttChart() {
            <div className={pageStyles.teamModal}>
             <div className={pageStyles.teamModalHeader}>
               <h3 className={pageStyles.teamModalTitle}>팀 & 멤버 관리</h3>
-              <button onClick={() => setIsTeamModalOpen(false)} className={pageStyles.iconButton}><X className="w-5 h-5"/></button>
+              <button onClick={() => setIsTeamModalOpen(false)} className={pageStyles.iconButton}><X size={20}/></button>
             </div>
             <div className={pageStyles.teamModalBody}>
               {editingTeams.map((team, tIdx) => (
@@ -1268,21 +1272,21 @@ export default function ResourceGanttChart() {
                     <span className={pageStyles.teamLabel}>Team</span>
                     <input className={pageStyles.teamInput} value={team.name} onChange={(e) => updateTeamName(tIdx, e.target.value)} />
                     <button onClick={() => addMemberToTeam(tIdx)} className={pageStyles.teamAddMember}>+ 추가</button>
-                    <button onClick={() => removeTeamCompletely(tIdx)} className="text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded border border-red-200">삭제</button>
+                    <button onClick={() => removeTeamCompletely(tIdx)} className={pageStyles.teamDeleteButton}>삭제</button>
                   </div>
                   <div className={pageStyles.memberList}>
                     {team.members.length === 0 ? <span className={pageStyles.emptyMembers}>구성원 없음</span> :
                       team.members.map((member, mIdx) => (
                         <div key={mIdx} className={pageStyles.memberChip}>
                           {member}
-                          <button onClick={() => removeMember(tIdx, mIdx)} className={pageStyles.memberRemove}><X className="w-3 h-3"/></button>
+                          <button onClick={() => removeMember(tIdx, mIdx)} className={pageStyles.memberRemove}><X size={12}/></button>
                         </div>
                       ))
                     }
                   </div>
                 </div>
               ))}
-              <button onClick={addTeam} className={pageStyles.addTeamButton}><Plus className="w-4 h-4"/> 새 팀 추가</button>
+              <button onClick={addTeam} className={pageStyles.addTeamButton}><Plus size={16}/> 새 팀 추가</button>
             </div>
             <div className={pageStyles.teamModalFooter}>
               <button onClick={() => setIsTeamModalOpen(false)} className={pageStyles.footerCancel}>취소</button>
@@ -1298,10 +1302,10 @@ export default function ResourceGanttChart() {
             <div className={pageStyles.teamModalHeader}>
               <h3 className={pageStyles.teamModalTitle}>비밀번호 변경</h3>
               <button onClick={() => setIsPasswordModalOpen(false)} className={pageStyles.iconButton}>
-                <X className="w-5 h-5" />
+                <X size={20} />
               </button>
             </div>
-            <div className="flex flex-col gap-3 p-1">
+            <div className={pageStyles.stackCompact}>
               <label className={pageStyles.inputLabel}>현재 비밀번호</label>
               <input
                 type="password"
@@ -1343,53 +1347,53 @@ export default function ResourceGanttChart() {
                 <div className={pageStyles.editHeaderLabel}>Project Edit</div>
                 <input type="text" value={masterProjectName} onChange={(e) => setMasterProjectName(e.target.value)} className={pageStyles.editTitleInput}/>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className={pageStyles.editClose}><X className="w-6 h-6" /></button>
+              <button onClick={() => setIsModalOpen(false)} className={pageStyles.editClose}><X size={24} /></button>
             </div>
             
         <div className={pageStyles.editBody}>
                 {/* 1. Global Settings */}
                 <div className={pageStyles.card}>
-                    <h4 className={pageStyles.cardTitle}><Settings className="w-4 h-4 text-gray-500" /> 통합 설정 (Global)</h4>
+                    <h4 className={pageStyles.cardTitle}><Settings size={16} className={pageStyles.cardTitleIcon} /> 통합 설정 (Global)</h4>
                     <div className={pageStyles.settingsRow}>
                         <div className={pageStyles.settingsCol}>
                             <label className={pageStyles.inputLabel}>기간 설정</label>
                             <div className={pageStyles.dateRow}>
                                 <input type="date" value={masterStart} onChange={(e) => setMasterStart(e.target.value)} className={pageStyles.dateInput}/>
-                                <span className="text-gray-400">-</span>
+                                <span className={pageStyles.dashMuted}>-</span>
                                 <input type="date" value={masterEnd} onChange={(e) => setMasterEnd(e.target.value)} className={pageStyles.dateInput}/>
                             </div>
                         </div>
-                        <button onClick={syncDatesToAll} className={pageStyles.syncButton}><RefreshCw className="w-3.5 h-3.5"/> 일정 동기화</button>
+                        <button onClick={syncDatesToAll} className={pageStyles.syncButton}><RefreshCw size={14}/> 일정 동기화</button>
                     </div>
                     <div className={pageStyles.docRow}>
-                      <div className="md:col-span-12 flex flex-col gap-2">
+                      <div className={pageStyles.fullColStack}>
                         {masterAttachments.map((att, idx) => (
-                          <div key={att.id} className="flex flex-wrap items-center gap-2">
-                            <div className="flex-1 min-w-[180px]">
+                          <div key={att.id} className={pageStyles.attachmentRow}>
+                            <div className={pageStyles.attachmentTextCol}>
                               <label className={pageStyles.inputLabel}>파일 {idx + 1}</label>
                               <input
                                 value={att.name}
                                 readOnly
                                 placeholder="파일을 업로드하면 이름이 표시됩니다"
-                                className={`${pageStyles.docInput} bg-gray-50 cursor-not-allowed`}
+                                className={`${pageStyles.docInput} ${pageStyles.docInputDisabled}`}
                               />
                             </div>
-                            <div className="flex items-end gap-2">
+                            <div className={pageStyles.attachmentActionRow}>
                               <label className={pageStyles.docUpload}>
                                 파일 선택
                                 <input
                                   type="file"
                                   accept="*/*"
                                   multiple
-                                  className="hidden"
+                                  className={pageStyles.hiddenInput}
                                   onChange={(e) => uploadMasterAttachment(att.id, e.target.files)}
                                 />
                               </label>
-                              {(att.key || att.url) && <span className="text-xs text-gray-600 truncate max-w-[180px]">{att.key || att.url}</span>}
+                              {(att.key || att.url) && <span className={pageStyles.attachmentKey}>{att.key || att.url}</span>}
                               <button
                                 type="button"
                                 onClick={() => openAttachment(att)}
-                          className="px-2 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded hover:bg-indigo-100 font-semibold text-xs disabled:opacity-50"
+                          className={pageStyles.inlineButtonPrimary}
                           disabled={!att.key && !att.url}
                         >
                           열기
@@ -1397,14 +1401,14 @@ export default function ResourceGanttChart() {
                         <button
                           type="button"
                           onClick={() => clearMasterAttachment(att.id)}
-                          className="px-2 py-1 bg-white text-gray-500 border border-gray-200 rounded hover:bg-gray-50 text-xs font-bold"
+                          className={pageStyles.inlineButtonGhost}
                         >
                           초기화
                         </button>
                         <button
                           type="button"
                           onClick={() => removeMasterAttachment(att.id)}
-                          className={`${pageStyles.milestoneRemove} text-sm ${masterAttachments.length === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          className={pageStyles.milestoneRemove}
                           disabled={masterAttachments.length === 1}
                               >
                                 -
@@ -1439,8 +1443,8 @@ export default function ResourceGanttChart() {
                     {masterMilestones.map(m => (
                       <span key={m.id} className={pageStyles.tag}>
                         <span className={pageStyles.inlineDot} style={{ backgroundColor: m.color }}></span>
-                        <span className="font-bold text-gray-800">{m.label}</span>
-                        <span className="text-gray-500">{m.date}</span>
+                        <span className={pageStyles.tagLabel}>{m.label}</span>
+                        <span className={pageStyles.tagDate}>{m.date}</span>
                         <button onClick={() => setMasterMilestones(prev => prev.filter(x => x.id !== m.id))} className={pageStyles.tagRemove}>×</button>
                       </span>
                     ))}
@@ -1456,20 +1460,20 @@ export default function ResourceGanttChart() {
                     <div className={pageStyles.vacationList}>
                       {editingMembers.flatMap((m, idx) => (m.vacations || []).map((v, i) => (
                         <div key={`${idx}-${i}`} className={pageStyles.vacationItem}>
-                          <span className="font-bold">{v.person || m.person}</span>
-                          <span className="text-gray-500">{v.team || m.team}</span>
-                          <span className="text-gray-600">{v.start} ~ {v.end}</span>
-                          {v.label && <span className="text-gray-500">({v.label})</span>}
+                          <span className={pageStyles.vacationPerson}>{v.person || m.person}</span>
+                          <span className={pageStyles.vacationTeam}>{v.team || m.team}</span>
+                          <span className={pageStyles.vacationRange}>{v.start} ~ {v.end}</span>
+                          {v.label && <span className={pageStyles.vacationNote}>({v.label})</span>}
                         </div>
                       )))}
                       {vacations
                         .filter(v => editingMembers.some(m => (m.person || '').toLowerCase() === (v.person || '').toLowerCase()))
                         .map((v, i) => (
                           <div key={`global-${i}`} className={pageStyles.vacationItem}>
-                            <span className="font-bold">{v.person}</span>
-                            <span className="text-gray-500">{v.team}</span>
-                            <span className="text-gray-600">{v.start} ~ {v.end}</span>
-                            {v.label && <span className="text-gray-500">({v.label})</span>}
+                            <span className={pageStyles.vacationPerson}>{v.person}</span>
+                            <span className={pageStyles.vacationTeam}>{v.team}</span>
+                            <span className={pageStyles.vacationRange}>{v.start} ~ {v.end}</span>
+                            {v.label && <span className={pageStyles.vacationNote}>({v.label})</span>}
                           </div>
                         ))}
                     </div>
@@ -1497,9 +1501,9 @@ export default function ResourceGanttChart() {
                                                 <input type="date" value={member.start} onChange={(e) => updateMemberDate(realIndex, 'start', e.target.value)} className={`${pageStyles.memberDateInput} ${isDiffDate ? pageStyles.memberDateDiff : pageStyles.memberDateDefault}`}/> 
                                                 <span className={pageStyles.memberDateDivider}>~</span> 
                                                 <input type="date" value={member.end} onChange={(e) => updateMemberDate(realIndex, 'end', e.target.value)} className={`${pageStyles.memberDateInput} ${isDiffDate ? pageStyles.memberDateDiff : pageStyles.memberDateDefault}`}/> 
-                                                {isDiffDate && (<span className={pageStyles.memberDateAlert}><AlertCircle className="w-3 h-3 inline"/></span>)}
+                                                {isDiffDate && (<span className={pageStyles.memberDateAlert}><AlertCircle size={12} /></span>)}
                                             </div>
-                                            <button onClick={() => removeMemberInModal(realIndex)} className={pageStyles.memberRemoveBtn}><Trash2 className="w-4 h-4"/></button>
+                                            <button onClick={() => removeMemberInModal(realIndex)} className={pageStyles.memberRemoveBtn}><Trash2 size={16}/></button>
                                         </div>
                                     );
                                 })}
@@ -1511,7 +1515,7 @@ export default function ResourceGanttChart() {
                 {/* 4. Add Member Input */}
                 <div className={pageStyles.memberInputWrap}>
                     <div className={pageStyles.memberSearch}>
-                        <Search className="w-4 h-4 text-gray-400" />
+                        <Search size={16} className={pageStyles.searchIcon} />
                         <input ref={modalInputRef} type="text" className={pageStyles.memberSearchInput} placeholder="새로운 멤버 검색 (엔터로 추가)" value={modalAssigneeInput} onChange={(e) => { setModalAssigneeInput(e.target.value); setModalShowSuggestions(true); }} onFocus={() => setModalShowSuggestions(true)} onKeyDown={handleModalInputKeyDown}/>
                     </div>
                     {modalShowSuggestions && modalAssigneeInput && (
@@ -1524,7 +1528,7 @@ export default function ResourceGanttChart() {
 
             {/* Footer - Fixed */}
             <div className={pageStyles.editFooter}>
-               {!deleteConfirmMode ? (<button onClick={() => setDeleteConfirmMode(true)} className={pageStyles.deleteLink}><Trash2 className="w-3.5 h-3.5" /> 전체 삭제</button>) : (<div className={pageStyles.deleteConfirm}><span className={pageStyles.deleteConfirmText}>정말 삭제할까요?</span><button onClick={handleDeleteAll} className={pageStyles.deleteYes}>네</button><button onClick={() => setDeleteConfirmMode(false)} className={pageStyles.deleteNo}>아니오</button></div>)}
+               {!deleteConfirmMode ? (<button onClick={() => setDeleteConfirmMode(true)} className={pageStyles.deleteLink}><Trash2 size={14} /> 전체 삭제</button>) : (<div className={pageStyles.deleteConfirm}><span className={pageStyles.deleteConfirmText}>정말 삭제할까요?</span><button onClick={handleDeleteAll} className={pageStyles.deleteYes}>네</button><button onClick={() => setDeleteConfirmMode(false)} className={pageStyles.deleteNo}>아니오</button></div>)}
                <div className={pageStyles.footerActions}><button onClick={() => setIsModalOpen(false)} className={pageStyles.footerCancel}>취소</button><button onClick={handleSaveMasterProject} className={pageStyles.footerPrimary}>저장 완료</button></div>
             </div>
           </div>
@@ -1536,7 +1540,7 @@ export default function ResourceGanttChart() {
         <div className={pageStyles.headerRow}>
             <div>
                 <h1 className={pageStyles.title}>
-                    <Briefcase className="w-6 h-6 text-indigo-600"/> Resource Gantt
+                    <Briefcase size={24} className={pageStyles.titleIcon}/> Resource Gantt
                 </h1>
                 <p className={pageStyles.subtitle}>팀 리소스 및 프로젝트 일정 관리 (2025)</p>
                 {sessionUser && (
@@ -1559,7 +1563,7 @@ export default function ResourceGanttChart() {
                       onClick={openTeamModal}
                       className={`${pageStyles.teamButton} ${pageStyles.teamAccent}`}
                     >
-                      <Settings className="w-4 h-4" /> 팀 설정
+                      <Settings size={16} /> 팀 설정
                     </button>
                   </>
                 )}
@@ -1574,13 +1578,13 @@ export default function ResourceGanttChart() {
                     계정 관리
                   </Link>
                 )}
-                <button onClick={handleLogout} className={pageStyles.logoutButton}><LogOut className="w-4 h-4" /></button>
+                <button onClick={handleLogout} className={pageStyles.logoutButton}><LogOut size={16} /></button>
             </div>
         </div>
 
         {banner && (
           <div className={`${pageStyles.banner} ${banner.tone === 'error' ? pageStyles.bannerError : banner.tone === 'info' ? pageStyles.bannerInfo : pageStyles.bannerSuccess}`}>
-            <Check className="w-4 h-4" />
+            <Check size={16} className={pageStyles.bannerIcon} />
             <span className={pageStyles.bannerText}>{banner.text}</span>
           </div>
         )}
@@ -1649,6 +1653,14 @@ export default function ResourceGanttChart() {
             onShortcutClick={handleShortcutClick}
             onProjectClick={handleProjectClick}
             setHoveredProjectName={setHoveredProjectName}
+          />
+        </div>
+
+        <div className={pageStyles.calendarShell}>
+          <CalendarView
+            timeline={timeline}
+            projects={projects}
+            onProjectClick={handleProjectClick}
           />
         </div>
 

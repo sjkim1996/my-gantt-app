@@ -98,7 +98,7 @@ const GanttTable: React.FC<Props> = ({
                       <>
                         <div className={`${styles.timelineLabel} ${w.isTodayWeek ? styles.timelineLabelToday : styles.timelineLabelDefault}`}>
                           {showCompactWeekLabel ? w.compactLabel || w.label : w.label}
-                          {w.isTodayWeek && <span className="inline-block w-1.5 h-1.5 bg-indigo-500 rounded-full ml-1 align-middle mb-0.5"></span>}
+                          {w.isTodayWeek && <span className={styles.todayDot}></span>}
                         </div>
                         <div className={styles.timelineSublabel}>{w.subLabel}</div>
                       </>
@@ -108,7 +108,7 @@ const GanttTable: React.FC<Props> = ({
                           <>
                             <div className={`${styles.timelineLabel} ${w.isTodayWeek ? styles.timelineLabelToday : styles.timelineLabelDefault}`}>
                               {w.label}
-                              {w.isTodayWeek && <span className="inline-block w-1.5 h-1.5 bg-indigo-500 rounded-full ml-1 align-middle mb-0.5"></span>}
+                              {w.isTodayWeek && <span className={styles.todayDot}></span>}
                             </div>
                             <div className={styles.timelineSublabel}>{w.subLabel}</div>
                           </>
@@ -235,6 +235,10 @@ const GanttTable: React.FC<Props> = ({
                           const milestoneHeight = barHeight; // match project bar height
                           const milestoneTop = barTop; // align with project bar top
                           const milestoneOpacity = isHighlighted ? 0.95 : hoveredProjectName ? 0.25 : 0.7;
+                          const backgroundColor = colorSet.customBg ?? colorSet.bgHex;
+                          const borderColor = colorSet.customBorder ?? colorSet.borderHex;
+                          const textColor = colorSet.customText ?? colorSet.textHex;
+                          const barColor = colorSet.barColor ?? colorSet.barHex;
 
                           return (
                             <div key={proj.id}>
@@ -242,14 +246,14 @@ const GanttTable: React.FC<Props> = ({
                                 onClick={() => handleProjectClick(proj)}
                                 onMouseEnter={() => { setHoveredProjectName(proj.name); setHoveredBlockKey(projKey); }}
                                 onMouseLeave={() => { setHoveredProjectName(null); setHoveredBlockKey(null); }}
-                                className={`${styles.projectBlock} group ${colorSet.customBg ? '' : `${colorSet.bg} ${colorSet.border}`} ${
+                                className={`${styles.projectBlock} ${
                                   isDimmed ? styles.projectDimmed : styles.projectHover
                                 } ${isHighlighted ? styles.projectHighlighted : ''}`}
-                                style={{ left: `${left}%`, width: `${width}%`, top, backgroundColor: colorSet.customBg, borderColor: colorSet.customBorder }}
+                                style={{ left: `${left}%`, width: `${width}%`, top, backgroundColor, borderColor }}
                                 title={barTitle}
                               >
-                                <div className={`${styles.projectBar} ${colorSet.barClass || ''}`} style={{ backgroundColor: colorSet.barColor }}></div>
-                                <span className={`${styles.projectText} ${colorSet.textClass || ''}`} style={{ color: colorSet.customText }}>
+                                <div className={styles.projectBar} style={{ backgroundColor: barColor }}></div>
+                                <span className={styles.projectText} style={{ color: textColor }}>
                                   {proj.name}
                                 </span>
                                 {proj.notes && (
