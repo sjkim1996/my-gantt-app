@@ -117,6 +117,7 @@ export default function ResourceGanttChart() {
   const [confirmPw, setConfirmPw] = useState('');
   const [vacations, setVacations] = useState<Vacation[]>([]);
   const [vacationModalDefaultTab, setVacationModalDefaultTab] = useState<'create' | 'list'>('create');
+  const [activeTab, setActiveTab] = useState<'gantt' | 'calendar'>('gantt');
   const [calendarSelectedMembers, setCalendarSelectedMembers] = useState<Assignee[]>([]);
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => {
     const d = new Date();
@@ -1707,58 +1708,78 @@ export default function ResourceGanttChart() {
           />
         </div>
 
-        <div className={pageStyles.calendarShell}>
-          <CalendarView
-            month={calendarMonth}
-            onMonthChange={setCalendarMonth}
-            teams={teams}
-            selectedMembers={calendarSelectedMembers}
-            onToggleTeam={toggleCalendarTeam}
-            onToggleMember={toggleCalendarMember}
-            onSelectAll={selectAllCalendarMembers}
-            onClearAll={clearCalendarMembers}
-            projects={projects}
-            vacations={combinedVacations}
-          />
+        <div className={pageStyles.tabBar}>
+          <button
+            className={`${pageStyles.tabButton} ${activeTab === 'gantt' ? pageStyles.tabActive : pageStyles.tabInactive}`}
+            onClick={() => setActiveTab('gantt')}
+          >
+            간트 뷰
+          </button>
+          <button
+            className={`${pageStyles.tabButton} ${activeTab === 'calendar' ? pageStyles.tabActive : pageStyles.tabInactive}`}
+            onClick={() => setActiveTab('calendar')}
+          >
+            캘린더 뷰
+          </button>
         </div>
 
-        {/* Chart Controls */}
-        <ChartControls
-          viewMode={viewMode}
-          onPrev={handlePrevMonth}
-          onNext={handleNextMonth}
-          onToday={handleJumpToToday}
-          onViewChange={handleViewChange}
-          onZoomIn={handleZoomIn}
-          onZoomOut={handleZoomOut}
-          canZoomIn={canZoomIn}
-          canZoomOut={canZoomOut}
-        />
+        {activeTab === 'calendar' ? (
+          <div className={pageStyles.calendarShell}>
+            <CalendarView
+              month={calendarMonth}
+              onMonthChange={setCalendarMonth}
+              teams={teams}
+              selectedMembers={calendarSelectedMembers}
+              onToggleTeam={toggleCalendarTeam}
+              onToggleMember={toggleCalendarMember}
+              onSelectAll={selectAllCalendarMembers}
+              onClearAll={clearCalendarMembers}
+              projects={projects}
+              vacations={combinedVacations}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Chart Controls */}
+            <ChartControls
+              viewMode={viewMode}
+              onPrev={handlePrevMonth}
+              onNext={handleNextMonth}
+              onToday={handleJumpToToday}
+              onViewChange={handleViewChange}
+              onZoomIn={handleZoomIn}
+              onZoomOut={handleZoomOut}
+              canZoomIn={canZoomIn}
+              canZoomOut={canZoomOut}
+            />
+          </>
+        )}
       </div>
 
-      {/* --- Main Gantt Table (Scrollable) --- */}
-      <div className={pageStyles.ganttShell}>
-        <GanttTable
-          timeline={timeline}
-          teams={teams}
-          projects={projects}
-          vacations={combinedVacations}
-          viewMode={viewMode}
-          chartContainerRef={chartContainerRef}
-          todayColumnRef={todayColumnRef}
-          rowRefs={rowRefs}
-          hoveredProjectName={hoveredProjectName}
-          setHoveredProjectName={setHoveredProjectName}
-          handleProjectClick={handleProjectClick}
-          chartTotalDays={chartTotalDays}
-          weekCellWidth={weekCellWidth}
-          dayCellWidth={dayCellWidth}
-          onVacationClick={(vac) => {
-            if (!canEdit) return;
-            void openVacationModal({ tab: 'list' });
-          }}
-        />
-      </div>
+      {activeTab === 'gantt' && (
+        <div className={pageStyles.ganttShell}>
+          <GanttTable
+            timeline={timeline}
+            teams={teams}
+            projects={projects}
+            vacations={combinedVacations}
+            viewMode={viewMode}
+            chartContainerRef={chartContainerRef}
+            todayColumnRef={todayColumnRef}
+            rowRefs={rowRefs}
+            hoveredProjectName={hoveredProjectName}
+            setHoveredProjectName={setHoveredProjectName}
+            handleProjectClick={handleProjectClick}
+            chartTotalDays={chartTotalDays}
+            weekCellWidth={weekCellWidth}
+            dayCellWidth={dayCellWidth}
+            onVacationClick={(vac) => {
+              if (!canEdit) return;
+              void openVacationModal({ tab: 'list' });
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -1095,6 +1095,33 @@
   font-weight: 600;
 }
 
+.tabBar {
+  display: inline-flex;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.tabButton {
+  padding: 0.55rem 1rem;
+  border-radius: 0.7rem;
+  font-weight: 700;
+  border: 1px solid var(--gray-200);
+  background: #fff;
+  color: var(--gray-600);
+  transition: all 0.15s ease;
+  font-size: 0.9rem;
+}
+
+.tabActive {
+  background: var(--indigo-50);
+  color: var(--indigo-700);
+  border-color: var(--indigo-200);
+}
+
+.tabInactive:hover {
+  background: var(--gray-50);
+}
+
 .dashboardShell {
   width: 100%;
   height: 240px;
