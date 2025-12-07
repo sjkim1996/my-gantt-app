@@ -507,8 +507,15 @@ const CalendarView: React.FC<Props> = ({
               ))}
               {(dayModalData?.milestones || []).map((m, idx) => (
                 <div key={`m-${idx}`} className={styles.modalItem}>
-                  <div className={styles.modalItemTitle}>[마일스톤] {m.project}</div>
-                  <div className={styles.modalMeta}>{m.label}</div>
+                  <div className={styles.modalItemTitleRow}>
+                    <span className={styles.milestoneDot} style={{ backgroundColor: m.color || '#f59e0b' }}>
+                      <Flag className="w-3 h-3" />
+                    </span>
+                    <div>
+                      <div className={styles.modalItemTitle}>{m.project}</div>
+                      <div className={styles.modalMeta}>{m.label}</div>
+                    </div>
+                  </div>
                 </div>
               ))}
               {(dayModalData?.vacations || []).map((v, idx) => (
