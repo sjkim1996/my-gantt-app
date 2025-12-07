@@ -1,7 +1,7 @@
 import React from 'react';
 import { Clock, Edit3, Target, Flag } from 'lucide-react';
 import { GroupedProject, Project } from '../types';
-import { BAR_COLORS } from '../utils/colors';
+import { getColorSet } from '../utils/colors';
 import styles from '../styles/Dashboard.module.css';
 
 type Props = {
@@ -81,47 +81,49 @@ const Dashboard: React.FC<Props> = ({
         </h2>
         <div className={styles.allList}>
           <div className={styles.allGrid}>
-            {groupedProjects.map((group) => (
-              <div
-                key={group.id}
-                onClick={() => onShortcutClick(group)}
-                onMouseEnter={() => setHoveredProjectName(group.name)}
-                onMouseLeave={() => setHoveredProjectName(null)}
-                className={`${styles.projectCard} ${hoveredProjectName === group.name ? styles.projectActive : ''}`}
-              >
+            {groupedProjects.map((group) => {
+              const colorSet = getColorSet(group);
+              return (
                 <div
-                  className={styles.projectBar}
-                  style={{ backgroundColor: BAR_COLORS[group.colorIdx % BAR_COLORS.length].barHex }}
-                ></div>
-                <div className={styles.projectBody}>
-                  <div className={styles.projectName} title={group.name}>
-                    {group.name}
-                  </div>
-                  <div className={styles.projectMembers}>
-                    {group.members.slice(0, 2).map((m, i) => (
-                      <span key={i} className={styles.projectChip}>
-                        {m.person}
-                      </span>
-                    ))}
-                    {group.members.length > 2 && (
-                      <span className={styles.projectMore}>+{group.members.length - 2}</span>
-                    )}
-                  </div>
-                </div>
-                <button
-                  className={styles.editButton}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onProjectClick(group);
-                    }}
-                    aria-label="프로젝트 수정"
-                  >
-                    <div className={styles.editButtonInner}>
-                      <Edit3 size={12} />
+                  key={group.id}
+                  onClick={() => onShortcutClick(group)}
+                  onMouseEnter={() => setHoveredProjectName(group.name)}
+                  onMouseLeave={() => setHoveredProjectName(null)}
+                  className={`${styles.projectCard} ${hoveredProjectName === group.name ? styles.projectActive : ''}`}
+                >
+                  <div
+                    className={styles.projectBar}
+                    style={{ backgroundColor: colorSet.barHex }}
+                  ></div>
+                  <div className={styles.projectBody}>
+                    <div className={styles.projectName} title={group.name}>
+                      {group.name}
                     </div>
-                  </button>
-                </div>
-              ))}
+                    <div className={styles.projectMembers}>
+                      {group.members.slice(0, 2).map((m, i) => (
+                        <span key={i} className={styles.projectChip}>
+                          {m.person}
+                        </span>
+                      ))}
+                      {group.members.length > 2 && (
+                        <span className={styles.projectMore}>+{group.members.length - 2}</span>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    className={styles.editButton}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onProjectClick(group);
+                      }}
+                      aria-label="프로젝트 수정"
+                    >
+                      <div className={styles.editButtonInner}>
+                        <Edit3 size={12} />
+                      </div>
+                    </button>
+                  </div>
+              );})}
             {groupedProjects.length === 0 && (
               <div className={styles.emptyProjects}>
                 아직 프로젝트가 없습니다.
