@@ -218,6 +218,7 @@
   @apply border border-gray-100 rounded-lg p-3 bg-gray-50;
 }
 
+<<<<<<< HEAD
 .modalItemTitleRow {
   @apply flex items-center gap-2;
 }
@@ -236,6 +237,8 @@
   border: 1px solid rgba(0,0,0,0.08);
 }
 
+=======
+>>>>>>> parent of e7249f5 (ㄷㄷ)
 .modalItemTitle {
   @apply text-sm font-semibold text-gray-800;
 }
