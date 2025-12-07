@@ -206,52 +206,6 @@ const CalendarView: React.FC<Props> = ({
     });
   }, [weeklySegments]);
 
-  const vacationLanesByWeek = useMemo<Segment[][][]>(() => {
-    const lanesByWeek: Segment[][][] = Array.from({ length: 6 }).map(() => []);
-    vacations.forEach((v, idx) => {
-      const key = `${(v.team || '').toLowerCase()}__${(v.person || '').toLowerCase()}`;
-      if (!selectedSet.has(key)) return;
-      const start = parseDate(v.start);
-      const end = parseDate(v.end);
-      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return;
-      for (let w = 0; w < 6; w++) {
-        const weekStart = new Date(startOfGrid);
-        weekStart.setDate(startOfGrid.getDate() + w * 7);
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 6);
-        if (end < weekStart || start > weekEnd) continue;
-        const segStart = start < weekStart ? weekStart : start;
-        const segEnd = end > weekEnd ? weekEnd : end;
-        const startIdx = segStart.getDay();
-        const span = Math.max(1, Math.floor((segEnd.getTime() - segStart.getTime()) / 86400000) + 1);
-        const seg: Segment = {
-          projectKey: `vac-${idx}`,
-          name: v.label || '휴가',
-          members: [{ name: v.person, team: v.team || '' }],
-          weekIndex: w,
-          startIdx,
-          span,
-          color: 'rgba(0,0,0,0.65)',
-          textColor: '#fff',
-        };
-        const lanes = lanesByWeek[w];
-        let placed = false;
-        for (const lane of lanes) {
-          const collision = lane.some(
-            (s) => !(seg.startIdx + seg.span <= s.startIdx || s.startIdx + s.span <= seg.startIdx)
-          );
-          if (!collision) {
-            lane.push(seg);
-            placed = true;
-            break;
-          }
-        }
-        if (!placed) lanes.push([seg]);
-      }
-    });
-    return lanesByWeek;
-  }, [vacations, selectedSet, startOfGrid]);
-
   const dayOverlaps = useMemo(() => {
     const map = new Map<string, number>();
     days.forEach((d) => map.set(d.key, 0));
@@ -314,7 +268,7 @@ const CalendarView: React.FC<Props> = ({
     return false;
   };
 
-  const maxVacLanes = useMemo(() => Math.max(...vacationLanesByWeek.map((l) => l.length), 0), [vacationLanesByWeek]);
+  const maxVacLanes = 0;
 
   const handleMonthOffset = (delta: number) => {
     const next = new Date(month);
@@ -422,6 +376,14 @@ const CalendarView: React.FC<Props> = ({
               {days.map((day) => {
                 const overlapCount = dayOverlaps.get(day.key) || 0;
                 const showMore = overlapCount > 3;
+                const vacs = dayDetails.get(day.key)?.vacations || [];
+                const vacationNames = Array.from(
+                  new Set(
+                    vacs
+                      .filter((v) => !!v.person)
+                      .map((v) => (v.person || '').trim())
+                  )
+                );
                 return (
                   <div
                     key={day.key}
@@ -439,36 +401,21 @@ const CalendarView: React.FC<Props> = ({
                         <button className={styles.moreBadge} onClick={() => openDayModal(day.key)}>+more</button>
                       )}
                     </div>
+                    {vacationNames.length > 0 && (
+                      <div className={styles.vacationList}>
+                        {vacationNames.join(', ')} 휴가
+                      </div>
+                    )}
+                    {showMore && (
+                      <div className={styles.overflowNotice}>
+                        일정이 너무 많아 표시할 수 없습니다. 우측 +more를 확인하세요.
+                      </div>
+                    )}
                   </div>
                 );
               })}
 
               <div className={styles.barLayer} style={{ height: GRID_OFFSET + 6 * (DAY_HEIGHT + DAY_GAP) }}>
-                {vacationLanesByWeek.map((lanes, weekIdx) =>
-                  lanes.map((lane, laneIdx) =>
-                    lane.map((seg) => {
-                      const left = seg.startIdx;
-                      const width = seg.span;
-                      if (shouldHideSegment(weekIdx, seg)) return null;
-                      return (
-                        <div
-                          key={`${seg.projectKey}-vac-${weekIdx}-${laneIdx}-${left}`}
-                          className={`${styles.bar} ${styles.vacBar}`}
-                          style={{
-                            top: GRID_OFFSET + weekIdx * (DAY_HEIGHT + DAY_GAP) + laneIdx * (VAC_HEIGHT + VAC_GAP),
-                            left: `calc((var(--col-width) + var(--day-gap)) * ${left})`,
-                            width: `calc(var(--col-width) * ${width} + var(--day-gap) * ${width - 1})`,
-                            height: VAC_HEIGHT,
-                            backgroundColor: 'rgba(55, 65, 81, 0.35)',
-                            color: '#fff',
-                          }}
-                          title={`${seg.name} · ${seg.members.map((m) => m.name).join(', ')}`}
-                        />
-                      );
-                    })
-                  )
-                )}
-
                 {lanesByWeek.map((lanes, weekIdx) =>
                   lanes.map((lane, laneIdx) =>
                     lane.map((seg) => {
