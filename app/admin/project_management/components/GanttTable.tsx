@@ -267,22 +267,14 @@ const GanttTable: React.FC<Props> = ({
                               </div>
 
                               {(proj.milestones || []).map((m) => {
-                                const startDate = parseDate(m.date);
-                                const rawEnd = m.end || m.date;
-                                const endDate = parseDate(rawEnd);
-                                if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return null;
-                                const inRangeStart = startDate < effectiveStart ? effectiveStart : startDate;
-                                const inRangeEnd = endDate > effectiveEnd ? effectiveEnd : endDate;
-                                if (inRangeEnd < effectiveStart || inRangeStart > effectiveEnd) return null;
-                                if (inRangeEnd < inRangeStart) return null;
-                                const offset = getDaysDiff(chartStart, inRangeStart);
-                                const spanDays = Math.max(1, getDaysDiff(inRangeStart, inRangeEnd) + 1);
+                                const mDate = parseDate(m.date);
+                                if (mDate < effectiveStart || mDate > effectiveEnd) return null;
+                                const offset = getDaysDiff(chartStart, mDate);
                                 const leftPos = (offset / duration) * 100;
-                                const blockWidth = (spanDays / duration) * 100;
+                                const blockWidth = dayWidthPct;
                                 const baseColor = proj.customColor || colorSet.barHex;
                                 const milestoneColor = baseColor ? darkenColor(baseColor, 0.18) : '#4b5563';
                                 const milestoneBorder = baseColor ? darkenColor(baseColor, 0.32) : '#374151';
-                                const dateLabel = `${m.date}${rawEnd && rawEnd !== m.date ? ` ~ ${rawEnd}` : ''}`;
                               return (
                                 <div
                                   key={m.id}
@@ -299,14 +291,14 @@ const GanttTable: React.FC<Props> = ({
                                       borderColor: milestoneBorder,
                                       opacity: milestoneOpacity,
                                     }}
-                                    title={`${m.label} (${dateLabel})`}
+                                    title={`${m.label} (${m.date})`}
                                   >
                                     {viewMode === 'day' && (
                                       <span className={styles.milestoneLabel}>{m.label}</span>
                                     )}
                                     <span className={styles.milestoneTooltip}>
                                       <strong>{m.label}</strong>
-                                      <span>{dateLabel}</span>
+                                      <span>{m.date}</span>
                                     </span>
                                   </div>
                                 );

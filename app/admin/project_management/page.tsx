@@ -131,7 +131,6 @@ export default function ResourceGanttChart() {
   const initialScrolledRef = useRef(false);
   const colorForNameRef = useRef<Map<string, number>>(new Map());
   const colorCursorRef = useRef(0);
-  const paletteOrderRef = useRef<number[]>([]);
   const paletteSize = BAR_COLORS.length;
   const autoTeamSyncRef = useRef(false);
   const WEEK_SPANS = [4, 6, 8, 10, 12, 16, 20] as const;
@@ -215,36 +214,14 @@ export default function ResourceGanttChart() {
     return false;
   };
 
-  const shufflePalette = () => {
-    const arr = Array.from({ length: paletteSize }, (_, i) => i);
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    paletteOrderRef.current = arr;
-  };
-
   const getColorIdxForName = useCallback((name: string) => {
     const existing = colorForNameRef.current.get(name);
     if (typeof existing === 'number') return existing;
-    if (paletteOrderRef.current.length !== paletteSize) shufflePalette();
-    const idx = paletteOrderRef.current[colorCursorRef.current % paletteOrderRef.current.length];
+    const idx = colorCursorRef.current % paletteSize;
     colorCursorRef.current += 1;
     colorForNameRef.current.set(name, idx);
     return idx;
   }, [paletteSize]);
-
-  const reseedColors = useCallback((names: string[]) => {
-    shufflePalette();
-    colorForNameRef.current = new Map();
-    colorCursorRef.current = 0;
-    names.forEach((n) => {
-      if (!colorForNameRef.current.has(n)) {
-        const idx = getColorIdxForName(n);
-        colorForNameRef.current.set(n, idx);
-      }
-    });
-  }, [getColorIdxForName]);
 
   const applyProjects = useCallback((list: Project[]) => {
     const viewerId = (effectiveSession?.id || '').toLowerCase();
@@ -260,8 +237,6 @@ export default function ResourceGanttChart() {
       role === 'member'
         ? list.map((p) => ({ ...p, vacations: filterVacations(p.vacations) }))
         : list;
-    const uniqueNames = Array.from(new Set(sanitized.map((p) => p.name)));
-    reseedColors(uniqueNames);
     const colored = sanitized.map((p) => {
       const normalizedMilestones = (p.milestones || []).map((m) => ({
         ...m,
@@ -276,7 +251,7 @@ export default function ResourceGanttChart() {
       return { ...p, colorIdx, milestones: mergeMilestones(normalizedMilestones, []), vacations: p.vacations ? mergeVacations(p.vacations, []) : [] };
     });
     setProjects(dedupeProjects(colored));
-  }, [role, getColorIdxForName, effectiveSession?.id, effectiveSession?.label, reseedColors]);
+  }, [role, getColorIdxForName, effectiveSession?.id, effectiveSession?.label]);
 
   const refreshProjects = useCallback(async () => {
     try {

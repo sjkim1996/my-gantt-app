@@ -341,7 +341,7 @@
   background: rgba(55, 65, 81, 0.8);
   transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
   cursor: pointer;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .milestoneBlock:hover {
@@ -356,8 +356,6 @@
   color: #fff;
   padding: 0.25rem 0.5rem;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .milestoneTooltip {
