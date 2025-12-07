@@ -234,7 +234,7 @@ const CalendarView: React.FC<Props> = ({
   const dayDetails = useMemo(() => {
     const map = new Map<
       string,
-      { projects: ProjectGroup[]; milestones: { label: string; project: string }[]; vacations: Vacation[] }
+      { projects: ProjectGroup[]; milestones: { label: string; project: string; color?: string }[]; vacations: Vacation[] }
     >();
     days.forEach((d) => {
       const projectsOnDay = groupedProjects.filter((g) => d.date >= g.start && d.date <= g.end);
@@ -242,7 +242,7 @@ const CalendarView: React.FC<Props> = ({
         .flatMap((g) =>
           g.milestones
             .filter((m) => formatDate(m.date) === d.key)
-            .map((m) => ({ label: m.label, project: g.name }))
+            .map((m) => ({ label: m.label, project: g.name, color: g.barHex || g.color }))
         );
       const vacs = vacations.filter((v) => {
         const key = `${(v.team || '').toLowerCase()}__${(v.person || '').toLowerCase()}`;
@@ -508,7 +508,7 @@ const CalendarView: React.FC<Props> = ({
               {(dayModalData?.milestones || []).map((m, idx) => (
                 <div key={`m-${idx}`} className={styles.modalItem}>
                   <div className={styles.modalItemTitleRow}>
-                    <span className={styles.milestoneDot} style={{ backgroundColor: '#f59e0b' }}>
+                    <span className={styles.milestoneDot} style={{ backgroundColor: m.color || '#f59e0b' }}>
                       <Flag className="w-3 h-3" />
                     </span>
                     <div>
