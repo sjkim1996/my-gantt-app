@@ -508,7 +508,7 @@ const CalendarView: React.FC<Props> = ({
               {(dayModalData?.milestones || []).map((m, idx) => (
                 <div key={`m-${idx}`} className={styles.modalItem}>
                   <div className={styles.modalItemTitleRow}>
-                    <span className={styles.milestoneDot} style={{ backgroundColor: m.color || '#f59e0b' }}>
+                    <span className={styles.milestoneDot} style={{ backgroundColor: '#f59e0b' }}>
                       <Flag className="w-3 h-3" />
                     </span>
                     <div>
