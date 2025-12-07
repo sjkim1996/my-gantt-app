@@ -229,13 +229,6 @@
   border: 1px solid rgba(0,0,0,0.08);
 }
 
-.milestoneDot {
-  @apply inline-flex items-center justify-center rounded-full text-white;
-  width: 1.2rem;
-  height: 1.2rem;
-  border: 1px solid rgba(0,0,0,0.08);
-}
-
 .modalItemTitle {
   @apply text-sm font-semibold text-gray-800;
 }
