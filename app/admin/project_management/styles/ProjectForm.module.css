@@ -222,6 +222,11 @@
   color: var(--gray-800);
 }
 
+.rangeDivider {
+  font-weight: 700;
+  color: var(--gray-400);
+}
+
 .milestoneAdd {
   padding: 0.55rem 0.75rem;
   background: var(--indigo-600);

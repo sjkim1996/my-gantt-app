@@ -657,6 +657,11 @@
   border-radius: 9999px;
 }
 
+.inlineDivider {
+  font-weight: 700;
+  color: var(--gray-400);
+}
+
 .tagRemove {
   color: var(--gray-400);
   background: transparent;

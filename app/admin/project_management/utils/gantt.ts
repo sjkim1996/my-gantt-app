@@ -5,9 +5,11 @@ import { getColorSet } from './colors';
 export const mergeMilestones = (a: Milestone[] = [], b: Milestone[] = []) => {
   const map = new Map<string, Milestone>();
   [...a, ...b].forEach(m => {
-    const key = `${m.date}-${m.label}`;
+    const start = m.date;
+    const end = m.end || m.date;
+    const key = `${start}-${end}-${m.label}`;
     if (!map.has(key)) {
-      map.set(key, { ...m, color: m.color || '#ef4444' });
+      map.set(key, { ...m, end, color: m.color || '#ef4444' });
     }
   });
   return Array.from(map.values());

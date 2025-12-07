@@ -20,10 +20,11 @@ export async function GET(req: Request) {
     type ProjectDoc = IncomingProject & { _id?: string; toObject?: () => IncomingProject & { _id?: string } };
     const normalized = projects.map((p) => {
       const doc = p as ProjectDoc;
-      if (typeof doc.toObject === 'function') {
-        return doc.toObject();
-      }
-      return doc;
+      const base = typeof doc.toObject === 'function' ? doc.toObject() : doc;
+      const milestones = Array.isArray(base.milestones)
+        ? base.milestones.map((m) => ({ ...m, end: m.end || m.date }))
+        : [];
+      return { ...base, milestones };
     });
     const visible = normalized;
 
@@ -50,7 +51,7 @@ type IncomingProject = {
   isTentative?: boolean;
   customColor?: string;
   notes?: string;
-  milestones?: { id: string; label: string; date: string; color?: string }[];
+  milestones?: { id: string; label: string; date: string; end?: string; color?: string }[];
   vacations?: { id: string; person: string; team?: string; label?: string; start: string; end: string; color?: string }[];
   attachments?: { name?: string; url?: string; key?: string }[];
 };
@@ -61,7 +62,14 @@ const sanitizeProject = (p?: IncomingProject | null) => {
   const cleanMilestones = Array.isArray(p.milestones)
     ? p.milestones
         .filter((m) => m && m.label && isValidDate(m.date))
-        .map((m) => ({ ...m, color: m.color || '#ef4444' }))
+        .map((m) => {
+          const start = m.date;
+          const validEnd = isValidDate(m.end) ? m.end! : start;
+          const startTime = Date.parse(start);
+          const endTime = Date.parse(validEnd);
+          const end = Number.isFinite(endTime) && endTime >= startTime ? validEnd : start;
+          return { ...m, date: start, end, color: m.color || '#ef4444' };
+        })
     : [];
   const cleanVacations = Array.isArray(p.vacations)
     ? p.vacations

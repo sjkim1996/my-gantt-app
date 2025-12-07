@@ -1,6 +1,7 @@
 export interface Milestone {
   id: string;
   date: string;
+  end?: string;
   label: string;
   color: string;
 }

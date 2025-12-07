@@ -75,6 +75,7 @@ export default function ResourceGanttChart() {
   const [masterMilestones, setMasterMilestones] = useState<Milestone[]>([]);
   const [masterMilestoneLabel, setMasterMilestoneLabel] = useState('');
   const [masterMilestoneDate, setMasterMilestoneDate] = useState('');
+  const [masterMilestoneEnd, setMasterMilestoneEnd] = useState('');
   const [editingMembers, setEditingMembers] = useState<EditingMember[]>([]);
   
   const [modalAssigneeInput, setModalAssigneeInput] = useState('');
@@ -99,7 +100,7 @@ export default function ResourceGanttChart() {
   const [projectTentative, setProjectTentative] = useState(false);
   const [projectCustomColor, setProjectCustomColor] = useState(getRandomHexColor());
   const [projectNotes, setProjectNotes] = useState('');
-  const [projectMilestones, setProjectMilestones] = useState<Milestone[]>([{ id: 'init-m1', label: '', date: '', color: getRandomHexColor() }]);
+  const [projectMilestones, setProjectMilestones] = useState<Milestone[]>([{ id: 'init-m1', label: '', date: '', end: '', color: getRandomHexColor() }]);
   const [projectVacations, setProjectVacations] = useState<Vacation[]>([{ id: 'init-v1', person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
   const [selectedAssignees, setSelectedAssignees] = useState<Assignee[]>([]);
   const [assigneeInput, setAssigneeInput] = useState('');
@@ -237,12 +238,17 @@ export default function ResourceGanttChart() {
         ? list.map((p) => ({ ...p, vacations: filterVacations(p.vacations) }))
         : list;
     const colored = sanitized.map((p) => {
+      const normalizedMilestones = (p.milestones || []).map((m) => ({
+        ...m,
+        end: m.end || m.date,
+        color: m.color || getRandomHexColor(),
+      }));
       const hasValidColor = typeof p.colorIdx === 'number' && !Number.isNaN(p.colorIdx);
       const colorIdx = hasValidColor ? p.colorIdx : getColorIdxForName(p.name);
       if (!colorForNameRef.current.has(p.name)) {
         colorForNameRef.current.set(p.name, colorIdx);
       }
-      return { ...p, colorIdx };
+      return { ...p, colorIdx, milestones: mergeMilestones(normalizedMilestones, []), vacations: p.vacations ? mergeVacations(p.vacations, []) : [] };
     });
     setProjects(dedupeProjects(colored));
   }, [role, getColorIdxForName, effectiveSession?.id, effectiveSession?.label]);
@@ -711,14 +717,19 @@ export default function ResourceGanttChart() {
   };
   
   const addProjectMilestone = () => {
-    setProjectMilestones(prev => [...prev, { id: `${Date.now()}`, label: '', date: '', color: getRandomHexColor() }]);
+    setProjectMilestones(prev => [...prev, { id: `${Date.now()}`, label: '', date: '', end: '', color: getRandomHexColor() }]);
   };
-  const updateProjectMilestone = (id: string, field: 'label' | 'date', value: string) => {
+  const updateProjectMilestone = (id: string, field: 'label' | 'date' | 'end', value: string) => {
     setProjectMilestones(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
   };
   const removeProjectMilestone = (id: string) => {
     setProjectMilestones(prev => prev.filter(x => x.id !== id));
   };
+  const normalizeMilestonesForSave = (items: Milestone[]) =>
+    items.map((m) => {
+      const end = m.end && m.end.length > 0 ? m.end : m.date;
+      return { ...m, end, color: m.color || getRandomHexColor() };
+    });
   const addProjectVacation = () => {
     setProjectVacations(prev => [...prev, { id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
   };
@@ -873,7 +884,11 @@ export default function ResourceGanttChart() {
       }
     }
 
-    const cleanedMilestones = projectMilestones.filter(m => m.label && m.date).map(m => ({ ...m, color: m.color || getRandomHexColor() }));
+    const cleanedMilestones = normalizeMilestonesForSave(
+      projectMilestones
+        .filter(m => m.label && m.date)
+        .map((m) => ({ ...m }))
+    );
     const cleanedVacations = projectVacations.filter(v => v.person && v.start && v.end).map(v => ({ ...v, color: v.color || '#94a3b8' }));
 
     const newEntries: ProjectPayload[] = assigneesToAdd.map((assignee) => ({
@@ -912,7 +927,7 @@ export default function ResourceGanttChart() {
           };
         });
         setProjects(prev => dedupeProjects((role === 'member' ? [...prev, ...normalized].map(p => ({ ...p, vacations: [] })) : [...prev, ...normalized])));
-        setProjectName(''); setSelectedAssignees([]); setProjectAttachments([makeAttachment()]); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([{ id: `${Date.now()}`, label: '', date: '', color: getRandomHexColor() }]); setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
+        setProjectName(''); setSelectedAssignees([]); setProjectAttachments([makeAttachment()]); setProjectTentative(false); setProjectCustomColor(getRandomHexColor()); setProjectNotes(''); setProjectMilestones([{ id: `${Date.now()}`, label: '', date: '', end: '', color: getRandomHexColor() }]); setProjectVacations([{ id: `${Date.now()}`, person: '', team: '', label: '', start: '', end: '', color: '#94a3b8' }]);
         showBanner('프로젝트가 추가되었습니다.', 'success');
         setRecentlyAddedProject(targetName);
         setHoveredProjectName(targetName);
@@ -957,7 +972,7 @@ export default function ResourceGanttChart() {
         isTentative: p.isTentative,
         customColor: p.customColor,
         notes: p.notes,
-        milestones: p.milestones,
+        milestones: p.milestones ? mergeMilestones(p.milestones, []) : [],
         vacations: (p.vacations || []).map(v => ({ ...v, person: v.person || p.person, team: v.team || p.team })),
     }; });
     setEditingMembers(members); setIsModalOpen(true);
@@ -992,6 +1007,7 @@ export default function ResourceGanttChart() {
   
   const handleSaveMasterProject = async () => {
     if (!guardEdit()) return;
+    const normalizedMasterMilestones = normalizeMilestonesForSave(masterMilestones);
     const masterAttachmentPayload = toAttachmentPayload(masterAttachments);
     const primaryAttachment = masterAttachmentPayload[0];
     const resolvedDocUrl = primaryAttachment?.url || '';
@@ -1014,14 +1030,14 @@ export default function ResourceGanttChart() {
     const newMembers = editingMembers.filter(m => (m.isNew || !m._id) && !m.isDeleted);
     if (newMembers.length > 0) {
         await apiCreateProject(newMembers.map(m => ({
-            name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: resolvedDocUrl, docKey: resolvedDocKey, docName: resolvedDocName, attachments: masterAttachmentPayload, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: masterMilestones, vacations: m.vacations
+            name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: resolvedDocUrl, docKey: resolvedDocKey, docName: resolvedDocName, attachments: masterAttachmentPayload, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: normalizedMasterMilestones, vacations: m.vacations
         })));
     }
 
     const updatedMembers = editingMembers.filter(m => !m.isNew && !m.isDeleted && m._id);
     for (const m of updatedMembers) {
         await apiUpdateProject({
-            _id: m._id, name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: resolvedDocUrl, docKey: resolvedDocKey, docName: resolvedDocName, attachments: masterAttachmentPayload, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: masterMilestones, vacations: m.vacations
+            _id: m._id, name: masterProjectName, person: m.person, team: m.team, start: m.start, end: m.end, colorIdx: masterColorIdx, docUrl: resolvedDocUrl, docKey: resolvedDocKey, docName: resolvedDocName, attachments: masterAttachmentPayload, isTentative: masterTentative, customColor: masterCustomColor || undefined, notes: masterNotes, milestones: normalizedMasterMilestones, vacations: m.vacations
         });
     }
 
@@ -1484,11 +1500,14 @@ export default function ResourceGanttChart() {
                   <div className={pageStyles.milestoneRow}>
                     <input type="text" value={masterMilestoneLabel} onChange={(e) => setMasterMilestoneLabel(e.target.value)} placeholder="이벤트 이름" className={pageStyles.inlineInput} />
                     <input type="date" value={masterMilestoneDate} onChange={(e) => setMasterMilestoneDate(e.target.value)} className={pageStyles.inlineInput} />
+                    <span className={pageStyles.inlineDivider}>~</span>
+                    <input type="date" value={masterMilestoneEnd || masterMilestoneDate} onChange={(e) => setMasterMilestoneEnd(e.target.value)} className={pageStyles.inlineInput} />
                     <button type="button" onClick={() => {
                       if (!masterMilestoneLabel || !masterMilestoneDate) return;
-                      const m: Milestone = { id: `${Date.now()}`, label: masterMilestoneLabel, date: masterMilestoneDate, color: getRandomHexColor() };
+                      const end = masterMilestoneEnd || masterMilestoneDate;
+                      const m: Milestone = { id: `${Date.now()}`, label: masterMilestoneLabel, date: masterMilestoneDate, end, color: getRandomHexColor() };
                       setMasterMilestones(prev => [...prev, m]);
-                      setMasterMilestoneLabel(''); setMasterMilestoneDate('');
+                      setMasterMilestoneLabel(''); setMasterMilestoneDate(''); setMasterMilestoneEnd('');
                     }} className={pageStyles.primarySmall}>추가</button>
                   </div>
                   <div className={pageStyles.tagList}>
@@ -1496,7 +1515,7 @@ export default function ResourceGanttChart() {
                       <span key={m.id} className={pageStyles.tag}>
                         <span className={pageStyles.inlineDot} style={{ backgroundColor: m.color }}></span>
                         <span className={pageStyles.tagLabel}>{m.label}</span>
-                        <span className={pageStyles.tagDate}>{m.date}</span>
+                        <span className={pageStyles.tagDate}>{m.date}{m.end && m.end !== m.date ? ` ~ ${m.end}` : ''}</span>
                         <button onClick={() => setMasterMilestones(prev => prev.filter(x => x.id !== m.id))} className={pageStyles.tagRemove}>×</button>
                       </span>
                     ))}

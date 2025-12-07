@@ -30,7 +30,7 @@ type Props = {
   onOpenAttachment: (att: Attachment) => void;
   projectMilestones: Milestone[];
   addProjectMilestone: () => void;
-  updateProjectMilestone: (id: string, field: 'label' | 'date', value: string) => void;
+  updateProjectMilestone: (id: string, field: 'label' | 'date' | 'end', value: string) => void;
   removeProjectMilestone: (id: string) => void;
 };
 
@@ -261,6 +261,13 @@ const ProjectForm: React.FC<Props> = ({
                   type="date"
                   value={m.date}
                   onChange={(e) => updateProjectMilestone(m.id, 'date', e.target.value)}
+                  className={styles.milestoneDate}
+                />
+                <span className={styles.rangeDivider}>~</span>
+                <input
+                  type="date"
+                  value={m.end || m.date}
+                  onChange={(e) => updateProjectMilestone(m.id, 'end', e.target.value)}
                   className={styles.milestoneDate}
                 />
                 <button type="button" onClick={addProjectMilestone} className={styles.milestoneAdd}>
