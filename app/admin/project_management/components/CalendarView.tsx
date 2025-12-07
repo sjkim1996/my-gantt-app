@@ -498,7 +498,10 @@ const CalendarView: React.FC<Props> = ({
             <div className={styles.modalBody}>
               {(dayModalData?.projects || []).map((p) => (
                 <div key={`p-${p.key}`} className={styles.modalItem}>
-                  <div className={styles.modalItemTitle}>{p.name}</div>
+                  <div className={styles.modalItemTitleRow}>
+                    <span className={styles.modalColorDot} style={{ backgroundColor: p.color }}></span>
+                    <span className={styles.modalItemTitle}>{p.name}</span>
+                  </div>
                   <div className={styles.modalMeta}>{p.members.map((m) => m.name).join(', ')}</div>
                 </div>
               ))}

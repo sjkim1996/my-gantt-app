@@ -218,6 +218,17 @@
   @apply border border-gray-100 rounded-lg p-3 bg-gray-50;
 }
 
+.modalItemTitleRow {
+  @apply flex items-center gap-2;
+}
+
+.modalColorDot {
+  @apply inline-block rounded-full;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
 .modalItemTitle {
   @apply text-sm font-semibold text-gray-800;
 }

@@ -133,6 +133,7 @@ export default function ResourceGanttChart() {
   const colorCursorRef = useRef(0);
   const paletteOrderRef = useRef<number[]>([]);
   const paletteSize = BAR_COLORS.length;
+  const initialRecolorRef = useRef(false);
   const autoTeamSyncRef = useRef(false);
   const WEEK_SPANS = [4, 6, 8, 10, 12, 16, 20] as const;
   const DAY_SPANS: number[] = [7, 14, 21, 28, 31];
@@ -215,10 +216,19 @@ export default function ResourceGanttChart() {
     return false;
   };
 
+  const randomFloat = () => {
+    if (typeof crypto !== 'undefined' && 'getRandomValues' in crypto) {
+      const buf = new Uint32Array(1);
+      crypto.getRandomValues(buf);
+      return buf[0] / 0xffffffff;
+    }
+    return Math.random();
+  };
+
   const shufflePalette = () => {
     const arr = Array.from({ length: paletteSize }, (_, i) => i);
     for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      const j = Math.floor(randomFloat() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     paletteOrderRef.current = arr;
@@ -277,6 +287,23 @@ export default function ResourceGanttChart() {
     });
     setProjects(dedupeProjects(colored));
   }, [role, getColorIdxForName, effectiveSession?.id, effectiveSession?.label, reseedColors]);
+
+  // Reassign colors once after data load to improve randomness and align bars/cards
+  useEffect(() => {
+    if (initialRecolorRef.current) return;
+    if (projects.length === 0) return;
+    const names = Array.from(new Set(projects.map((p) => p.name)));
+    reseedColors(names);
+    setProjects((prev) =>
+      dedupeProjects(
+        prev.map((p) => ({
+          ...p,
+          colorIdx: getColorIdxForName(p.name),
+        }))
+      )
+    );
+    initialRecolorRef.current = true;
+  }, [projects.length, reseedColors, getColorIdxForName]);
 
   const refreshProjects = useCallback(async () => {
     try {
