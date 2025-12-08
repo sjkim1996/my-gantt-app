@@ -130,6 +130,7 @@ export default function ResourceGanttChart() {
   const canEdit = isEditRole(role);
   const initialScrolledRef = useRef(false);
   const colorForNameRef = useRef<Map<string, number>>(new Map());
+  const paletteOrderRef = useRef<number[]>([]);
   const paletteSize = BAR_COLORS.length;
   const autoTeamSyncRef = useRef(false);
   const WEEK_SPANS = [4, 6, 8, 10, 12, 16, 20] as const;
@@ -229,9 +230,16 @@ export default function ResourceGanttChart() {
     }
   };
 
+  const ensurePaletteOrder = () => {
+    if (paletteOrderRef.current.length === paletteSize) return;
+    const order = Array.from({ length: paletteSize }, (_, i) => i);
+    shuffleArray(order);
+    paletteOrderRef.current = order;
+  };
+
   const refreshColorMap = useCallback((names: string[]) => {
-    const palette = Array.from({ length: paletteSize }, (_, i) => i);
-    shuffleArray(palette);
+    ensurePaletteOrder();
+    const order = paletteOrderRef.current;
     const shuffledNames = [...names];
     for (let i = shuffledNames.length - 1; i > 0; i--) {
       const j = Math.floor(randomFloat() * (i + 1));
@@ -239,7 +247,7 @@ export default function ResourceGanttChart() {
     }
     const map = new Map<string, number>();
     shuffledNames.forEach((name, idx) => {
-      map.set(name, palette[idx % palette.length]);
+      map.set(name, order[idx % order.length]);
     });
     colorForNameRef.current = map;
   }, [paletteSize]);
@@ -247,7 +255,9 @@ export default function ResourceGanttChart() {
   const getColorIdxForName = useCallback((name: string) => {
     const existing = colorForNameRef.current.get(name);
     if (typeof existing === 'number') return existing;
-    const idx = Math.floor(randomFloat() * paletteSize);
+    ensurePaletteOrder();
+    const order = paletteOrderRef.current;
+    const idx = order[colorForNameRef.current.size % order.length];
     colorForNameRef.current.set(name, idx);
     return idx;
   }, [paletteSize]);
@@ -325,6 +335,20 @@ export default function ResourceGanttChart() {
   useEffect(() => {
     setAnchorDate(parseDate(chartStartDate));
   }, [viewMode, chartStartDate]);
+
+  useEffect(() => {
+    if (projects.length === 0) return;
+    const names = Array.from(new Set(projects.map((p) => p.name)));
+    refreshColorMap(names);
+    setProjects((prev) =>
+      dedupeProjects(
+        prev.map((proj) => {
+          const colorIdx = getColorIdxForName(proj.name);
+          return { ...proj, colorIdx };
+        })
+      )
+    );
+  }, [projects.length, refreshColorMap, getColorIdxForName]);
 
   useEffect(() => {
     const lockScroll = isModalOpen || isTeamModalOpen || isVacationModalOpen || isPasswordModalOpen;
