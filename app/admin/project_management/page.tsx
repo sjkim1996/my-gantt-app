@@ -130,7 +130,6 @@ export default function ResourceGanttChart() {
   const canEdit = isEditRole(role);
   const initialScrolledRef = useRef(false);
   const colorForNameRef = useRef<Map<string, number>>(new Map());
-  const colorCursorRef = useRef(0);
   const paletteSize = BAR_COLORS.length;
   const autoTeamSyncRef = useRef(false);
   const WEEK_SPANS = [4, 6, 8, 10, 12, 16, 20] as const;
@@ -214,11 +213,41 @@ export default function ResourceGanttChart() {
     return false;
   };
 
+  const randomFloat = () => {
+    if (typeof crypto !== 'undefined' && 'getRandomValues' in crypto) {
+      const buf = new Uint32Array(1);
+      crypto.getRandomValues(buf);
+      return buf[0] / 0xffffffff;
+    }
+    return Math.random();
+  };
+
+  const shuffleArray = (arr: number[]) => {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(randomFloat() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  };
+
+  const refreshColorMap = useCallback((names: string[]) => {
+    const palette = Array.from({ length: paletteSize }, (_, i) => i);
+    shuffleArray(palette);
+    const shuffledNames = [...names];
+    for (let i = shuffledNames.length - 1; i > 0; i--) {
+      const j = Math.floor(randomFloat() * (i + 1));
+      [shuffledNames[i], shuffledNames[j]] = [shuffledNames[j], shuffledNames[i]];
+    }
+    const map = new Map<string, number>();
+    shuffledNames.forEach((name, idx) => {
+      map.set(name, palette[idx % palette.length]);
+    });
+    colorForNameRef.current = map;
+  }, [paletteSize]);
+
   const getColorIdxForName = useCallback((name: string) => {
     const existing = colorForNameRef.current.get(name);
     if (typeof existing === 'number') return existing;
-    const idx = colorCursorRef.current % paletteSize;
-    colorCursorRef.current += 1;
+    const idx = Math.floor(randomFloat() * paletteSize);
     colorForNameRef.current.set(name, idx);
     return idx;
   }, [paletteSize]);
@@ -237,6 +266,8 @@ export default function ResourceGanttChart() {
       role === 'member'
         ? list.map((p) => ({ ...p, vacations: filterVacations(p.vacations) }))
         : list;
+    const uniqueNames = Array.from(new Set(sanitized.map((p) => p.name)));
+    refreshColorMap(uniqueNames);
     const colored = sanitized.map((p) => {
       const normalizedMilestones = (p.milestones || []).map((m) => ({
         ...m,
@@ -245,13 +276,10 @@ export default function ResourceGanttChart() {
       }));
       const hasValidColor = typeof p.colorIdx === 'number' && !Number.isNaN(p.colorIdx);
       const colorIdx = hasValidColor ? p.colorIdx : getColorIdxForName(p.name);
-      if (!colorForNameRef.current.has(p.name)) {
-        colorForNameRef.current.set(p.name, colorIdx);
-      }
       return { ...p, colorIdx, milestones: mergeMilestones(normalizedMilestones, []), vacations: p.vacations ? mergeVacations(p.vacations, []) : [] };
     });
     setProjects(dedupeProjects(colored));
-  }, [role, getColorIdxForName, effectiveSession?.id, effectiveSession?.label]);
+  }, [role, getColorIdxForName, effectiveSession?.id, effectiveSession?.label, refreshColorMap]);
 
   const refreshProjects = useCallback(async () => {
     try {
