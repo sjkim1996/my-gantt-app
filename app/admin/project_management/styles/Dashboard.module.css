@@ -385,7 +385,7 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  z-index: 620;
+  z-index: 900; /* above sticky headers/side rails */
   backdrop-filter: blur(4px);
 }
 
@@ -399,7 +399,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  z-index: 621;
+  z-index: 901;
 }
 
 .listModalHeader {
