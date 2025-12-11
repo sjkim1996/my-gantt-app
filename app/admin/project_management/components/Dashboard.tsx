@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Edit3, Target, Flag } from 'lucide-react';
+import { Clock, Edit3, Target, Flag, List, X } from 'lucide-react';
 import { GroupedProject, Project } from '../types';
 import { BAR_COLORS } from '../utils/colors';
 import styles from '../styles/Dashboard.module.css';
@@ -23,6 +23,10 @@ const Dashboard: React.FC<Props> = ({
   onProjectClick,
   setHoveredProjectName,
 }) => {
+  const [isListOpen, setIsListOpen] = React.useState(false);
+
+  const closeList = () => setIsListOpen(false);
+
   return (
     <div className={styles.layout}>
       <div className={styles.todayCard}>
@@ -76,9 +80,20 @@ const Dashboard: React.FC<Props> = ({
       </div>
 
       <div className={styles.allCard}>
-        <h2 className={styles.allHeader}>
-          <Target size={14} /> All Projects <span className={styles.allHint}>(click to jump)</span>
-        </h2>
+        <div className={styles.allHeaderRow}>
+          <h2 className={styles.allHeader}>
+            <Target size={14} /> All Projects <span className={styles.allHint}>(click to jump)</span>
+          </h2>
+          <button
+            type="button"
+            className={styles.listButton}
+            onClick={() => setIsListOpen(true)}
+            aria-label="전체 프로젝트 리스트 보기"
+          >
+            <List size={14} />
+            목록
+          </button>
+        </div>
         <div className={styles.allList}>
           <div className={styles.allGrid}>
             {groupedProjects.map((group) => (
@@ -130,6 +145,66 @@ const Dashboard: React.FC<Props> = ({
           </div>
         </div>
       </div>
+      {isListOpen && (
+        <div className={styles.listModalBackdrop} role="presentation" onClick={closeList}>
+          <div
+            className={styles.listModal}
+            role="dialog"
+            aria-modal="true"
+            aria-label="전체 프로젝트 리스트"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.listModalHeader}>
+              <div>
+                <p className={styles.listModalEyebrow}>빠르게 찾기</p>
+                <h3 className={styles.listModalTitle}>전체 프로젝트 목록</h3>
+              </div>
+              <button type="button" className={styles.listClose} onClick={closeList} aria-label="닫기">
+                <X size={14} />
+              </button>
+            </div>
+            <div className={styles.listModalBody}>
+              {groupedProjects.length === 0 ? (
+                <div className={styles.listEmpty}>아직 등록된 프로젝트가 없습니다.</div>
+              ) : (
+                <div className={styles.listRows}>
+                  {groupedProjects.map((group) => (
+                    <button
+                      key={group.id}
+                      className={styles.listRow}
+                      onClick={() => {
+                        onShortcutClick(group);
+                        closeList();
+                      }}
+                    >
+                      <div
+                        className={styles.listSwatch}
+                        style={{
+                          backgroundColor: BAR_COLORS[group.colorIdx % BAR_COLORS.length].barHex,
+                        }}
+                      />
+                      <div className={styles.listRowText}>
+                        <div className={styles.listRowTop}>
+                          <span className={styles.listName}>{group.name}</span>
+                          <span className={styles.listRange}>{group.start} ~ {group.end}</span>
+                        </div>
+                        <div className={styles.listMembers}>
+                          {group.members.slice(0, 3).map((m, idx) => (
+                            <span key={idx} className={styles.listMember}>{m.person}</span>
+                          ))}
+                          {group.members.length > 3 && (
+                            <span className={styles.listMore}>+{group.members.length - 3}</span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

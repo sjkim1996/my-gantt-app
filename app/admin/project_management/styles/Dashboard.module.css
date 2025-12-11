@@ -194,11 +194,18 @@
   }
 }
 
+.allHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
 .allHeader {
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--gray-600);
-  margin-bottom: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   display: flex;
@@ -212,6 +219,26 @@
   font-weight: 400;
   color: var(--gray-400);
   text-transform: lowercase;
+}
+
+.listButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.65rem;
+  background: var(--gray-50);
+  color: var(--gray-700);
+  border: 1px solid var(--gray-200);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.listButton:hover {
+  background: #fff;
+  color: var(--gray-900);
+  border-color: var(--gray-300);
 }
 
 .allList {
@@ -346,6 +373,165 @@
   font-size: 0.9rem;
   padding: 2rem 0;
   border: 2px dashed var(--gray-200);
+  border-radius: 0.75rem;
+}
+
+.listModalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 50;
+  backdrop-filter: blur(4px);
+}
+
+.listModal {
+  width: min(720px, 100%);
+  max-height: min(80vh, 640px);
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 20px 40px -24px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--gray-200);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.listModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--gray-100);
+  background: linear-gradient(120deg, #f8fafc, #fff);
+}
+
+.listModalEyebrow {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gray-400);
+  margin-bottom: 0.1rem;
+}
+
+.listModalTitle {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--gray-900);
+}
+
+.listClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  border: 1px solid var(--gray-200);
+  background: #fff;
+  color: var(--gray-600);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.listClose:hover {
+  background: var(--gray-100);
+  color: var(--gray-900);
+}
+
+.listModalBody {
+  padding: 0.75rem 1rem 1rem;
+  overflow-y: auto;
+}
+
+.listRows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.listRow {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--gray-100);
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.08s ease;
+}
+
+.listRow:hover {
+  border-color: var(--indigo-200);
+  box-shadow: 0 8px 18px -16px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
+}
+
+.listSwatch {
+  width: 0.5rem;
+  height: 100%;
+  border-radius: 9999px;
+  min-height: 38px;
+}
+
+.listRowText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.listRowTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.listName {
+  font-weight: 700;
+  color: var(--gray-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listRange {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  flex-shrink: 0;
+}
+
+.listMembers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.listMember, .listMore {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  background: var(--gray-100);
+  color: var(--gray-600);
+}
+
+.listMore {
+  background: var(--indigo-50);
+  color: var(--indigo-600);
+  border: 1px solid var(--indigo-100);
+}
+
+.listEmpty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--gray-400);
+  border: 1px dashed var(--gray-200);
   border-radius: 0.75rem;
 }
 
