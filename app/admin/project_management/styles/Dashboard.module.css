@@ -288,8 +288,7 @@
 }
 
 .projectActive {
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--project-accent, var(--indigo-300)) 18%, transparent);
+  box-shadow: 0 0 0 4px var(--project-accent, var(--indigo-300));
   border-color: var(--project-accent, var(--indigo-300));
 }
 
@@ -386,7 +385,7 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  z-index: 120;
+  z-index: 620;
   backdrop-filter: blur(4px);
 }
 
@@ -400,6 +399,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  z-index: 621;
 }
 
 .listModalHeader {
