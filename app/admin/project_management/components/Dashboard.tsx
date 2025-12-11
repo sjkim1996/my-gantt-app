@@ -103,11 +103,13 @@ const Dashboard: React.FC<Props> = ({
                 onMouseEnter={() => setHoveredProjectName(group.name)}
                 onMouseLeave={() => setHoveredProjectName(null)}
                 className={`${styles.projectCard} ${hoveredProjectName === group.name ? styles.projectActive : ''}`}
+                style={
+                  {
+                    '--project-accent': BAR_COLORS[group.colorIdx % BAR_COLORS.length].barHex,
+                  } as React.CSSProperties
+                }
               >
-                <div
-                  className={styles.projectBar}
-                  style={{ backgroundColor: BAR_COLORS[group.colorIdx % BAR_COLORS.length].barHex }}
-                ></div>
+                <div className={styles.projectBar}></div>
                 <div className={styles.projectBody}>
                   <div className={styles.projectName} title={group.name}>
                     {group.name}
@@ -172,17 +174,17 @@ const Dashboard: React.FC<Props> = ({
                     <button
                       key={group.id}
                       className={styles.listRow}
+                      style={
+                        {
+                          '--project-accent': BAR_COLORS[group.colorIdx % BAR_COLORS.length].barHex,
+                        } as React.CSSProperties
+                      }
                       onClick={() => {
                         onShortcutClick(group);
                         closeList();
                       }}
                     >
-                      <div
-                        className={styles.listSwatch}
-                        style={{
-                          backgroundColor: BAR_COLORS[group.colorIdx % BAR_COLORS.length].barHex,
-                        }}
-                      />
+                      <div className={styles.listSwatch} />
                       <div className={styles.listRowText}>
                         <div className={styles.listRowTop}>
                           <span className={styles.listName}>{group.name}</span>
