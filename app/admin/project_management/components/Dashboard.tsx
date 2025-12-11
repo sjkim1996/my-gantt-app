@@ -1,7 +1,7 @@
 import React from 'react';
 import { Clock, Edit3, Target, Flag, List, X } from 'lucide-react';
 import { GroupedProject, Project } from '../types';
-import { BAR_COLORS } from '../utils/colors';
+import { getColorSet } from '../utils/colors';
 import styles from '../styles/Dashboard.module.css';
 
 type Props = {
@@ -96,49 +96,49 @@ const Dashboard: React.FC<Props> = ({
         </div>
         <div className={styles.allList}>
           <div className={styles.allGrid}>
-            {groupedProjects.map((group) => (
-              <div
-                key={group.id}
-                onClick={() => onShortcutClick(group)}
-                onMouseEnter={() => setHoveredProjectName(group.name)}
-                onMouseLeave={() => setHoveredProjectName(null)}
-                className={`${styles.projectCard} ${hoveredProjectName === group.name ? styles.projectActive : ''}`}
-                style={
-                  {
-                    '--project-accent': BAR_COLORS[group.colorIdx % BAR_COLORS.length].barHex,
-                  } as React.CSSProperties
-                }
-              >
-                <div className={styles.projectBar}></div>
-                <div className={styles.projectBody}>
-                  <div className={styles.projectName} title={group.name}>
-                    {group.name}
-                  </div>
-                  <div className={styles.projectMembers}>
-                    {group.members.slice(0, 2).map((m, i) => (
-                      <span key={i} className={styles.projectChip}>
-                        {m.person}
-                      </span>
-                    ))}
-                    {group.members.length > 2 && (
-                      <span className={styles.projectMore}>+{group.members.length - 2}</span>
-                    )}
-                  </div>
-                </div>
-                <button
-                  className={styles.editButton}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onProjectClick(group);
-                    }}
-                    aria-label="프로젝트 수정"
-                  >
-                    <div className={styles.editButtonInner}>
-                      <Edit3 size={12} />
+            {groupedProjects.map((group) => {
+              const colorSet = getColorSet(group);
+              const accent = colorSet.barColor ?? colorSet.barHex;
+              return (
+                <div
+                  key={group.id}
+                  onClick={() => onShortcutClick(group)}
+                  onMouseEnter={() => setHoveredProjectName(group.name)}
+                  onMouseLeave={() => setHoveredProjectName(null)}
+                  className={`${styles.projectCard} ${hoveredProjectName === group.name ? styles.projectActive : ''}`}
+                  style={{ '--project-accent': accent } as React.CSSProperties}
+                >
+                  <div className={styles.projectBar}></div>
+                  <div className={styles.projectBody}>
+                    <div className={styles.projectName} title={group.name}>
+                      {group.name}
                     </div>
-                  </button>
-                </div>
-              ))}
+                    <div className={styles.projectMembers}>
+                      {group.members.slice(0, 2).map((m, i) => (
+                        <span key={i} className={styles.projectChip}>
+                          {m.person}
+                        </span>
+                      ))}
+                      {group.members.length > 2 && (
+                        <span className={styles.projectMore}>+{group.members.length - 2}</span>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    className={styles.editButton}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onProjectClick(group);
+                      }}
+                      aria-label="프로젝트 수정"
+                    >
+                      <div className={styles.editButtonInner}>
+                        <Edit3 size={12} />
+                      </div>
+                    </button>
+                  </div>
+                );
+              })}
             {groupedProjects.length === 0 && (
               <div className={styles.emptyProjects}>
                 아직 프로젝트가 없습니다.
@@ -170,37 +170,37 @@ const Dashboard: React.FC<Props> = ({
                 <div className={styles.listEmpty}>아직 등록된 프로젝트가 없습니다.</div>
               ) : (
                 <div className={styles.listRows}>
-                  {groupedProjects.map((group) => (
-                    <button
-                      key={group.id}
-                      className={styles.listRow}
-                      style={
-                        {
-                          '--project-accent': BAR_COLORS[group.colorIdx % BAR_COLORS.length].barHex,
-                        } as React.CSSProperties
-                      }
-                      onClick={() => {
-                        onShortcutClick(group);
-                        closeList();
-                      }}
-                    >
-                      <div className={styles.listSwatch} />
-                      <div className={styles.listRowText}>
-                        <div className={styles.listRowTop}>
-                          <span className={styles.listName}>{group.name}</span>
-                          <span className={styles.listRange}>{group.start} ~ {group.end}</span>
+                  {groupedProjects.map((group) => {
+                    const colorSet = getColorSet(group);
+                    const accent = colorSet.barColor ?? colorSet.barHex;
+                    return (
+                      <button
+                        key={group.id}
+                        className={styles.listRow}
+                        style={{ '--project-accent': accent } as React.CSSProperties}
+                        onClick={() => {
+                          onShortcutClick(group);
+                          closeList();
+                        }}
+                      >
+                        <div className={styles.listSwatch} />
+                        <div className={styles.listRowText}>
+                          <div className={styles.listRowTop}>
+                            <span className={styles.listName}>{group.name}</span>
+                            <span className={styles.listRange}>{group.start} ~ {group.end}</span>
+                          </div>
+                          <div className={styles.listMembers}>
+                            {group.members.slice(0, 3).map((m, idx) => (
+                              <span key={idx} className={styles.listMember}>{m.person}</span>
+                            ))}
+                            {group.members.length > 3 && (
+                              <span className={styles.listMore}>+{group.members.length - 3}</span>
+                            )}
+                          </div>
                         </div>
-                        <div className={styles.listMembers}>
-                          {group.members.slice(0, 3).map((m, idx) => (
-                            <span key={idx} className={styles.listMember}>{m.person}</span>
-                          ))}
-                          {group.members.length > 3 && (
-                            <span className={styles.listMore}>+{group.members.length - 3}</span>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
